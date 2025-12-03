@@ -1,0 +1,75 @@
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const db = require('../models');
+
+// Register
+router.post('/register', async (req, res) => {
+    try {
+        const { username, password, email } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        const existingUser = await db.User.findOne({ where: { username } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await db.User.create({
+            username,
+            password: hashedPassword,
+            email
+        });
+
+        req.session.userId = user.id;
+        res.json({ id: user.id, username: user.username, email: user.email });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await db.User.findOne({ where: { username } });
+
+        if (!user || !await bcrypt.compare(password, user.password)) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        req.session.userId = user.id;
+        res.json({ id: user.id, username: user.username, email: user.email });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Logout
+router.post('/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ success: true });
+});
+
+// Get Current User
+router.get('/me', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    try {
+        const user = await db.User.findByPk(req.session.userId, {
+            attributes: ['id', 'username', 'email', 'avatar']
+        });
+        if (!user) {
+            req.session.destroy();
+            return res.status(401).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+module.exports = router;
