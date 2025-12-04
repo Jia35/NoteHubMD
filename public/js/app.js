@@ -444,7 +444,17 @@ const Note = {
             <div class="flex-1 flex overflow-hidden relative">
                 <!-- Editor -->
                 <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
-                    <textarea ref="editorTextarea"></textarea>
+                    <div class="flex-1 overflow-hidden relative">
+                        <textarea ref="editorTextarea"></textarea>
+                    </div>
+                    <!-- Editor Footer -->
+                    <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-end items-center text-xs z-10 shrink-0">
+                        <select v-model="selectedTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+                            <option v-for="theme in themes" :key="theme.value" :value="theme.value">
+                                {{ theme.label }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- Preview -->
@@ -456,6 +466,9 @@ const Note = {
                      @scroll="handlePreviewScroll">
                 </div>
             </div>
+
+            
+
         </div>
     `,
     setup() {
@@ -475,6 +488,28 @@ const Note = {
             // linkify: true,
             // typographer: true
         });
+
+        const themes = [
+            { label: '預設', value: 'default' },
+            { label: 'Ayu Dark', value: 'ayu-dark' },
+            { label: 'Bespin', value: 'bespin' },
+            { label: 'Colorforth', value: 'colorforth' },
+            { label: 'Duotone Dark', value: 'duotone-dark' },
+            { label: 'Eclipse', value: 'eclipse' },
+            { label: 'Material Darker', value: 'material-darker' },
+            { label: 'Material Palenight', value: 'material-palenight' },
+            { label: 'Material', value: 'material' },
+            { label: 'Monokai', value: 'monokai' },
+            { label: 'Nord', value: 'nord' },
+            { label: 'Panda Syntax', value: 'panda-syntax' },
+            { label: 'Railscats', value: 'railscats' },
+            { label: 'Rubyblue', value: 'rubyblue' },
+            { label: 'Solarized', value: 'solarized' },
+            { label: 'XQ Light', value: 'xq-light' },
+            { label: 'XQ Dark', value: 'xq-dark' },
+        ];
+        const selectedTheme = ref(localStorage.getItem('editorTheme') || 'duotone-dark');
+
         let cmInstance = null;
 
         // Mode handling
@@ -541,10 +576,11 @@ const Note = {
             if (editorTextarea.value) {
                 cmInstance = CodeMirror.fromTextArea(editorTextarea.value, {
                     mode: 'markdown',
-                    theme: 'one-dark',
+                    theme: selectedTheme.value,
                     lineNumbers: true,
                     lineWrapping: true,
                 });
+                // cmInstance.setSize(null, "100%");
 
                 cmInstance.setValue(content.value);
 
@@ -586,6 +622,13 @@ const Note = {
             }
         });
 
+        watch(selectedTheme, (newTheme) => {
+            localStorage.setItem('editorTheme', newTheme);
+            if (cmInstance) {
+                cmInstance.setOption('theme', newTheme);
+            }
+        });
+
         watch(() => route.query.mode, (newMode) => {
             if (newMode) mode.value = newMode;
             nextTick(() => {
@@ -603,7 +646,9 @@ const Note = {
             mode,
             setMode,
             handlePreviewScroll,
-            saving
+            saving,
+            themes,
+            selectedTheme
         };
     }
 };
