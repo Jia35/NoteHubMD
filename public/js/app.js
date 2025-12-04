@@ -27,11 +27,11 @@ const api = {
         }
         return res.json();
     },
-    async register(username, password, email) {
+    async register(username, password) {
         const res = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, email })
+            body: JSON.stringify({ username, password })
         });
         if (!res.ok) {
             const data = await res.json();
@@ -113,10 +113,7 @@ const Login = {
                         <input v-model="username" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
                     </div>
                     
-                    <div v-if="isRegister" class="mb-4">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Email</label>
-                        <input v-model="email" type="email" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
-                    </div>
+
 
                     <div class="mb-6">
                         <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Password</label>
@@ -143,7 +140,6 @@ const Login = {
         const isRegister = ref(false);
         const username = ref('');
         const password = ref('');
-        const email = ref('');
         const error = ref('');
 
         const toggleMode = () => {
@@ -155,7 +151,7 @@ const Login = {
             error.value = '';
             try {
                 if (isRegister.value) {
-                    await api.register(username.value, password.value, email.value);
+                    await api.register(username.value, password.value);
                 } else {
                     await api.login(username.value, password.value);
                 }
@@ -165,7 +161,7 @@ const Login = {
             }
         };
 
-        return { isRegister, username, password, email, error, toggleMode, handleSubmit };
+        return { isRegister, username, password, error, toggleMode, handleSubmit };
     }
 };
 

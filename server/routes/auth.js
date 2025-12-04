@@ -6,7 +6,7 @@ const db = require('../models');
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { username, password, email } = req.body;
+        const { username, password } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
         }
@@ -19,12 +19,11 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await db.User.create({
             username,
-            password: hashedPassword,
-            email
+            password: hashedPassword
         });
 
         req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username, email: user.email });
+        res.json({ id: user.id, username: user.username });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -41,7 +40,7 @@ router.post('/login', async (req, res) => {
         }
 
         req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username, email: user.email });
+        res.json({ id: user.id, username: user.username });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -60,7 +59,7 @@ router.get('/me', async (req, res) => {
     }
     try {
         const user = await db.User.findByPk(req.session.userId, {
-            attributes: ['id', 'username', 'email', 'avatar']
+            attributes: ['id', 'username', 'avatar']
         });
         if (!user) {
             req.session.destroy();
