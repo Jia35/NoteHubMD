@@ -474,8 +474,9 @@ const Note = {
         const saving = ref(false);
         const md = window.markdownit({
             html: true,
-            linkify: true,
-            typographer: true
+            breaks: true,
+            // linkify: true,
+            // typographer: true
         });
         let cmInstance = null;
 
@@ -634,6 +635,14 @@ router.beforeEach(async (to, from, next) => {
 
 const app = createApp({
     setup() {
+        onMounted(() => {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
         return {};
     }
 });
