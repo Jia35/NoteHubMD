@@ -470,6 +470,7 @@ const Note = {
         const editorTextarea = ref(null);
         const previewContainer = ref(null);
         const content = ref('');
+        const title = ref('');
         const renderedContent = ref('');
         const saving = ref(false);
         const md = window.markdownit({
@@ -498,6 +499,11 @@ const Note = {
             renderedContent.value = md.render(content.value);
         };
 
+        const extractTitle = (text) => {
+            const match = text.match(/^#\s+(.+)$/m);
+            return match ? match[1] : 'Untitled';
+        };
+
         // Sync Scroll
         const handleEditorScroll = (cm) => {
             if (mode.value !== 'both' || !previewContainer.value) return;
@@ -513,10 +519,10 @@ const Note = {
             // Optional
         };
 
-        const saveContent = debounce(async (val) => {
+        const saveContent = debounce(async (newContent, newTitle) => {
             saving.value = true;
             try {
-                await api.updateNote(noteId.value, { content: val });
+                await api.updateNote(noteId.value, { content: newContent, title: newTitle });
             } catch (e) {
                 console.error('Save failed', e);
             } finally {
@@ -531,6 +537,7 @@ const Note = {
             try {
                 const note = await api.getNote(noteId.value);
                 content.value = note.content || '';
+                title.value = note.title || 'Untitled';
             } catch (e) {
                 console.error('Failed to load note', e);
             }
@@ -549,11 +556,15 @@ const Note = {
                     const val = cm.getValue();
                     if (val !== content.value) {
                         content.value = val;
+                        const newTitle = extractTitle(val);
+                        if (newTitle !== title.value) {
+                            title.value = newTitle;
+                        }
                         updatePreview();
                         // Emit change
                         socket.emit('edit-note', { noteId: noteId.value, content: val });
                         // Save to DB
-                        saveContent(val);
+                        saveContent(val, newTitle);
                     }
                 });
 
@@ -570,6 +581,7 @@ const Note = {
                     if (newContent !== content.value) {
                         const cursor = cmInstance.getCursor();
                         content.value = newContent;
+                        title.value = extractTitle(newContent);
                         cmInstance.setValue(newContent);
                         cmInstance.setCursor(cursor);
                         updatePreview();
