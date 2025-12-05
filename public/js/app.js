@@ -291,15 +291,22 @@ const Note = {
 
         let cmInstance = null;
 
-        // Mode handling
-        const mode = ref(route.query.mode || 'both');
+        // Mode handling - read mode from URL query keys (e.g., ?edit, ?both, ?view)
+        const getModeFromQuery = (query) => {
+            if ('edit' in query) return 'edit';
+            if ('view' in query) return 'view';
+            if ('both' in query) return 'both';
+            return 'both'; // default
+        };
+        const mode = ref(getModeFromQuery(route.query));
 
         const showEditor = computed(() => mode.value === 'both' || mode.value === 'edit');
         const showPreview = computed(() => mode.value === 'both' || mode.value === 'view');
 
         const setMode = (newMode) => {
             mode.value = newMode;
-            router.replace({ query: { ...route.query, mode: newMode } });
+            // Set URL as ?edit, ?both, or ?view (key only, no value)
+            router.replace({ query: { [newMode]: null } });
             nextTick(() => {
                 if (cmInstance) cmInstance.refresh();
             });
@@ -408,12 +415,15 @@ const Note = {
             }
         });
 
-        watch(() => route.query.mode, (newMode) => {
-            if (newMode) mode.value = newMode;
+        watch(() => route.query, (newQuery) => {
+            const newMode = getModeFromQuery(newQuery);
+            if (newMode !== mode.value) {
+                mode.value = newMode;
+            }
             nextTick(() => {
                 if (cmInstance) cmInstance.refresh();
             });
-        });
+        }, { deep: true });
 
         return {
             noteId,

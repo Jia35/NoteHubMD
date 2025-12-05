@@ -29,9 +29,12 @@
     <!-- CodeMirror 5 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/duotone-dark.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-ocean.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-palenight.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-ocean.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-palenight.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/solarized.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css">
@@ -58,11 +61,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/yaml/yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/powershell/powershell.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/vbscript/vbscript.min.js"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/gfm/gfm.min.js"></script> -->
 
     <!-- Markdown-it -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
 
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
@@ -85,7 +88,6 @@
                         <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Username</label>
                         <input v-model="username" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
                     </div>
-                    
 
                     <div class="mb-6">
                         <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Password</label>
@@ -197,7 +199,6 @@
                     <div v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
-                            
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ book.title }}</h3>
                         </div>
                         <p class="text-gray-500 dark:text-gray-400 text-sm">{{ book.description || 'No description' }}</p>
@@ -255,8 +256,8 @@
     <script type="text/x-template" id="note-template">
         <div class="flex flex-col h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
             <!-- Toolbar -->
-            <div class="bg-gray-900 text-white p-3 flex items-center justify-between shadow-md z-10 shrink-0">
-                <div class="flex items-center space-x-3">
+            <div class="bg-gray-900 text-white p-3 flex items-center justify-center shadow-md z-10 shrink-0">
+                <div class="flex items-center space-x-3 flex-1">
                     <router-link to="/" class="hover:text-blue-400 transition font-medium">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -278,6 +279,7 @@
                         <i class="fa-solid fa-eye"></i>
                     </button>
                 </div>
+                <div class="flex-1"></div>
             </div>
             
             <!-- Content -->
@@ -299,11 +301,11 @@
                 
                 <!-- Preview -->
                 <div v-show="showPreview" 
-                     class="h-full overflow-auto bg-white dark:bg-dark-bg p-8 markdown-body dark:text-gray-300" 
-                     :class="{'w-full': !showEditor, 'w-1/2': showEditor}" 
-                     ref="previewContainer" 
-                     v-html="renderedContent"
+                     class="h-full overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300" 
+                     :class="{'w-full flex justify-center': !showEditor, 'w-1/2': showEditor}" 
+                     ref="previewContainer"
                      @scroll="handlePreviewScroll">
+                    <div :class="{'max-w-[900px] w-full p-8': !showEditor, 'p-8': showEditor}" v-html="renderedContent"></div>
                 </div>
             </div>
         </div>
