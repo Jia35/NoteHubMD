@@ -102,39 +102,7 @@ const api = {
 // --- Components ---
 
 const Login = {
-    template: `
-        <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-bg">
-            <div class="bg-white dark:bg-dark-surface p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">{{ isRegister ? 'Create Account' : 'Login to NoteHubMD' }}</h2>
-                
-                <form @submit.prevent="handleSubmit">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Username</label>
-                        <input v-model="username" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
-                    </div>
-                    
-
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Password</label>
-                        <input v-model="password" type="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
-                    </div>
-
-                    <div v-if="error" class="mb-4 text-red-500 text-sm text-center">{{ error }}</div>
-
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-                        {{ isRegister ? 'Register' : 'Login' }}
-                    </button>
-                </form>
-
-                <div class="mt-4 text-center">
-                    <button @click="toggleMode" class="text-blue-600 hover:text-blue-800 text-sm">
-                        {{ isRegister ? 'Already have an account? Login' : 'Need an account? Register' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    `,
+    template: '#login-template',
     setup() {
         const router = VueRouter.useRouter();
         const isRegister = ref(false);
@@ -166,61 +134,7 @@ const Login = {
 };
 
 const Sidebar = {
-    template: `
-        <div class="w-64 bg-gray-900 text-white flex flex-col h-full border-r border-gray-800 shrink-0">
-            <!-- Header -->
-            <router-link to="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
-                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
-                <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
-            </router-link>
-
-            <!-- Navigation -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-2">
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
-                <router-link to="/" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                    <span class="mr-3">🏠</span> Home
-                </router-link>
-            </div>
-
-            <!-- User & Settings -->
-            <div class="p-4 border-t border-gray-800 bg-gray-900">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center overflow-hidden">
-                        <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center mr-2 shrink-0">
-                            {{ user?.username?.charAt(0).toUpperCase() || '?' }}
-                        </div>
-                        <span class="text-sm font-medium truncate">{{ user?.username || 'Guest' }}</span>
-                    </div>
-                    <button @click="showSettings = true" class="text-gray-400 hover:text-white transition ml-2">
-                        ⚙️
-                    </button>
-                </div>
-            </div>
-
-            <!-- Settings Modal -->
-            <div v-if="showSettings" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettings = false">
-                <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
-                    <h2 class="text-xl font-bold mb-4">Settings</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2">Theme</label>
-                        <div class="flex space-x-2">
-                            <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">Light</button>
-                            <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">Dark</button>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                        <button @click="logout" class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
-                    </div>
-
-                    <div class="flex justify-end mt-4">
-                        <button @click="showSettings = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
+    template: '#sidebar-template',
     props: ['user'],
     setup() {
         const showSettings = ref(false);
@@ -254,15 +168,7 @@ const Sidebar = {
 };
 
 const Layout = {
-    template: `
-        <div class="flex h-full w-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text transition-colors duration-200">
-            <Sidebar :user="user" />
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <router-view v-if="user"></router-view>
-                <div v-else class="flex items-center justify-center h-full">Loading...</div>
-            </div>
-        </div>
-    `,
+    template: '#layout-template',
     components: { Sidebar },
     setup() {
         const user = ref(null);
@@ -281,46 +187,7 @@ const Layout = {
 };
 
 const Home = {
-    template: `
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
-            <h1 class="text-4xl font-bold mb-8 text-gray-800 dark:text-white">NoteHubMD</h1>
-            
-            <div class="flex space-x-4 mb-8">
-                <button @click="createNote" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow flex items-center">
-                    <span class="mr-2">+</span> New Note
-                </button>
-                <button @click="createBook" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition shadow flex items-center">
-                    <span class="mr-2">+</span> New Book
-                </button>
-            </div>
-
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
-                        <div class="flex items-center mb-2">
-                            <span class="text-2xl mr-2">📚</span>
-                            <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ book.title }}</h3>
-                        </div>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm">{{ book.description || 'No description' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <h2 class="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div v-for="note in notes" :key="note.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
-                        <div class="flex items-center mb-2">
-                            <span class="text-2xl mr-2">📝</span>
-                            <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ note.title }}</h3>
-                        </div>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm">Last updated: {{ new Date(note.updatedAt).toLocaleString() }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
+    template: '#home-template',
     setup() {
         const router = VueRouter.useRouter();
         const notes = ref([]);
@@ -356,37 +223,7 @@ const Home = {
 };
 
 const Book = {
-    template: `
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
-            <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
-                <router-link to="/" class="hover:text-blue-500">Home</router-link>
-                <span class="mx-2">/</span>
-                <span>{{ book.title }}</span>
-            </div>
-
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-4xl font-bold text-gray-800 dark:text-white flex items-center">
-                    <span class="mr-3">📚</span> {{ book.title }}
-                </h1>
-                <button @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                    + Add Note
-                </button>
-            </div>
-
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div v-for="note in book.Notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center" @click="$router.push('/note/' + note.id)">
-                    <div class="flex items-center">
-                        <span class="mr-3 text-gray-400">📝</span>
-                        <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ note.title }}</span>
-                    </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ new Date(note.updatedAt).toLocaleDateString() }}</span>
-                </div>
-                <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                    No notes in this book yet.
-                </div>
-            </div>
-        </div>
-    `,
+    template: '#book-template',
     setup() {
         const route = useRoute();
         const router = VueRouter.useRouter();
@@ -412,65 +249,7 @@ const Book = {
 };
 
 const Note = {
-    template: `
-        <div class="flex flex-col h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-            <!-- Toolbar -->
-            <div class="bg-gray-900 text-white p-3 flex items-center justify-between shadow-md z-10 shrink-0">
-                <div class="flex items-center space-x-3">
-                    <router-link to="/" class="hover:text-blue-400 transition font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    </router-link>
-                    <span class="text-gray-600">/</span>
-                    <span class="font-mono text-sm bg-gray-800 px-2 py-1 rounded">{{ noteId }}</span>
-                    <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
-                    <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
-                </div>
-                <div class="flex bg-gray-800 rounded-lg p-1 space-x-1">
-                    <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Edit">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Both">
-                        <i class="fa-solid fa-columns"></i>
-                    </button>
-                    <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="View">
-                        <i class="fa-solid fa-eye"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Content -->
-            <div class="flex-1 flex overflow-hidden relative">
-                <!-- Editor -->
-                <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
-                    <div class="flex-1 overflow-hidden relative">
-                        <textarea ref="editorTextarea"></textarea>
-                    </div>
-                    <!-- Editor Footer -->
-                    <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-end items-center text-xs z-10 shrink-0">
-                        <select v-model="selectedTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
-                            <option v-for="theme in themes" :key="theme.value" :value="theme.value">
-                                {{ theme.label }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- Preview -->
-                <div v-show="showPreview" 
-                     class="h-full overflow-auto bg-white dark:bg-dark-bg p-8 markdown-body dark:text-gray-300" 
-                     :class="{'w-full': !showEditor, 'w-1/2': showEditor}" 
-                     ref="previewContainer" 
-                     v-html="renderedContent"
-                     @scroll="handlePreviewScroll">
-                </div>
-            </div>
-
-            
-
-        </div>
-    `,
+    template: '#note-template',
     setup() {
         const route = useRoute();
         const router = VueRouter.useRouter();
