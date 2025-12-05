@@ -29,12 +29,9 @@
     <!-- CodeMirror 5 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/duotone-dark.min.css">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-ocean.min.css">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-palenight.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-ocean.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-palenight.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/solarized.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css">
@@ -44,7 +41,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/colorforth.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/eclipse.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/panda-syntax.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/railscats.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/rubyblue.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/xq-light.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/xq-dark.min.css">
@@ -66,11 +62,10 @@
 
     <!-- Markdown-it -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
 
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 
 <body
@@ -139,7 +134,7 @@
                         <span class="text-sm font-medium truncate">{{ user?.username || 'Guest' }}</span>
                     </div>
                     <button @click="showSettings = true" class="text-gray-400 hover:text-white transition ml-2">
-                        ⚙️
+                        <i class="fa-solid fa-gear"></i>
                     </button>
                 </div>
             </div>
@@ -147,13 +142,17 @@
             <!-- Settings Modal -->
             <div v-if="showSettings" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettings = false">
                 <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
-                    <h2 class="text-xl font-bold mb-4">Settings</h2>
+                    <h2 class="text-xl font-bold mb-4">設定</h2>
                     
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2">Theme</label>
                         <div class="flex space-x-2">
-                            <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">Light</button>
-                            <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">Dark</button>
+                            <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                <i class="fa-solid fa-sun"></i>
+                            </button>
+                            <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                <i class="fa-solid fa-moon"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -193,11 +192,12 @@
             </div>
 
             <div class="mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <div class="flex items-center mb-2">
-                            <span class="text-2xl mr-2">📚</span>
+                            <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
+                            
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ book.title }}</h3>
                         </div>
                         <p class="text-gray-500 dark:text-gray-400 text-sm">{{ book.description || 'No description' }}</p>
@@ -206,14 +206,14 @@
             </div>
 
             <div>
-                <h2 class="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-for="note in notes" :key="note.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <div class="flex items-center mb-2">
-                            <span class="text-2xl mr-2">📝</span>
+                            <span class="text-xl mr-2"><i class="fa-solid fa-note-sticky"></i></span>
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ note.title }}</h3>
                         </div>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm">Last updated: {{ new Date(note.updatedAt).toLocaleString() }}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(note.updatedAt).toLocaleString() }}</p>
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@
 
             <div class="flex justify-between items-center mb-8">
                 <h1 class="text-4xl font-bold text-gray-800 dark:text-white flex items-center">
-                    <span class="mr-3">📚</span> {{ book.title }}
+                    <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
                 </h1>
                 <button @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
                     + Add Note
@@ -240,7 +240,7 @@
             <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div v-for="note in book.Notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center" @click="$router.push('/note/' + note.id)">
                     <div class="flex items-center">
-                        <span class="mr-3 text-gray-400">📝</span>
+                        <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
                         <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ note.title }}</span>
                     </div>
                     <span class="text-sm text-gray-500 dark:text-gray-400">{{ new Date(note.updatedAt).toLocaleDateString() }}</span>
