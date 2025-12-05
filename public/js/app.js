@@ -264,8 +264,16 @@ const Note = {
         const md = window.markdownit({
             html: true,
             breaks: true,
-            // linkify: true,
-            // typographer: true
+            highlight: function (str, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return '<pre class="hljs"><code>' +
+                            hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                            '</code></pre>';
+                    } catch (__) { }
+                }
+                return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+            }
         });
 
         const themes = [
@@ -322,18 +330,33 @@ const Note = {
         };
 
         // Sync Scroll
-        const handleEditorScroll = (cm) => {
-            if (mode.value !== 'both' || !previewContainer.value) return;
+        let isScrollingSynced = false; // Prevent scroll loop
 
+        const handleEditorScroll = (cm) => {
+            if (mode.value !== 'both' || !previewContainer.value || isScrollingSynced) return;
+
+            isScrollingSynced = true;
             const scrollInfo = cm.getScrollInfo();
             const percentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
 
             const preview = previewContainer.value;
             preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
+
+            setTimeout(() => { isScrollingSynced = false; }, 50);
         };
 
         const handlePreviewScroll = (e) => {
-            // Optional
+            if (mode.value !== 'both' || !cmInstance || isScrollingSynced) return;
+
+            isScrollingSynced = true;
+            const preview = e.target;
+            const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
+
+            const scrollInfo = cmInstance.getScrollInfo();
+            const targetScrollTop = percentage * (scrollInfo.height - scrollInfo.clientHeight);
+            cmInstance.scrollTo(null, targetScrollTop);
+
+            setTimeout(() => { isScrollingSynced = false; }, 50);
         };
 
         const saveContent = debounce(async (newContent, newTitle) => {
