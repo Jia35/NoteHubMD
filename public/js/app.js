@@ -1,7 +1,19 @@
-const { createApp, ref, onMounted, computed, watch, nextTick } = Vue;
+const { createApp, ref, onMounted, onUnmounted, computed, watch, nextTick } = Vue;
 const { createRouter, createWebHistory, useRoute } = VueRouter;
 
 const socket = io();
+
+// Get current user from API (cached)
+let currentUserCache = null;
+async function getCurrentUser() {
+    if (currentUserCache) return currentUserCache;
+    try {
+        currentUserCache = await api.getMe();
+        return currentUserCache;
+    } catch (e) {
+        return null;
+    }
+}
 
 // Utils
 function debounce(func, wait) {
@@ -589,6 +601,13 @@ const Note = {
         const saving = ref(false);
         const permission = ref('private');
         const isOwner = ref(false);
+
+        // Online users tracking
+        const onlineUsers = ref([]);
+        const showOnlineUsersPopup = ref(false);
+        const toggleOnlineUsersPopup = () => {
+            showOnlineUsersPopup.value = !showOnlineUsersPopup.value;
+        };
         const canEdit = ref(true);
         const permissionOptions = [
             { value: 'public-edit', label: '可編輯' },
@@ -862,10 +881,12 @@ const Note = {
                 // Initial render
                 updatePreview();
 
-                // Socket Join
-                socket.emit('join-note', noteId.value);
+                // Register socket listeners FIRST (before join-note)
+                socket.on('users-in-note', (users) => {
+                    console.log('Received users-in-note:', users);
+                    onlineUsers.value = users;
+                });
 
-                // Socket Listen
                 socket.on('note-updated', (newContent) => {
                     if (newContent !== content.value) {
                         const cursor = cmInstance.getCursor();
@@ -876,7 +897,20 @@ const Note = {
                         updatePreview();
                     }
                 });
+
+                // Socket Join - get username and send with join (after listeners are ready)
+                const currentUser = await getCurrentUser();
+                const username = currentUser?.username || 'Guest';
+                console.log('Joining note:', noteId.value, 'as', username);
+                socket.emit('join-note', { noteId: noteId.value, username });
             }
+        });
+
+        // Cleanup on unmount
+        onUnmounted(() => {
+            socket.emit('leave-note', noteId.value);
+            socket.off('users-in-note');
+            socket.off('note-updated');
         });
 
         watch(selectedTheme, (newTheme) => {
@@ -916,7 +950,10 @@ const Note = {
             isOwner,
             canEdit,
             permissionOptions,
-            handlePermissionChange
+            handlePermissionChange,
+            onlineUsers,
+            showOnlineUsersPopup,
+            toggleOnlineUsersPopup
         };
     }
 };
