@@ -92,6 +92,14 @@ const api = {
         if (!res.ok) throw new Error('Book not found');
         return res.json();
     },
+    async updateBook(id, data) {
+        const res = await fetch('/api/books/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
     async createNoteInBook(bookId) {
         const res = await fetch(`/api/books/${bookId}/notes`, {
             method: 'POST',
@@ -102,6 +110,10 @@ const api = {
     },
     async getNotes() {
         const res = await fetch('/api/notes');
+        return res.json();
+    },
+    async getAllNotesForTags() {
+        const res = await fetch('/api/notes?includeBookNotes=true');
         return res.json();
     },
     async getBooks() {
@@ -253,23 +265,30 @@ const Home = {
         const router = VueRouter.useRouter();
         const notes = ref([]);
         const books = ref([]);
+        const allNotesForTags = ref([]); // All notes including book notes, for tag collection
         const selectedTag = ref('');
 
         const loadData = async () => {
             try {
                 notes.value = await api.getNotes();
                 books.value = await api.getBooks();
+                allNotesForTags.value = await api.getAllNotesForTags();
             } catch (e) {
                 // Error handling handled by global auth check mostly
             }
         };
 
-        // Collect all unique tags from notes
+        // Collect all unique tags from ALL notes (including book notes) AND books
         const allTags = computed(() => {
             const tagSet = new Set();
-            notes.value.forEach(note => {
+            allNotesForTags.value.forEach(note => {
                 if (note.tags && Array.isArray(note.tags)) {
                     note.tags.forEach(tag => tagSet.add(tag));
+                }
+            });
+            books.value.forEach(book => {
+                if (book.tags && Array.isArray(book.tags)) {
+                    book.tags.forEach(tag => tagSet.add(tag));
                 }
             });
             return Array.from(tagSet).sort();
@@ -280,6 +299,14 @@ const Home = {
             if (!selectedTag.value) return notes.value;
             return notes.value.filter(note =>
                 note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)
+            );
+        });
+
+        // Filter books by selected tag
+        const filteredBooks = computed(() => {
+            if (!selectedTag.value) return books.value;
+            return books.value.filter(book =>
+                book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)
             );
         });
 
@@ -321,7 +348,7 @@ const Home = {
 
         onMounted(loadData);
 
-        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, selectTag };
+        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, filteredBooks, selectTag };
     }
 };
 
@@ -331,10 +358,12 @@ const Book = {
         const route = useRoute();
         const router = VueRouter.useRouter();
         const book = ref({});
+        const newTag = ref('');
 
         const loadBook = async () => {
             try {
                 book.value = await api.getBook(route.params.id);
+                if (!book.value.tags) book.value.tags = [];
             } catch (e) { alert('Book not found'); router.push('/'); }
         };
 
@@ -345,9 +374,31 @@ const Book = {
             } catch (e) { alert('Error creating note'); }
         };
 
+        const addTag = async () => {
+            const tag = newTag.value.trim();
+            if (!tag) return;
+            if (!book.value.tags) book.value.tags = [];
+            if (book.value.tags.includes(tag)) {
+                newTag.value = '';
+                return;
+            }
+            book.value.tags.push(tag);
+            newTag.value = '';
+            try {
+                await api.updateBook(book.value.id, { tags: book.value.tags });
+            } catch (e) { alert('儲存標籤失敗'); }
+        };
+
+        const removeTag = async (tagToRemove) => {
+            book.value.tags = book.value.tags.filter(t => t !== tagToRemove);
+            try {
+                await api.updateBook(book.value.id, { tags: book.value.tags });
+            } catch (e) { alert('儲存標籤失敗'); }
+        };
+
         onMounted(loadBook);
 
-        return { book, createNote };
+        return { book, createNote, newTag, addTag, removeTag };
     }
 };
 

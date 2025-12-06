@@ -14,6 +14,9 @@ module.exports = (sequelize, DataTypes) => {
         permission: {
             type: DataTypes.STRING,
             defaultValue: 'private'
+        },
+        tags: {
+            type: DataTypes.JSON
         }
     }, {
         paranoid: true

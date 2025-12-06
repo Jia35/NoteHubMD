@@ -7,7 +7,6 @@ const { generateId } = require('../utils/idGenerator');
 // Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
 function parseTags(content) {
     if (!content) return [];
-    console.log('[parseTags] Content starts with:', content.substring(0, 100));
     const match = content.match(/^#{1,6}\s*tags:\s*(.+)$/im);
     if (!match) return [];
 
@@ -15,9 +14,7 @@ function parseTags(content) {
     const tagMatches = match[1].match(/`([^`]+)`/g);
     if (!tagMatches) return [];
 
-    const tags = tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
-    console.log('[parseTags] Extracted tags:', tags);
-    return tags;
+    return tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
 }
 
 // --- Notes ---
@@ -118,7 +115,6 @@ router.put('/notes/:id', async (req, res) => {
         const { permission: _, ...updateData } = req.body;
 
         // Auto-parse tags from content if content is being updated
-        console.log('[PUT /notes/:id] updateData keys:', Object.keys(updateData), 'content?:', updateData.content !== undefined);
         if (updateData.content !== undefined) {
             updateData.tags = parseTags(updateData.content);
         }
@@ -164,12 +160,17 @@ router.put('/notes/:id/permission', async (req, res) => {
 });
 
 // Get All Notes (Home)
+// ?includeBookNotes=true to include notes inside books (for tag filtering)
 router.get('/notes', async (req, res) => {
     try {
+        const whereClause = req.query.includeBookNotes === 'true'
+            ? {} // All notes
+            : { bookId: null }; // Only standalone notes
+
         const notes = await db.Note.findAll({
-            where: { bookId: null }, // Only standalone notes
+            where: whereClause,
             order: [['updatedAt', 'DESC']],
-            limit: 20
+            limit: req.query.includeBookNotes === 'true' ? 100 : 20
         });
         res.json(notes);
     } catch (e) {
@@ -211,6 +212,26 @@ router.get('/books/:id', async (req, res) => {
             include: [{ model: db.Note, attributes: ['id', 'title', 'updatedAt'] }]
         });
         if (!book) return res.status(404).json({ error: 'Book not found' });
+        res.json(book);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Update Book
+router.put('/books/:id', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const updateData = { ...req.body };
+
+        // Auto-parse tags from description if description is being updated
+        if (updateData.description !== undefined) {
+            updateData.tags = parseTags(updateData.description);
+        }
+
+        await book.update(updateData);
         res.json(book);
     } catch (e) {
         res.status(500).json({ error: e.message });

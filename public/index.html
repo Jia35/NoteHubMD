@@ -207,18 +207,41 @@
                 </button>
             </div>
 
+            <!-- Tag Filter (filters both Books and Notes) -->
+            <div v-if="allTags.length > 0" class="mb-6 flex flex-wrap gap-2 items-center">
+                <span class="text-sm text-gray-500 dark:text-gray-400 mr-2"><i class="fa-solid fa-tags"></i> 標籤篩選:</span>
+                <button v-for="tag in allTags" :key="tag" 
+                        @click="selectTag(tag)"
+                        class="px-3 py-1 text-sm rounded-full transition"
+                        :class="selectedTag === tag 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-600'">
+                    {{ tag }}
+                </button>
+                <button v-if="selectedTag" @click="selectTag('')" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2">
+                    <i class="fa-solid fa-xmark"></i> 清除
+                </button>
+            </div>
+
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-if="books.length == 0" class="text-gray-400 italic">(無 Book)</div>
-                    <div v-if="books.length >= 0" v-for="book in books" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
+                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無 Book)</div>
+                    <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <button @click="deleteBook(book.id, $event)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1" title="刪除">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
-                            <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ book.title }}</h3>
+                            <h3 class="font-bold text-xl text-gray-800 dark:text-white truncate">{{ book.title }}</h3>
                         </div>
+                        <!-- Tags -->
+                        <div v-if="book.tags && book.tags.length > 0" class="mb-2 flex flex-wrap gap-1">
+                            <span v-for="tag in book.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                                {{ tag }}
+                            </span>
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(book.updatedAt).toLocaleString() }}</p>
                         <p class="text-gray-500 dark:text-gray-400 text-sm">{{ book.description || 'No description' }}</p>
                     </div>
                 </div>
@@ -226,23 +249,6 @@
 
             <div>
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
-                
-                <!-- Tag Filter -->
-                <div v-if="allTags.length > 0" class="mb-4 flex flex-wrap gap-2 items-center">
-                    <span class="text-sm text-gray-500 dark:text-gray-400 mr-2"><i class="fa-solid fa-tags"></i> 標籤篩選:</span>
-                    <button v-for="tag in allTags" :key="tag" 
-                            @click="selectTag(tag)"
-                            class="px-3 py-1 text-sm rounded-full transition"
-                            :class="selectedTag === tag 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-600'">
-                        {{ tag }}
-                    </button>
-                    <button v-if="selectedTag" @click="selectTag('')" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2">
-                        <i class="fa-solid fa-xmark"></i> 清除
-                    </button>
-                </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無 Note)</div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
@@ -274,7 +280,7 @@
                 <span>{{ book.title }}</span>
             </div>
 
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex justify-between items-center mb-4">
                 <h1 class="text-4xl font-bold text-gray-800 dark:text-white flex items-center">
                     <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
                 </h1>
@@ -283,13 +289,40 @@
                 </button>
             </div>
 
+            <!-- Tag Editor -->
+            <div class="mb-6 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center mb-3">
+                    <i class="fa-solid fa-tags text-gray-400 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">標籤</span>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <span v-for="tag in book.tags" :key="tag" class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 flex items-center">
+                        {{ tag }}
+                        <button @click="removeTag(tag)" class="ml-2 text-green-500 hover:text-red-500">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </span>
+                    <span v-if="!book.tags || book.tags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
+                </div>
+                <div class="flex gap-2">
+                    <input v-model="newTag" 
+                           @keyup.enter="addTag"
+                           type="text" 
+                           placeholder="輸入新標籤..." 
+                           class="flex-1 px-3 py-2 text-sm border rounded bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button @click="addTag" class="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                        <i class="fa-solid fa-plus"></i> 新增
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div v-for="note in book.Notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center" @click="$router.push('/note/' + note.id)">
                     <div class="flex items-center">
                         <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
                         <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ note.title }}</span>
                     </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ new Date(note.updatedAt).toLocaleDateString() }}</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ new Date(note.updatedAt).toLocaleString() }}</span>
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
                     No notes in this book yet.
