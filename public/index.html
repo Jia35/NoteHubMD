@@ -87,7 +87,8 @@
     <script type="text/x-template" id="login-template">
         <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-bg">
             <div class="bg-white dark:bg-dark-surface p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">{{ isRegister ? 'Create Account' : 'Login to NoteHubMD' }}</h2>
+                <h2 class="text-xl font-bold mb-2 text-center text-gray-800 dark:text-white">NoteHubMD</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">{{ isRegister ? 'Register' : 'Login' }}</h2>
                 
                 <form @submit.prevent="handleSubmit">
                     <div class="mb-4">
@@ -103,13 +104,13 @@
                     <div v-if="error" class="mb-4 text-red-500 text-sm text-center">{{ error }}</div>
 
                     <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-                        {{ isRegister ? 'Register' : 'Login' }}
+                        {{ isRegister ? '註冊' : '登入' }}
                     </button>
                 </form>
 
                 <div class="mt-4 text-center">
                     <button @click="toggleMode" class="text-blue-600 hover:text-blue-800 text-sm">
-                        {{ isRegister ? 'Already have an account? Login' : 'Need an account? Register' }}
+                        {{ isRegister ? '已經有帳號？ Login' : '註冊新帳號？ Register' }}
                     </button>
                 </div>
             </div>
@@ -202,7 +203,8 @@
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
+                    <div v-if="books.length == 0" class="text-gray-400 italic">(無 Book)</div>
+                    <div v-if="books.length >= 0" v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ book.title }}</h3>
@@ -215,7 +217,8 @@
             <div>
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-for="note in notes" :key="note.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
+                    <div v-if="notes.length == 0" class="text-gray-400 italic">(無 Note)</div>
+                    <div v-if="notes.length >= 0" v-for="note in notes" :key="note.id" class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-note-sticky"></i></span>
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white">{{ note.title }}</h3>
