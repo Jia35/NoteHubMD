@@ -3,6 +3,23 @@ const router = express.Router();
 const db = require('../models');
 const { generateId } = require('../utils/idGenerator');
 
+// Parse tags from markdown content
+// Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
+function parseTags(content) {
+    if (!content) return [];
+    console.log('[parseTags] Content starts with:', content.substring(0, 100));
+    const match = content.match(/^#{1,6}\s*tags:\s*(.+)$/im);
+    if (!match) return [];
+
+    // Extract content inside backticks
+    const tagMatches = match[1].match(/`([^`]+)`/g);
+    if (!tagMatches) return [];
+
+    const tags = tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
+    console.log('[parseTags] Extracted tags:', tags);
+    return tags;
+}
+
 // --- Notes ---
 
 // Create Note
@@ -99,6 +116,12 @@ router.put('/notes/:id', async (req, res) => {
         // Prevent permission from being updated via this endpoint
         // Use PUT /notes/:id/permission instead
         const { permission: _, ...updateData } = req.body;
+
+        // Auto-parse tags from content if content is being updated
+        console.log('[PUT /notes/:id] updateData keys:', Object.keys(updateData), 'content?:', updateData.content !== undefined);
+        if (updateData.content !== undefined) {
+            updateData.tags = parseTags(updateData.content);
+        }
 
         await note.update(updateData);
         res.json({

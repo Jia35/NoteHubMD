@@ -13,6 +13,17 @@ function debounce(func, wait) {
     };
 }
 
+// Extract tags from markdown content (CodiMD style)
+// Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
+function extractTags(content) {
+    if (!content) return [];
+    const match = content.match(/^#{1,6}\s*tags:\s*(.+)$/im);
+    if (!match) return [];
+    const tagMatches = match[1].match(/`([^`]+)`/g);
+    if (!tagMatches) return [];
+    return tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
+}
+
 // API Helper
 const api = {
     async login(username, password) {
@@ -242,6 +253,7 @@ const Home = {
         const router = VueRouter.useRouter();
         const notes = ref([]);
         const books = ref([]);
+        const selectedTag = ref('');
 
         const loadData = async () => {
             try {
@@ -250,6 +262,29 @@ const Home = {
             } catch (e) {
                 // Error handling handled by global auth check mostly
             }
+        };
+
+        // Collect all unique tags from notes
+        const allTags = computed(() => {
+            const tagSet = new Set();
+            notes.value.forEach(note => {
+                if (note.tags && Array.isArray(note.tags)) {
+                    note.tags.forEach(tag => tagSet.add(tag));
+                }
+            });
+            return Array.from(tagSet).sort();
+        });
+
+        // Filter notes by selected tag
+        const filteredNotes = computed(() => {
+            if (!selectedTag.value) return notes.value;
+            return notes.value.filter(note =>
+                note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)
+            );
+        });
+
+        const selectTag = (tag) => {
+            selectedTag.value = selectedTag.value === tag ? '' : tag;
         };
 
         const createNote = async () => {
@@ -286,7 +321,7 @@ const Home = {
 
         onMounted(loadData);
 
-        return { notes, books, createNote, createBook, deleteNote, deleteBook };
+        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, selectTag };
     }
 };
 
