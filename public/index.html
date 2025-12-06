@@ -243,9 +243,21 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無書本)</div>
                     <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
-                        <button @click="deleteBook(book.id, $event)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1" title="刪除">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <!-- Dropdown Menu Button -->
+                        <div class="absolute top-2 right-2">
+                            <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div v-if="openMenuId === 'book-' + book.id" class="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                <button @click.stop="openInfoModal('book', book)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                                    <i class="fa-solid fa-circle-info mr-2"></i>資訊
+                                </button>
+                                <button @click.stop="deleteBook(book.id, $event)" class="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                    <i class="fa-solid fa-trash mr-2"></i>刪除
+                                </button>
+                            </div>
+                        </div>
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white truncate">{{ book.title }}</h3>
@@ -257,7 +269,7 @@
                             </span>
                         </div>
                         <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(book.updatedAt).toLocaleString() }}</p>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm">{{ book.description || 'No description' }}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ book.description || 'No description' }}</p>
                     </div>
                 </div>
             </div>
@@ -267,9 +279,21 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無筆記)</div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
-                        <button @click="deleteNote(note.id, $event)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1" title="刪除">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <!-- Dropdown Menu Button -->
+                        <div class="absolute top-2 right-2">
+                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div v-if="openMenuId === 'note-' + note.id" class="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                <button @click.stop="openInfoModal('note', note)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                                    <i class="fa-solid fa-circle-info mr-2"></i>資訊
+                                </button>
+                                <button @click.stop="deleteNote(note.id, $event)" class="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                    <i class="fa-solid fa-trash mr-2"></i>刪除
+                                </button>
+                            </div>
+                        </div>
                         <div class="flex items-center mb-2">
                             <span class="text-xl mr-2"><i class="fa-solid fa-note-sticky"></i></span>
                             <h3 class="font-bold text-xl text-gray-800 dark:text-white truncate">{{ note.title }}</h3>
@@ -281,6 +305,82 @@
                             </span>
                         </div>
                         <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(note.updatedAt).toLocaleString() }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Modal -->
+            <div v-if="showInfoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showInfoModal = false">
+                <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i :class="infoModalType === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-2"></i>
+                            {{ infoModalType === 'book' ? '書本資訊' : '筆記資訊' }}
+                        </h2>
+                        <button @click="showInfoModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Modal Body -->
+                    <div class="p-4 space-y-4">
+                        <!-- Item Info -->
+                        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ infoModalItem.id }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">標題: <span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.title }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.createdAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400">更新時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
+                        </div>
+
+                        <!-- Description Editor (for books only) -->
+                        <div v-if="infoModalType === 'book'">
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-align-left mr-1"></i> 描述
+                            </label>
+                            <textarea v-model="editableDescription"
+                                      rows="3"
+                                      placeholder="輸入描述..."
+                                      class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                        </div>
+
+                        <!-- Tags Editor -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-tags mr-1"></i> 標籤
+                            </label>
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <span v-for="tag in editableTags" :key="tag" 
+                                      :class="infoModalType === 'book' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'"
+                                      class="px-3 py-1 text-sm rounded-full flex items-center">
+                                    {{ tag }}
+                                    <button @click="removeEditableTag(tag)" class="ml-2 hover:text-red-500">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </span>
+                                <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newTag" 
+                                       @keyup.enter="addEditableTag"
+                                       type="text" 
+                                       placeholder="輸入新標籤..." 
+                                       class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button @click="addEditableTag" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                        <button @click="showInfoModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            取消
+                        </button>
+                        <button @click="saveInfoChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                            <i class="fa-solid fa-save mr-1"></i> 儲存
+                        </button>
                     </div>
                 </div>
             </div>
@@ -299,38 +399,38 @@
                 <h1 class="text-4xl font-bold text-gray-800 dark:text-white flex items-center">
                     <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
                 </h1>
-                <button @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                    + Add Note
-                </button>
-            </div>
-
-            <!-- Tag Editor -->
-            <div class="mb-6 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-                <div class="flex items-center mb-3">
-                    <i class="fa-solid fa-tags text-gray-400 mr-2"></i>
-                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">標籤</span>
-                </div>
-                <div class="flex flex-wrap gap-2 mb-3">
-                    <span v-for="tag in book.tags" :key="tag" class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 flex items-center">
-                        {{ tag }}
-                        <button @click="removeTag(tag)" class="ml-2 text-green-500 hover:text-red-500">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </span>
-                    <span v-if="!book.tags || book.tags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
-                </div>
                 <div class="flex gap-2">
-                    <input v-model="newTag" 
-                           @keyup.enter="addTag"
-                           type="text" 
-                           placeholder="輸入新標籤..." 
-                           class="flex-1 px-3 py-2 text-sm border rounded bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button @click="addTag" class="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        <i class="fa-solid fa-plus"></i> 新增
+                    <button @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                        + Add Note
+                    </button>
+                    <button @click="showEditModal = true" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                        <i class="fa-solid fa-pen"></i> 編輯
                     </button>
                 </div>
             </div>
 
+            <!-- Read-only Info Display -->
+            <div class="mb-6 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                <!-- Tags (read-only) -->
+                <div class="flex items-center mb-3">
+                    <i class="fa-solid fa-tags text-gray-400 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-3">標籤</span>
+                    <div class="flex flex-wrap gap-2">
+                        <span v-for="tag in book.tags" :key="tag" class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                            {{ tag }}
+                        </span>
+                        <span v-if="!book.tags || book.tags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
+                    </div>
+                </div>
+                <!-- Description (read-only) -->
+                <div class="flex items-start">
+                    <i class="fa-solid fa-align-left text-gray-400 mr-2 mt-1"></i>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-3">描述</span>
+                    <p class="text-gray-700 dark:text-gray-300 text-sm flex-1">{{ book.description || '無描述' }}</p>
+                </div>
+            </div>
+
+            <!-- Notes List -->
             <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div v-for="note in book.Notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center" @click="$router.push('/note/' + note.id)">
                     <div class="flex items-center">
@@ -341,6 +441,78 @@
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
                     No notes in this book yet.
+                </div>
+            </div>
+
+            <!-- Edit Modal -->
+            <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showEditModal = false">
+                <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i class="fa-solid fa-book mr-2"></i> 編輯書本
+                        </h2>
+                        <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Modal Body -->
+                    <div class="p-4 space-y-4">
+                        <!-- Book Info -->
+                        <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">書本 ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ book.id }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.createdAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400">更新時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.updatedAt).toLocaleString() }}</span></div>
+                        </div>
+
+                        <!-- Description Editor -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-align-left mr-1"></i> 描述
+                            </label>
+                            <textarea v-model="editableDescription"
+                                      rows="3"
+                                      placeholder="輸入書本描述..."
+                                      class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                        </div>
+
+                        <!-- Tags Editor -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-tags mr-1"></i> 標籤
+                            </label>
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <span v-for="tag in editableTags" :key="tag" class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 flex items-center">
+                                    {{ tag }}
+                                    <button @click="removeEditableTag(tag)" class="ml-2 text-green-500 hover:text-red-500">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </span>
+                                <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newTag" 
+                                       @keyup.enter="addEditableTag"
+                                       type="text" 
+                                       placeholder="輸入新標籤..." 
+                                       class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button @click="addEditableTag" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                        <button @click="showEditModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            取消
+                        </button>
+                        <button @click="saveBookChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                            <i class="fa-solid fa-save mr-1"></i> 儲存
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

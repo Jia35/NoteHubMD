@@ -270,6 +270,15 @@ const Home = {
         const searchQuery = ref('');
         const includeContent = ref(false);
 
+        // Menu and modal state
+        const openMenuId = ref(null);
+        const showInfoModal = ref(false);
+        const infoModalType = ref(''); // 'book' or 'note'
+        const infoModalItem = ref({});
+        const editableDescription = ref('');
+        const editableTags = ref([]);
+        const newTag = ref('');
+
         const loadData = async () => {
             try {
                 notes.value = await api.getNotes();
@@ -414,9 +423,82 @@ const Home = {
             } catch (e) { alert('刪除失敗'); }
         };
 
+        // Menu functions
+        const toggleMenu = (type, id) => {
+            const menuId = `${type}-${id}`;
+            openMenuId.value = openMenuId.value === menuId ? null : menuId;
+        };
+
+        // Close menu when clicking outside
+        const closeMenu = () => {
+            openMenuId.value = null;
+        };
+
+        // Info modal functions
+        const openInfoModal = (type, item) => {
+            infoModalType.value = type;
+            infoModalItem.value = { ...item };
+            editableDescription.value = item.description || '';
+            editableTags.value = [...(item.tags || [])];
+            showInfoModal.value = true;
+            openMenuId.value = null;
+        };
+
+        const addEditableTag = () => {
+            const tag = newTag.value.trim();
+            if (!tag) return;
+            if (editableTags.value.includes(tag)) {
+                newTag.value = '';
+                return;
+            }
+            editableTags.value.push(tag);
+            newTag.value = '';
+        };
+
+        const removeEditableTag = (tagToRemove) => {
+            editableTags.value = editableTags.value.filter(t => t !== tagToRemove);
+        };
+
+        const saveInfoChanges = async () => {
+            try {
+                const updateData = { tags: editableTags.value };
+                if (infoModalType.value === 'book') {
+                    updateData.description = editableDescription.value;
+                    await api.updateBook(infoModalItem.value.id, updateData);
+                    // Update local book data
+                    const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
+                    if (bookIndex !== -1) {
+                        books.value[bookIndex].tags = [...editableTags.value];
+                        books.value[bookIndex].description = editableDescription.value;
+                    }
+                } else {
+                    await api.updateNote(infoModalItem.value.id, updateData);
+                    // Update local note data
+                    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (noteIndex !== -1) {
+                        notes.value[noteIndex].tags = [...editableTags.value];
+                    }
+                    // Also update in allNotesForTags
+                    const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (allNoteIndex !== -1) {
+                        allNotesForTags.value[allNoteIndex].tags = [...editableTags.value];
+                    }
+                }
+                showInfoModal.value = false;
+            } catch (e) { alert('儲存失敗'); }
+        };
+
         onMounted(loadData);
 
-        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, filteredBooks, selectTag, searchQuery, includeContent };
+        return {
+            notes, books, createNote, createBook, deleteNote, deleteBook,
+            allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
+            searchQuery, includeContent,
+            openMenuId, toggleMenu, closeMenu,
+            showInfoModal, infoModalType, infoModalItem,
+            editableDescription, editableTags, newTag,
+            openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges
+        };
     }
 };
 
@@ -427,6 +509,9 @@ const Book = {
         const router = VueRouter.useRouter();
         const book = ref({});
         const newTag = ref('');
+        const showEditModal = ref(false);
+        const editableDescription = ref('');
+        const editableTags = ref([]);
 
         const loadBook = async () => {
             try {
@@ -442,31 +527,48 @@ const Book = {
             } catch (e) { alert('Error creating note'); }
         };
 
-        const addTag = async () => {
+        // Watch for modal open to initialize editable values
+        watch(showEditModal, (newVal) => {
+            if (newVal) {
+                editableDescription.value = book.value.description || '';
+                editableTags.value = [...(book.value.tags || [])];
+            }
+        });
+
+        const addEditableTag = () => {
             const tag = newTag.value.trim();
             if (!tag) return;
-            if (!book.value.tags) book.value.tags = [];
-            if (book.value.tags.includes(tag)) {
+            if (editableTags.value.includes(tag)) {
                 newTag.value = '';
                 return;
             }
-            book.value.tags.push(tag);
+            editableTags.value.push(tag);
             newTag.value = '';
-            try {
-                await api.updateBook(book.value.id, { tags: book.value.tags });
-            } catch (e) { alert('儲存標籤失敗'); }
         };
 
-        const removeTag = async (tagToRemove) => {
-            book.value.tags = book.value.tags.filter(t => t !== tagToRemove);
+        const removeEditableTag = (tagToRemove) => {
+            editableTags.value = editableTags.value.filter(t => t !== tagToRemove);
+        };
+
+        const saveBookChanges = async () => {
             try {
-                await api.updateBook(book.value.id, { tags: book.value.tags });
-            } catch (e) { alert('儲存標籤失敗'); }
+                await api.updateBook(book.value.id, {
+                    description: editableDescription.value,
+                    tags: editableTags.value
+                });
+                book.value.description = editableDescription.value;
+                book.value.tags = [...editableTags.value];
+                showEditModal.value = false;
+            } catch (e) { alert('儲存失敗'); }
         };
 
         onMounted(loadBook);
 
-        return { book, createNote, newTag, addTag, removeTag };
+        return {
+            book, createNote, showEditModal,
+            editableDescription, editableTags, newTag,
+            addEditableTag, removeEditableTag, saveBookChanges
+        };
     }
 };
 
