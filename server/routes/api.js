@@ -240,6 +240,42 @@ router.get('/books', async (req, res) => {
     }
 });
 
+// Delete Book (Soft)
+router.delete('/books/:id', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+        await book.destroy();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Restore Book
+router.post('/books/:id/restore', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id, { paranoid: false });
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+        await book.restore();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Force Delete Book
+router.delete('/books/:id/force', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id, { paranoid: false });
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+        await book.destroy({ force: true });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- Trash ---
 
 // Delete Note (Soft)

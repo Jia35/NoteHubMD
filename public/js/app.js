@@ -108,6 +108,44 @@ const api = {
             throw new Error(data.error || 'Failed to update permission');
         }
         return res.json();
+    },
+    // Trash operations - Notes
+    async deleteNote(id) {
+        const res = await fetch('/api/notes/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete note');
+        return res.json();
+    },
+    async restoreNote(id) {
+        const res = await fetch('/api/notes/' + id + '/restore', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to restore note');
+        return res.json();
+    },
+    async forceDeleteNote(id) {
+        const res = await fetch('/api/notes/' + id + '/force', { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to permanently delete note');
+        return res.json();
+    },
+    // Trash operations - Books
+    async deleteBook(id) {
+        const res = await fetch('/api/books/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete book');
+        return res.json();
+    },
+    async restoreBook(id) {
+        const res = await fetch('/api/books/' + id + '/restore', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to restore book');
+        return res.json();
+    },
+    async forceDeleteBook(id) {
+        const res = await fetch('/api/books/' + id + '/force', { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to permanently delete book');
+        return res.json();
+    },
+    // Get Trash
+    async getTrash() {
+        const res = await fetch('/api/trash');
+        if (!res.ok) throw new Error('Failed to get trash');
+        return res.json();
     }
 };
 
@@ -228,9 +266,27 @@ const Home = {
             } catch (e) { alert('Error creating book'); }
         };
 
+        const deleteNote = async (id, event) => {
+            event.stopPropagation();
+            if (!confirm('確定要刪除此筆記？（可從垃圾桶還原）')) return;
+            try {
+                await api.deleteNote(id);
+                notes.value = notes.value.filter(n => n.id !== id);
+            } catch (e) { alert('刪除失敗'); }
+        };
+
+        const deleteBook = async (id, event) => {
+            event.stopPropagation();
+            if (!confirm('確定要刪除此書本？（可從垃圾桶還原）')) return;
+            try {
+                await api.deleteBook(id);
+                books.value = books.value.filter(b => b.id !== id);
+            } catch (e) { alert('刪除失敗'); }
+        };
+
         onMounted(loadData);
 
-        return { notes, books, createNote, createBook };
+        return { notes, books, createNote, createBook, deleteNote, deleteBook };
     }
 };
 
@@ -609,6 +665,62 @@ const Note = {
     }
 };
 
+const Trash = {
+    template: '#trash-template',
+    setup() {
+        const notes = ref([]);
+        const books = ref([]);
+        const loading = ref(true);
+
+        const loadTrash = async () => {
+            loading.value = true;
+            try {
+                const data = await api.getTrash();
+                notes.value = data.notes || [];
+                books.value = data.books || [];
+            } catch (e) {
+                console.error('Failed to load trash', e);
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const restoreNote = async (id) => {
+            try {
+                await api.restoreNote(id);
+                notes.value = notes.value.filter(n => n.id !== id);
+            } catch (e) { alert('還原失敗'); }
+        };
+
+        const forceDeleteNote = async (id) => {
+            if (!confirm('確定要永久刪除此筆記？此操作無法復原！')) return;
+            try {
+                await api.forceDeleteNote(id);
+                notes.value = notes.value.filter(n => n.id !== id);
+            } catch (e) { alert('刪除失敗'); }
+        };
+
+        const restoreBook = async (id) => {
+            try {
+                await api.restoreBook(id);
+                books.value = books.value.filter(b => b.id !== id);
+            } catch (e) { alert('還原失敗'); }
+        };
+
+        const forceDeleteBook = async (id) => {
+            if (!confirm('確定要永久刪除此書本？此操作無法復原！')) return;
+            try {
+                await api.forceDeleteBook(id);
+                books.value = books.value.filter(b => b.id !== id);
+            } catch (e) { alert('刪除失敗'); }
+        };
+
+        onMounted(loadTrash);
+
+        return { notes, books, loading, restoreNote, forceDeleteNote, restoreBook, forceDeleteBook };
+    }
+};
+
 const routes = [
     { path: '/login', component: Login },
     {
@@ -617,6 +729,7 @@ const routes = [
         children: [
             { path: '', component: Home },
             { path: 'book/:id', component: Book },
+            { path: 'trash', component: Trash },
         ]
     },
     { path: '/note/:id', component: Note }, // Note view takes full screen

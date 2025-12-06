@@ -4,6 +4,11 @@
     font-size: 16px;
 }
 
+/* Hide the original textarea after CodeMirror initializes */
+.CodeMirror~textarea {
+    display: none !important;
+}
+
 /* CodeMirror placeholder */
 .CodeMirror-placeholder {
     color: #999 !important;
