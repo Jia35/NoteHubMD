@@ -295,18 +295,31 @@ const Home = {
         });
 
         // Filter notes by selected tag
+        // Only show STANDALONE notes (notes inside books will show as their parent book)
         const filteredNotes = computed(() => {
-            if (!selectedTag.value) return notes.value;
+            if (!selectedTag.value) return notes.value; // No filter: show standalone notes only
+            // With filter: show only standalone notes matching the tag
             return notes.value.filter(note =>
                 note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)
             );
         });
 
         // Filter books by selected tag
+        // Include books that either: 1) have matching tag, OR 2) contain notes with matching tag
         const filteredBooks = computed(() => {
             if (!selectedTag.value) return books.value;
+
+            // Find book IDs that contain notes with the matching tag
+            const bookIdsWithMatchingNotes = new Set();
+            allNotesForTags.value.forEach(note => {
+                if (note.bookId && note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)) {
+                    bookIdsWithMatchingNotes.add(note.bookId);
+                }
+            });
+
             return books.value.filter(book =>
-                book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)
+                (book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)) ||
+                bookIdsWithMatchingNotes.has(book.id)
             );
         });
 
