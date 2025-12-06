@@ -260,6 +260,8 @@ const Note = {
         const content = ref('');
         const title = ref('');
         const renderedContent = ref('');
+        const toc = ref([]);
+        const activeTocId = ref('');
         const saving = ref(false);
         const md = window.markdownit({
             html: true,
@@ -322,6 +324,43 @@ const Note = {
 
         const updatePreview = () => {
             renderedContent.value = md.render(content.value);
+            generateToc();
+        };
+
+        // Generate TOC from content (h1, h2, h3)
+        const generateToc = () => {
+            const headings = [];
+            const lines = content.value.split('\n');
+            let headingIndex = 0;
+
+            lines.forEach((line) => {
+                const match = line.match(/^(#{1,3})\s+(.+)$/);
+                if (match) {
+                    const level = match[1].length;
+                    const text = match[2].trim();
+                    const id = 'heading-' + headingIndex++;
+                    headings.push({ id, level, text });
+                }
+            });
+
+            toc.value = headings;
+
+            // Set first heading as active by default
+            if (headings.length > 0) {
+                activeTocId.value = headings[0].id;
+            }
+        };
+
+        // Scroll to heading in preview
+        const scrollToHeading = (id) => {
+            if (!previewContainer.value) return;
+
+            const index = parseInt(id.replace('heading-', ''));
+            const headings = previewContainer.value.querySelectorAll('h1, h2, h3');
+
+            if (headings[index]) {
+                headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         };
 
         const extractTitle = (text) => {
@@ -346,17 +385,42 @@ const Note = {
         };
 
         const handlePreviewScroll = (e) => {
-            if (mode.value !== 'both' || !cmInstance || isScrollingSynced) return;
+            // Sync scroll in both mode
+            if (mode.value === 'both' && cmInstance && !isScrollingSynced) {
+                isScrollingSynced = true;
+                const preview = e.target;
+                const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
 
-            isScrollingSynced = true;
-            const preview = e.target;
-            const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
+                const scrollInfo = cmInstance.getScrollInfo();
+                const targetScrollTop = percentage * (scrollInfo.height - scrollInfo.clientHeight);
+                cmInstance.scrollTo(null, targetScrollTop);
 
-            const scrollInfo = cmInstance.getScrollInfo();
-            const targetScrollTop = percentage * (scrollInfo.height - scrollInfo.clientHeight);
-            cmInstance.scrollTo(null, targetScrollTop);
+                setTimeout(() => { isScrollingSynced = false; }, 50);
+            }
 
-            setTimeout(() => { isScrollingSynced = false; }, 50);
+            // Update active TOC item in view mode
+            if (mode.value === 'view' && previewContainer.value) {
+                updateActiveTocItem();
+            }
+        };
+
+        // Update active TOC item based on scroll position
+        const updateActiveTocItem = () => {
+            if (!previewContainer.value || toc.value.length === 0) return;
+
+            const headings = previewContainer.value.querySelectorAll('h1, h2, h3');
+            const containerTop = previewContainer.value.scrollTop;
+            const offset = 80; // offset from top
+
+            let activeId = '';
+            headings.forEach((heading, index) => {
+                const headingTop = heading.offsetTop - previewContainer.value.offsetTop;
+                if (headingTop <= containerTop + offset) {
+                    activeId = 'heading-' + index;
+                }
+            });
+
+            activeTocId.value = activeId;
         };
 
         const saveContent = debounce(async (newContent, newTitle) => {
@@ -460,7 +524,10 @@ const Note = {
             handlePreviewScroll,
             saving,
             themes,
-            selectedTheme
+            selectedTheme,
+            toc,
+            activeTocId,
+            scrollToHeading
         };
     }
 };
