@@ -523,6 +523,7 @@ const Note = {
                     lineNumbers: true,
                     lineWrapping: true,
                     readOnly: !canEdit.value,
+                    placeholder: '寫些什麼東西吧~',
                 });
                 // cmInstance.setSize(null, "100%");
 
