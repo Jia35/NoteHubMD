@@ -478,9 +478,13 @@ const Note = {
                 canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
             } catch (e) {
                 console.error('Failed to load note', e);
-                // Redirect to home if access denied
-                if (e.message.includes('Access denied') || e.message.includes('Login required')) {
-                    alert(e.message);
+                // Handle access errors
+                if (e.message.includes('Login required')) {
+                    alert('需要登入才能存取此筆記');
+                    router.push('/login');
+                    return;
+                } else if (e.message.includes('Access denied')) {
+                    alert('您沒有權限存取此筆記');
                     router.push('/');
                     return;
                 }
@@ -598,11 +602,19 @@ const router = createRouter({
 
 // Global Auth Guard
 router.beforeEach(async (to, from, next) => {
+    // Allow login page
     if (to.path === '/login') {
         next();
         return;
     }
 
+    // Allow note pages (permission check happens in component/backend)
+    if (to.path.startsWith('/note/')) {
+        next();
+        return;
+    }
+
+    // Require auth for other pages
     try {
         await api.getMe();
         next();
