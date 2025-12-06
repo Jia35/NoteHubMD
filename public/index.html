@@ -207,6 +207,21 @@
                 </button>
             </div>
 
+            <!-- Search Box -->
+            <div class="mb-4 flex items-center gap-4">
+                <div class="flex-1 relative">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input v-model="searchQuery" 
+                           type="text" 
+                           placeholder="搜尋 Book 和 Note..."
+                           class="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <label class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                    <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600">
+                    包含內文
+                </label>
+            </div>
+
             <!-- Tag Filter (filters both Books and Notes) -->
             <div v-if="allTags.length > 0" class="mb-6 flex flex-wrap gap-2 items-center">
                 <span class="text-sm text-gray-500 dark:text-gray-400 mr-2"><i class="fa-solid fa-tags"></i> 標籤篩選:</span>
@@ -226,7 +241,7 @@
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Books</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無 Book)</div>
+                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無書本)</div>
                     <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <button @click="deleteBook(book.id, $event)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1" title="刪除">
                             <i class="fa-solid fa-trash"></i>
@@ -250,7 +265,7 @@
             <div>
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Recent Notes</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無 Note)</div>
+                    <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無筆記)</div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <button @click="deleteNote(note.id, $event)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition p-1" title="刪除">
                             <i class="fa-solid fa-trash"></i>

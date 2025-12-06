@@ -267,6 +267,8 @@ const Home = {
         const books = ref([]);
         const allNotesForTags = ref([]); // All notes including book notes, for tag collection
         const selectedTag = ref('');
+        const searchQuery = ref('');
+        const includeContent = ref(false);
 
         const loadData = async () => {
             try {
@@ -294,33 +296,86 @@ const Home = {
             return Array.from(tagSet).sort();
         });
 
-        // Filter notes by selected tag
+        // Helper function to check if an item matches search query
+        const matchesSearch = (item, isNote = false) => {
+            const query = searchQuery.value.toLowerCase().trim();
+            if (!query) return true;
+
+            const titleMatch = (item.title || '').toLowerCase().includes(query);
+            const descMatch = (item.description || '').toLowerCase().includes(query);
+
+            if (isNote && includeContent.value) {
+                const contentMatch = (item.content || '').toLowerCase().includes(query);
+                return titleMatch || descMatch || contentMatch;
+            }
+            return titleMatch || descMatch;
+        };
+
+        // Filter notes by selected tag and search query
         // Only show STANDALONE notes (notes inside books will show as their parent book)
         const filteredNotes = computed(() => {
-            if (!selectedTag.value) return notes.value; // No filter: show standalone notes only
-            // With filter: show only standalone notes matching the tag
-            return notes.value.filter(note =>
-                note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)
-            );
+            let result = notes.value;
+
+            // Apply tag filter
+            if (selectedTag.value) {
+                result = result.filter(note =>
+                    note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)
+                );
+            }
+
+            // Apply search filter
+            if (searchQuery.value.trim()) {
+                result = result.filter(note => matchesSearch(note, true));
+            }
+
+            return result;
         });
 
-        // Filter books by selected tag
+        // Filter books by selected tag and search query
         // Include books that either: 1) have matching tag, OR 2) contain notes with matching tag
         const filteredBooks = computed(() => {
-            if (!selectedTag.value) return books.value;
+            let result = books.value;
 
-            // Find book IDs that contain notes with the matching tag
-            const bookIdsWithMatchingNotes = new Set();
-            allNotesForTags.value.forEach(note => {
-                if (note.bookId && note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)) {
-                    bookIdsWithMatchingNotes.add(note.bookId);
+            // Apply tag filter
+            if (selectedTag.value) {
+                // Find book IDs that contain notes with the matching tag
+                const bookIdsWithMatchingNotes = new Set();
+                allNotesForTags.value.forEach(note => {
+                    if (note.bookId && note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)) {
+                        bookIdsWithMatchingNotes.add(note.bookId);
+                    }
+                });
+
+                result = result.filter(book =>
+                    (book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)) ||
+                    bookIdsWithMatchingNotes.has(book.id)
+                );
+            }
+
+            // Apply search filter
+            if (searchQuery.value.trim()) {
+                const query = searchQuery.value.toLowerCase().trim();
+
+                // Find book IDs that contain notes matching the search
+                const bookIdsWithMatchingNotes = new Set();
+                if (includeContent.value) {
+                    allNotesForTags.value.forEach(note => {
+                        if (note.bookId) {
+                            const titleMatch = (note.title || '').toLowerCase().includes(query);
+                            const contentMatch = (note.content || '').toLowerCase().includes(query);
+                            if (titleMatch || contentMatch) {
+                                bookIdsWithMatchingNotes.add(note.bookId);
+                            }
+                        }
+                    });
                 }
-            });
 
-            return books.value.filter(book =>
-                (book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)) ||
-                bookIdsWithMatchingNotes.has(book.id)
-            );
+                result = result.filter(book =>
+                    matchesSearch(book, false) || bookIdsWithMatchingNotes.has(book.id)
+                );
+            }
+
+            return result;
         });
 
         const selectTag = (tag) => {
@@ -361,7 +416,7 @@ const Home = {
 
         onMounted(loadData);
 
-        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, filteredBooks, selectTag };
+        return { notes, books, createNote, createBook, deleteNote, deleteBook, allTags, selectedTag, filteredNotes, filteredBooks, selectTag, searchQuery, includeContent };
     }
 };
 
