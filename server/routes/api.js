@@ -35,7 +35,38 @@ router.get('/notes/:id', async (req, res) => {
     try {
         const note = await db.Note.findByPk(req.params.id);
         if (!note) return res.status(404).json({ error: 'Note not found' });
-        res.json(note);
+
+        const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const permission = note.permission || 'private';
+
+        // Permission check
+        if (permission === 'private') {
+            if (!isOwner) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+        } else if (permission === 'auth-view' || permission === 'auth-edit') {
+            if (!userId) {
+                return res.status(401).json({ error: 'Login required' });
+            }
+        }
+        // public-view and public-edit allow anyone
+
+        // Determine if user can edit
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (permission === 'public-edit') {
+            canEdit = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        res.json({
+            ...note.toJSON(),
+            isOwner,
+            canEdit
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -47,8 +78,63 @@ router.put('/notes/:id', async (req, res) => {
         const note = await db.Note.findByPk(req.params.id);
         if (!note) return res.status(404).json({ error: 'Note not found' });
 
-        await note.update(req.body);
-        res.json(note);
+        const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const permission = note.permission || 'private';
+
+        // Permission check for editing
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (permission === 'public-edit') {
+            canEdit = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        if (!canEdit) {
+            return res.status(403).json({ error: 'Edit permission denied' });
+        }
+
+        // Prevent permission from being updated via this endpoint
+        // Use PUT /notes/:id/permission instead
+        const { permission: _, ...updateData } = req.body;
+
+        await note.update(updateData);
+        res.json({
+            ...note.toJSON(),
+            isOwner,
+            canEdit
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Update Note Permission (owner only)
+const VALID_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private'];
+router.put('/notes/:id/permission', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Only owner can change permission' });
+        }
+
+        const { permission } = req.body;
+        if (!VALID_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission value' });
+        }
+
+        await note.update({ permission });
+        res.json({ success: true, permission });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

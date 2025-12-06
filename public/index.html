@@ -286,7 +286,26 @@
                         <i class="fa-solid fa-eye"></i>
                     </button>
                 </div>
-                <div class="flex-1"></div>
+                <!-- Permission Display/Selector -->
+                <div class="flex-1 flex justify-end items-center space-x-2">
+                    <!-- Owner: Dropdown selector -->
+                    <template v-if="isOwner">
+                        <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
+                        <select v-model="permission" @change="handlePermissionChange(permission)" 
+                                class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                            <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </template>
+                    <!-- Non-owner: Show permission as badge -->
+                    <template v-else>
+                        <span class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                        </span>
+                    </template>
+                </div>
             </div>
             
             <!-- Content -->

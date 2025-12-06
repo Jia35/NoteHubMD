@@ -96,6 +96,18 @@ const api = {
     async getBooks() {
         const res = await fetch('/api/books');
         return res.json();
+    },
+    async updatePermission(id, permission) {
+        const res = await fetch('/api/notes/' + id + '/permission', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permission })
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to update permission');
+        }
+        return res.json();
     }
 };
 
@@ -263,6 +275,16 @@ const Note = {
         const toc = ref([]);
         const activeTocId = ref('');
         const saving = ref(false);
+        const permission = ref('private');
+        const isOwner = ref(false);
+        const canEdit = ref(true);
+        const permissionOptions = [
+            { value: 'public-edit', label: '可編輯' },
+            { value: 'auth-edit', label: '可編輯(需登入)' },
+            { value: 'public-view', label: '唯讀' },
+            { value: 'auth-view', label: '唯讀(需登入)' },
+            { value: 'private', label: '私人' }
+        ];
         const md = window.markdownit({
             html: true,
             breaks: true,
@@ -434,6 +456,15 @@ const Note = {
             }
         }, 1000);
 
+        const handlePermissionChange = async (newPermission) => {
+            try {
+                await api.updatePermission(noteId.value, newPermission);
+                permission.value = newPermission;
+            } catch (e) {
+                console.error('Failed to update permission', e);
+                alert('無法更新權限：' + e.message);
+            }
+        };
 
 
         onMounted(async () => {
@@ -442,8 +473,17 @@ const Note = {
                 const note = await api.getNote(noteId.value);
                 content.value = note.content || '';
                 title.value = note.title || 'Untitled';
+                permission.value = note.permission || 'private';
+                isOwner.value = note.isOwner || false;
+                canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
             } catch (e) {
                 console.error('Failed to load note', e);
+                // Redirect to home if access denied
+                if (e.message.includes('Access denied') || e.message.includes('Login required')) {
+                    alert(e.message);
+                    router.push('/');
+                    return;
+                }
             }
 
             if (editorTextarea.value) {
@@ -452,6 +492,7 @@ const Note = {
                     theme: selectedTheme.value,
                     lineNumbers: true,
                     lineWrapping: true,
+                    readOnly: !canEdit.value,
                 });
                 // cmInstance.setSize(null, "100%");
 
@@ -527,7 +568,12 @@ const Note = {
             selectedTheme,
             toc,
             activeTocId,
-            scrollToHeading
+            scrollToHeading,
+            permission,
+            isOwner,
+            canEdit,
+            permissionOptions,
+            handlePermissionChange
         };
     }
 };
