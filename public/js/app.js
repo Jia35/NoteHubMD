@@ -289,6 +289,10 @@ const Note = {
             html: true,
             breaks: true,
             highlight: function (str, lang) {
+                // Handle mermaid code blocks specially
+                if (lang && lang.toLowerCase() === 'mermaid') {
+                    return '<div class="mermaid">' + str + '</div>';
+                }
                 if (lang && hljs.getLanguage(lang)) {
                     try {
                         return '<pre class="hljs"><code>' +
@@ -347,6 +351,18 @@ const Note = {
         const updatePreview = () => {
             renderedContent.value = md.render(content.value);
             generateToc();
+            // Re-render mermaid diagrams after content update
+            nextTick(() => {
+                if (window.mermaid && previewContainer.value) {
+                    try {
+                        window.mermaid.run({
+                            nodes: previewContainer.value.querySelectorAll('.mermaid')
+                        });
+                    } catch (e) {
+                        console.error('Mermaid rendering error:', e);
+                    }
+                }
+            });
         };
 
         // Generate TOC from content (h1, h2, h3)
@@ -468,6 +484,16 @@ const Note = {
 
 
         onMounted(async () => {
+            // Initialize Mermaid
+            if (window.mermaid) {
+                const isDark = document.documentElement.classList.contains('dark');
+                window.mermaid.initialize({
+                    startOnLoad: false,
+                    theme: isDark ? 'dark' : 'default',
+                    securityLevel: 'loose'
+                });
+            }
+
             // Fetch Note
             try {
                 const note = await api.getNote(noteId.value);
