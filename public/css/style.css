@@ -356,3 +356,206 @@
     background-color: #fbc02d;
     color: #000;
 }
+
+/* SortableJS styles */
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #e3f2fd !important;
+}
+
+.dark .sortable-ghost {
+    background-color: #1e3a5f !important;
+}
+
+.sortable-chosen {
+    background-color: #bbdefb !important;
+}
+
+.dark .sortable-chosen {
+    background-color: #1565c0 !important;
+}
+
+.drag-handle {
+    touch-action: none;
+}
+
+.note-item {
+    transition: background-color 0.15s ease;
+}
+
+/* Task lists */
+.dark .markdown-body .task-list-item-checkbox {
+    background-color: #2d2d2d;
+    border-color: #555;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+    display: block;
+    width: 100%;
+    margin: 16px 0;
+    padding: 16px;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.dark .mermaid {
+    background-color: #2d2d2d;
+}
+
+.mermaid svg {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Custom Containers (Alerts) */
+.markdown-body .alert {
+    padding: 15px;
+    padding-left: 20px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    position: relative;
+    border-left-width: 5px;
+}
+
+.markdown-body .alert> :first-child {
+    margin-top: 0;
+}
+
+.markdown-body .alert> :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body .alert-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+    border-left-color: #3c763d;
+}
+
+.markdown-body .alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+    border-left-color: #31708f;
+}
+
+.markdown-body .alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    border-left-color: #8a6d3b;
+}
+
+.markdown-body .alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+    border-left-color: #a94442;
+}
+
+/* Dark mode alerts */
+.dark .markdown-body .alert-success {
+    color: #e0f2d9;
+    background-color: #1e3a1e;
+    border-color: #2c592c;
+    border-left-color: #4caf50;
+}
+
+.dark .markdown-body .alert-info {
+    color: #d9edf7;
+    background-color: #1a3c52;
+    border-color: #265a88;
+    border-left-color: #2196f3;
+}
+
+.dark .markdown-body .alert-warning {
+    color: #fcf8e3;
+    background-color: #42381e;
+    border-color: #66512c;
+    border-left-color: #ff9800;
+}
+
+.dark .markdown-body .alert-danger {
+    color: #f2dede;
+    background-color: #3c1e1e;
+    border-color: #8a1f1f;
+    border-left-color: #f44336;
+}
+
+/* Spoiler / Details */
+.markdown-body details {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 0.5em 0.5em 0;
+    margin-bottom: 1em;
+}
+
+.dark .markdown-body details {
+    border-color: #444;
+}
+
+.markdown-body summary {
+    cursor: pointer;
+    font-weight: bold;
+    padding-bottom: 0.5em;
+    outline: none;
+}
+
+.markdown-body details[open] {
+    padding-bottom: 0.5em;
+}
+
+.markdown-body details[open] summary {
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 0.5em;
+}
+
+.dark .markdown-body details[open] summary {
+    border-bottom-color: #444;
+}
+
+/* Mark */
+.markdown-body mark {
+    background-color: #ffeb3b;
+    color: #000;
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
+
+.dark .markdown-body mark {
+    background-color: #fbc02d;
+    color: #000;
+}
+
+/* SortableJS styles */
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #e3f2fd !important;
+}
+
+.dark .sortable-ghost {
+    background-color: #1e3a5f !important;
+}
+
+.sortable-chosen {
+    background-color: #bbdefb !important;
+}
+
+.dark .sortable-chosen {
+    background-color: #1565c0 !important;
+}
+
+.drag-handle {
+    touch-action: none;
+}
+
+.note-item {
+    transition: background-color 0.15s ease;
+}

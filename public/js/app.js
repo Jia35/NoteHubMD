@@ -138,6 +138,15 @@ const api = {
         const res = await fetch('/api/books');
         return res.json();
     },
+    async reorderBookNotes(bookId, noteIds) {
+        const res = await fetch(`/api/books/${bookId}/notes/reorder`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ noteIds })
+        });
+        if (!res.ok) throw new Error('Reorder failed');
+        return res.json();
+    },
     async updatePermission(id, permission) {
         const res = await fetch('/api/notes/' + id + '/permission', {
             method: 'PUT',
@@ -636,6 +645,8 @@ const Book = {
         const showEditModal = ref(false);
         const editableDescription = ref('');
         const editableTags = ref([]);
+        const notesList = ref(null);
+        let sortableInstance = null;
 
         // Permission state
         const permission = ref('private');
@@ -651,6 +662,37 @@ const Book = {
             { value: 'private', label: '私人' }
         ];
 
+        const initSortable = () => {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+            if (!notesList.value || !canEdit.value) return;
+
+            sortableInstance = new Sortable(notesList.value, {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: async (evt) => {
+                    if (evt.oldIndex === evt.newIndex) return;
+
+                    // Get new order of note IDs
+                    const noteIds = Array.from(notesList.value.querySelectorAll('[data-id]'))
+                        .map(el => el.dataset.id);
+
+                    try {
+                        await api.reorderBookNotes(book.value.id, noteIds);
+                    } catch (e) {
+                        console.error('Failed to reorder notes', e);
+                        alert('排序失敗');
+                        // Reload to restore original order
+                        loadBook();
+                    }
+                }
+            });
+        };
+
         const loadBook = async () => {
             try {
                 const data = await api.getBook(route.params.id);
@@ -660,6 +702,9 @@ const Book = {
                 isOwner.value = data.isOwner || false;
                 canEdit.value = data.canEdit || false;
                 canAddNote.value = data.canAddNote || false;
+
+                // Initialize sortable after data is loaded
+                nextTick(() => initSortable());
             } catch (e) {
                 console.error('Failed to load book', e);
                 // Handle access errors
@@ -737,12 +782,20 @@ const Book = {
 
         onMounted(loadBook);
 
+        onUnmounted(() => {
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+        });
+
         return {
             book, createNote, showEditModal,
             editableDescription, editableTags, newTag,
             addEditableTag, removeEditableTag, saveBookChanges,
             permission, isOwner, canEdit, canAddNote,
-            permissionOptions, handlePermissionChange
+            permissionOptions, handlePermissionChange,
+            notesList
         };
     }
 };

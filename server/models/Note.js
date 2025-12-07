@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
         deletedById: {
             type: DataTypes.INTEGER,
             allowNull: true
+        },
+        order: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
         }
     }, {
         paranoid: true

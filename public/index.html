@@ -86,6 +86,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -612,13 +613,17 @@
             </div>
 
             <!-- Notes List -->
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div v-for="note in book.Notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center" @click="$router.push('/note/' + note.id)">
-                    <div class="flex items-center">
+            <div ref="notesList" class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div v-for="note in book.Notes" :key="note.id" :data-id="note.id" class="note-item p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center" @click="$router.push('/note/' + note.id)">
+                    <!-- Drag handle (only show if canEdit) -->
+                    <span v-if="canEdit" class="drag-handle cursor-move text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3 px-1" @click.stop>
+                        <i class="fa-solid fa-grip-vertical"></i>
+                    </span>
+                    <div class="flex items-center flex-1 min-w-0">
                         <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
-                        <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ note.title }}</span>
+                        <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate">{{ note.title }}</span>
                     </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ new Date(note.updatedAt).toLocaleString() }}</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 shrink-0 ml-2">{{ new Date(note.updatedAt).toLocaleString() }}</span>
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
                     No notes in this book yet.

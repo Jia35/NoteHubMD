@@ -327,10 +327,11 @@ router.get('/books/:id', async (req, res) => {
     try {
         const book = await db.Book.findByPk(req.params.id, {
             include: [
-                { model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission'] },
+                { model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission', 'order'] },
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
                 { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
-            ]
+            ],
+            order: [[db.Note, 'order', 'ASC']]
         });
         if (!book) return res.status(404).json({ error: 'Book not found' });
 
@@ -472,6 +473,14 @@ router.post('/books/:id/notes', async (req, res) => {
         }
 
         // Create note with 'inherit' permission by default for notes in a book
+        // Get max order for notes in this book
+        const maxOrderNote = await db.Note.findOne({
+            where: { bookId: book.id },
+            order: [['order', 'DESC']],
+            attributes: ['order']
+        });
+        const newOrder = (maxOrderNote?.order ?? -1) + 1;
+
         let id = generateId();
         let retry = 0;
         while (retry < 5) {
@@ -482,7 +491,8 @@ router.post('/books/:id/notes', async (req, res) => {
                     content: (req.body && req.body.content) || '',
                     bookId: book.id,
                     ownerId: userId,
-                    permission: 'inherit' // Default to inherit from book
+                    permission: 'inherit', // Default to inherit from book
+                    order: newOrder
                 });
                 return res.json(note);
             } catch (e) {
@@ -495,6 +505,47 @@ router.post('/books/:id/notes', async (req, res) => {
             }
         }
         res.status(500).json({ error: 'Failed to generate unique ID' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Reorder Notes in Book
+router.put('/books/:id/notes/reorder', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const bookPermission = book.permission || 'private';
+
+        // Check if user can edit (reorder)
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (bookPermission === 'public-edit') {
+            canEdit = true;
+        } else if (bookPermission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        if (!canEdit) {
+            return res.status(403).json({ error: 'No permission to reorder notes' });
+        }
+
+        const { noteIds } = req.body;
+        if (!Array.isArray(noteIds)) {
+            return res.status(400).json({ error: 'noteIds must be an array' });
+        }
+
+        // Update order for each note
+        const updates = noteIds.map((noteId, index) =>
+            db.Note.update({ order: index }, { where: { id: noteId, bookId: book.id } })
+        );
+        await Promise.all(updates);
+
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
