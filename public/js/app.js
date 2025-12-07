@@ -223,11 +223,11 @@ const Sidebar = {
     props: ['user'],
     setup() {
         const showSettings = ref(false);
-        const theme = ref(localStorage.getItem('theme') || 'dark');
+        const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
 
         const setTheme = (t) => {
             theme.value = t;
-            localStorage.setItem('theme', t);
+            localStorage.setItem('NoteHubMD-theme', t);
             updateThemeClass(t);
         };
 
@@ -711,7 +711,7 @@ const Note = {
             { label: '[亮色] Solarized', value: 'solarized' },
             { label: '[亮色] XQ Light', value: 'xq-light' },
         ];
-        const selectedTheme = ref(localStorage.getItem('editorTheme') || 'duotone-dark');
+        const selectedTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || 'monokai');
 
         let cmInstance = null;
 
@@ -1040,7 +1040,7 @@ const Note = {
         });
 
         watch(selectedTheme, (newTheme) => {
-            localStorage.setItem('editorTheme', newTheme);
+            localStorage.setItem('NoteHubMD-editorTheme', newTheme);
             if (cmInstance) {
                 cmInstance.setOption('theme', newTheme);
             }
@@ -1187,7 +1187,7 @@ router.beforeEach(async (to, from, next) => {
 const app = createApp({
     setup() {
         onMounted(() => {
-            const theme = localStorage.getItem('theme') || 'dark';
+            const theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
             } else {
