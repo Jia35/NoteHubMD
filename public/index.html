@@ -554,7 +554,7 @@
                         </template>
                     </div>
                     <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                        + Add Note
+                        <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
                     </button>
                     <button v-if="canEdit" @click="showEditModal = true" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                         <i class="fa-solid fa-pen"></i> 編輯
@@ -615,7 +615,9 @@
                         <!-- Book Info -->
                         <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
                             <div class="text-gray-500 dark:text-gray-400 mb-1">書本 ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ book.id }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立者: <span class="text-gray-700 dark:text-gray-300">{{ book.owner?.username || '(未知)' }}</span></div>
                             <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.createdAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者: <span class="text-gray-700 dark:text-gray-300">{{ book.lastEditor?.username || book.owner?.username || '(未知)' }}</span></div>
                             <div class="text-gray-500 dark:text-gray-400">最後編輯時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.updatedAt).toLocaleString() }}</span></div>
                         </div>
 

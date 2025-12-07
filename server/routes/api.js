@@ -294,7 +294,11 @@ router.post('/books', async (req, res) => {
 router.get('/books/:id', async (req, res) => {
     try {
         const book = await db.Book.findByPk(req.params.id, {
-            include: [{ model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission'] }]
+            include: [
+                { model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission'] },
+                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+            ]
         });
         if (!book) return res.status(404).json({ error: 'Book not found' });
 

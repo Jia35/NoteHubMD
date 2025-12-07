@@ -34,8 +34,8 @@ app.get(/(.*)/, (req, res) => {
 });
 
 // Sync DB and start server
-// Using alter: true to automatically add new columns (like lastEditorId)
-db.sequelize.sync({ alter: true }).then(() => {
+// Using force: false to preserve existing data (columns already exist)
+db.sequelize.sync({ force: false }).then(() => {
     server.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
     });
