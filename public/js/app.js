@@ -262,11 +262,50 @@ const Sidebar = {
             window.location.href = '/login';
         };
 
+        // Create Note function
+        const createNote = async () => {
+            try {
+                const note = await api.createNote();
+                window.location.href = '/note/' + note.id;
+            } catch (e) { alert('Error creating note'); }
+        };
+
+        // Create Book Modal state and functions
+        const showCreateBookModal = ref(false);
+        const newBookTitle = ref('');
+        const newBookDescription = ref('');
+
+        const openCreateBookModal = () => {
+            newBookTitle.value = '';
+            newBookDescription.value = '';
+            showCreateBookModal.value = true;
+        };
+
+        const createBook = async () => {
+            if (!newBookTitle.value.trim()) {
+                alert('請輸入書本標題');
+                return;
+            }
+            try {
+                const book = await api.createBook({
+                    title: newBookTitle.value.trim(),
+                    description: newBookDescription.value.trim()
+                });
+                showCreateBookModal.value = false;
+                window.location.href = '/book/' + book.id;
+            } catch (e) { alert('Error creating book'); }
+        };
+
         onMounted(() => {
             updateThemeClass(theme.value);
         });
 
-        return { showSettings, theme, setTheme, logout };
+        return {
+            showSettings, theme, setTheme, logout,
+            createNote,
+            showCreateBookModal, newBookTitle, newBookDescription,
+            openCreateBookModal, createBook
+        };
     }
 };
 
@@ -537,7 +576,15 @@ const Home = {
             } catch (e) { alert('儲存失敗'); }
         };
 
-        onMounted(loadData);
+        onMounted(() => {
+            loadData();
+            // Close menu when clicking outside
+            document.addEventListener('click', closeMenu);
+        });
+
+        onUnmounted(() => {
+            document.removeEventListener('click', closeMenu);
+        });
 
         return {
             notes, books, createNote, createBook, deleteNote, deleteBook,

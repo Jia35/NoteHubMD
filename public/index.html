@@ -138,6 +138,16 @@
                 <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
             </router-link>
 
+            <!-- Create Buttons -->
+            <div class="p-4 space-y-2 border-b border-gray-800">
+                <button @click="createNote" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
+                </button>
+                <button @click="openCreateBookModal" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 建立書本
+                </button>
+            </div>
+
             <!-- Navigation -->
             <div class="flex-1 overflow-y-auto p-4 space-y-2">
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
@@ -191,6 +201,49 @@
                 </div>
             </div>
         </div>
+
+        <!-- Create Book Modal -->
+        <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModal = false">
+            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
+                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                        <i class="fa-solid fa-book mr-2"></i> 新增書本
+                    </h2>
+                    <button @click="showCreateBookModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                            標題 <span class="text-red-500">*</span>
+                        </label>
+                        <input v-model="newBookTitle" 
+                               type="text" 
+                               placeholder="輸入書本標題..." 
+                               class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                               @keyup.enter="createBook">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                            描述
+                        </label>
+                        <textarea v-model="newBookDescription" 
+                                  rows="3" 
+                                  placeholder="輸入描述..."
+                                  class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                    <button @click="showCreateBookModal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        取消
+                    </button>
+                    <button @click="createBook" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                        <i class="fa-solid fa-plus mr-1"></i> 建立
+                    </button>
+                </div>
+            </div>
+        </div>
     </script>
 
     <script type="text/x-template" id="layout-template">
@@ -205,67 +258,13 @@
 
     <script type="text/x-template" id="home-template">
         <div class="p-8 container mx-auto overflow-y-auto h-full">
-            <h1 class="text-4xl font-bold mb-8 text-gray-800 dark:text-white">NoteHubMD</h1>
-            
-            <div class="flex space-x-4 mb-8">
-                <button @click="createNote" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow flex items-center">
-                    <span class="mr-2">+</span> New Note
-                </button>
-                <button @click="openCreateBookModal" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition shadow flex items-center">
-                    <span class="mr-2">+</span> New Book
-                </button>
-            </div>
-
-            <!-- Create Book Modal -->
-            <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModal = false">
-                <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
-                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-                            <i class="fa-solid fa-book mr-2"></i> 新增書本
-                        </h2>
-                        <button @click="showCreateBookModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                標題 <span class="text-red-500">*</span>
-                            </label>
-                            <input v-model="newBookTitle" 
-                                   type="text" 
-                                   placeholder="輸入書本標題..." 
-                                   class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                   @keyup.enter="createBook">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                描述
-                            </label>
-                            <textarea v-model="newBookDescription" 
-                                      rows="3" 
-                                      placeholder="輸入描述..."
-                                      class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
-                        <button @click="showCreateBookModal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                            取消
-                        </button>
-                        <button @click="createBook" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                            <i class="fa-solid fa-plus mr-1"></i> 建立
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Search Box -->
             <div class="mb-4 flex items-center gap-4">
                 <div class="flex-1 relative">
                     <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input v-model="searchQuery" 
                            type="text" 
-                           placeholder="搜尋 Book 和 Note..."
+                           placeholder="搜尋 筆記 和 書本..."
                            class="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <label class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
@@ -275,8 +274,8 @@
             </div>
 
             <!-- Tag Filter (filters both Books and Notes) -->
-            <div v-if="allTags.length > 0" class="mb-6 flex flex-wrap gap-2 items-center">
-                <span class="text-sm text-gray-500 dark:text-gray-400 mr-2"><i class="fa-solid fa-tags"></i> 標籤篩選:</span>
+            <div class="mb-6 flex flex-wrap gap-2 items-center">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-tags"></i> 標籤篩選：</span>
                 <button v-for="tag in allTags" :key="tag" 
                         @click="selectTag(tag)"
                         class="px-3 py-1 text-sm rounded-full transition"
@@ -297,7 +296,7 @@
                     <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
-                            <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1">
+                            <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
@@ -336,7 +335,7 @@
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
-                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1">
+                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
