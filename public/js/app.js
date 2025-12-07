@@ -593,6 +593,7 @@ const Note = {
 
         const editorTextarea = ref(null);
         const previewContainer = ref(null);
+        const previewContent = ref(null);
         const content = ref('');
         const title = ref('');
         const renderedContent = ref('');
@@ -680,7 +681,22 @@ const Note = {
         };
 
         const updatePreview = () => {
-            renderedContent.value = md.render(content.value);
+            const html = md.render(content.value);
+
+            if (window.morphdom && previewContent.value) {
+                // DOM Diffing with morphdom
+                const target = previewContent.value;
+                const newEl = target.cloneNode(false);
+                newEl.innerHTML = html;
+                window.morphdom(target, newEl);
+            } else if (previewContent.value) {
+                // Fallback
+                previewContent.value.innerHTML = html;
+            }
+
+            // Keep reference updated (though v-html is removed)
+            renderedContent.value = html;
+
             generateToc();
             // Re-render mermaid diagrams after content update
             nextTick(() => {
@@ -934,6 +950,7 @@ const Note = {
             noteId,
             editorTextarea,
             previewContainer,
+            previewContent,
             renderedContent,
             showEditor,
             showPreview,

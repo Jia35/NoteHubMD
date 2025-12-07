@@ -25,6 +25,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
 
     <!-- CodeMirror 5 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
@@ -682,7 +683,7 @@
                          :class="{'flex justify-center': !showEditor}"
                          ref="previewContainer"
                          @scroll="handlePreviewScroll">
-                        <div :class="{'max-w-[900px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" v-html="renderedContent"></div>
+                        <div :class="{'max-w-[900px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
                     </div>
                     
                     <!-- TOC Sidebar (only in view mode) -->
