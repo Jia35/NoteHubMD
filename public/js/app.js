@@ -80,7 +80,10 @@ const api = {
     },
     async getNote(id) {
         const res = await fetch('/api/notes/' + id);
-        if (!res.ok) throw new Error('Note not found');
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Note not found');
+        }
         return res.json();
     },
     async updateNote(id, data) {
@@ -101,7 +104,10 @@ const api = {
     },
     async getBook(id) {
         const res = await fetch('/api/books/' + id);
-        if (!res.ok) throw new Error('Book not found');
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Book not found');
+        }
         return res.json();
     },
     async updateBook(id, data) {
@@ -141,6 +147,18 @@ const api = {
         if (!res.ok) {
             const data = await res.json();
             throw new Error(data.error || 'Failed to update permission');
+        }
+        return res.json();
+    },
+    async updateBookPermission(id, permission) {
+        const res = await fetch('/api/books/' + id + '/permission', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permission })
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to update book permission');
         }
         return res.json();
     },
@@ -525,18 +543,67 @@ const Book = {
         const editableDescription = ref('');
         const editableTags = ref([]);
 
+        // Permission state
+        const permission = ref('private');
+        const isOwner = ref(false);
+        const canEdit = ref(false);
+        const canAddNote = ref(false);
+
+        const permissionOptions = [
+            { value: 'public-edit', label: '可編輯' },
+            { value: 'auth-edit', label: '可編輯(需登入)' },
+            { value: 'public-view', label: '唯讀' },
+            { value: 'auth-view', label: '唯讀(需登入)' },
+            { value: 'private', label: '私人' }
+        ];
+
         const loadBook = async () => {
             try {
-                book.value = await api.getBook(route.params.id);
+                const data = await api.getBook(route.params.id);
+                book.value = data;
                 if (!book.value.tags) book.value.tags = [];
-            } catch (e) { alert('Book not found'); router.push('/'); }
+                permission.value = data.permission || 'private';
+                isOwner.value = data.isOwner || false;
+                canEdit.value = data.canEdit || false;
+                canAddNote.value = data.canAddNote || false;
+            } catch (e) {
+                console.error('Failed to load book', e);
+                // Handle access errors
+                if (e.message.includes('Login required')) {
+                    alert('需要登入才能存取此書本');
+                    router.push('/login');
+                    return;
+                } else if (e.message.includes('Access denied')) {
+                    alert('您沒有權限存取此書本');
+                    router.push('/');
+                    return;
+                }
+                alert('Book not found');
+                router.push('/');
+            }
         };
 
         const createNote = async () => {
             try {
                 const note = await api.createNoteInBook(book.value.id);
                 router.push('/note/' + note.id);
-            } catch (e) { alert('Error creating note'); }
+            } catch (e) {
+                if (e.message.includes('Cannot add notes')) {
+                    alert('您沒有權限在此書本新增筆記');
+                } else {
+                    alert('Error creating note');
+                }
+            }
+        };
+
+        const handlePermissionChange = async (newPermission) => {
+            try {
+                await api.updateBookPermission(book.value.id, newPermission);
+                permission.value = newPermission;
+            } catch (e) {
+                console.error('Failed to update permission', e);
+                alert('無法更新權限：' + e.message);
+            }
         };
 
         // Watch for modal open to initialize editable values
@@ -579,7 +646,9 @@ const Book = {
         return {
             book, createNote, showEditModal,
             editableDescription, editableTags, newTag,
-            addEditableTag, removeEditableTag, saveBookChanges
+            addEditableTag, removeEditableTag, saveBookChanges,
+            permission, isOwner, canEdit, canAddNote,
+            permissionOptions, handlePermissionChange
         };
     }
 };
@@ -601,7 +670,9 @@ const Note = {
         const activeTocId = ref('');
         const saving = ref(false);
         const permission = ref('private');
+        const effectivePermission = ref('private'); // Actual permission after resolving inherit
         const isOwner = ref(false);
+        const bookId = ref(null); // Track if note belongs to a book
 
         // Online users tracking
         const onlineUsers = ref([]);
@@ -610,13 +681,21 @@ const Note = {
             showOnlineUsersPopup.value = !showOnlineUsersPopup.value;
         };
         const canEdit = ref(true);
-        const permissionOptions = [
-            { value: 'public-edit', label: '可編輯' },
-            { value: 'auth-edit', label: '可編輯(需登入)' },
-            { value: 'public-view', label: '唯讀' },
-            { value: 'auth-view', label: '唯讀(需登入)' },
-            { value: 'private', label: '私人' }
-        ];
+
+        // Permission options - 'inherit' is only available for notes inside a book
+        const permissionOptions = computed(() => {
+            const baseOptions = [
+                { value: 'public-edit', label: '可編輯' },
+                { value: 'auth-edit', label: '可編輯(需登入)' },
+                { value: 'public-view', label: '唯讀' },
+                { value: 'auth-view', label: '唯讀(需登入)' },
+                { value: 'private', label: '私人' }
+            ];
+            if (bookId.value) {
+                return [{ value: 'inherit', label: '繼承書本' }, ...baseOptions];
+            }
+            return baseOptions;
+        });
         const md = window.markdownit({
             html: true,
             breaks: true,
@@ -1022,8 +1101,10 @@ const Note = {
                 content.value = note.content || '';
                 title.value = note.title || 'Untitled';
                 permission.value = note.permission || 'private';
+                effectivePermission.value = note.effectivePermission || note.permission || 'private';
                 isOwner.value = note.isOwner || false;
                 canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
+                bookId.value = note.bookId || null;
             } catch (e) {
                 console.error('Failed to load note', e);
                 // Handle access errors
@@ -1150,6 +1231,8 @@ const Note = {
             activeTocId,
             scrollToHeading,
             permission,
+            effectivePermission,
+            bookId,
             isOwner,
             canEdit,
             permissionOptions,

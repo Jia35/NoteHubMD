@@ -98,14 +98,16 @@ router.get('/notes/:id', async (req, res) => {
 
         const userId = req.session.userId || null;
         const isOwner = note.ownerId && note.ownerId === userId;
-        const permission = note.permission || 'private';
+
+        // Resolve effective permission (handle 'inherit' from book)
+        const effectivePermission = await resolveNotePermission(note);
 
         // Permission check
-        if (permission === 'private') {
+        if (effectivePermission === 'private') {
             if (!isOwner) {
                 return res.status(403).json({ error: 'Access denied' });
             }
-        } else if (permission === 'auth-view' || permission === 'auth-edit') {
+        } else if (effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') {
             if (!userId) {
                 return res.status(401).json({ error: 'Login required' });
             }
@@ -116,16 +118,17 @@ router.get('/notes/:id', async (req, res) => {
         let canEdit = false;
         if (isOwner) {
             canEdit = true;
-        } else if (permission === 'public-edit') {
+        } else if (effectivePermission === 'public-edit') {
             canEdit = true;
-        } else if (permission === 'auth-edit' && userId) {
+        } else if (effectivePermission === 'auth-edit' && userId) {
             canEdit = true;
         }
 
         res.json({
             ...note.toJSON(),
             isOwner,
-            canEdit
+            canEdit,
+            effectivePermission
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -140,15 +143,17 @@ router.put('/notes/:id', async (req, res) => {
 
         const userId = req.session.userId || null;
         const isOwner = note.ownerId && note.ownerId === userId;
-        const permission = note.permission || 'private';
+
+        // Resolve effective permission (handle 'inherit' from book)
+        const effectivePermission = await resolveNotePermission(note);
 
         // Permission check for editing
         let canEdit = false;
         if (isOwner) {
             canEdit = true;
-        } else if (permission === 'public-edit') {
+        } else if (effectivePermission === 'public-edit') {
             canEdit = true;
-        } else if (permission === 'auth-edit' && userId) {
+        } else if (effectivePermission === 'auth-edit' && userId) {
             canEdit = true;
         }
 
@@ -169,15 +174,30 @@ router.put('/notes/:id', async (req, res) => {
         res.json({
             ...note.toJSON(),
             isOwner,
-            canEdit
+            canEdit,
+            effectivePermission
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-// Update Note Permission (owner only)
+// Permission constants
 const VALID_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private'];
+const VALID_NOTE_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private', 'inherit'];
+const VALID_BOOK_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private'];
+
+// Helper function to resolve effective permission for a Note
+// If permission is 'inherit' and note belongs to a book, use the book's permission
+async function resolveNotePermission(note) {
+    if (note.permission === 'inherit' && note.bookId) {
+        const book = await db.Book.findByPk(note.bookId);
+        return book ? (book.permission || 'private') : 'private';
+    }
+    return note.permission || 'private';
+}
+
+// Update Note Permission (owner only)
 router.put('/notes/:id/permission', async (req, res) => {
     try {
         const note = await db.Note.findByPk(req.params.id);
@@ -194,7 +214,13 @@ router.put('/notes/:id/permission', async (req, res) => {
         }
 
         const { permission } = req.body;
-        if (!VALID_PERMISSIONS.includes(permission)) {
+
+        // 'inherit' is only valid for notes inside a book
+        if (permission === 'inherit' && !note.bookId) {
+            return res.status(400).json({ error: 'inherit permission is only valid for notes inside a book' });
+        }
+
+        if (!VALID_NOTE_PERMISSIONS.includes(permission)) {
             return res.status(400).json({ error: 'Invalid permission value' });
         }
 
@@ -255,10 +281,46 @@ router.post('/books', async (req, res) => {
 router.get('/books/:id', async (req, res) => {
     try {
         const book = await db.Book.findByPk(req.params.id, {
-            include: [{ model: db.Note, attributes: ['id', 'title', 'updatedAt'] }]
+            include: [{ model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission'] }]
         });
         if (!book) return res.status(404).json({ error: 'Book not found' });
-        res.json(book);
+
+        const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+
+        // Permission check
+        if (permission === 'private') {
+            if (!isOwner) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+        } else if (permission === 'auth-view' || permission === 'auth-edit') {
+            if (!userId) {
+                return res.status(401).json({ error: 'Login required' });
+            }
+        }
+        // public-view and public-edit allow anyone
+
+        // Determine edit and add note capabilities
+        let canEdit = false;
+        let canAddNote = false;
+        if (isOwner) {
+            canEdit = true;
+            canAddNote = true;
+        } else if (permission === 'public-edit') {
+            canEdit = true;
+            canAddNote = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canEdit = true;
+            canAddNote = true;
+        }
+
+        res.json({
+            ...book.toJSON(),
+            isOwner,
+            canEdit,
+            canAddNote
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -270,7 +332,27 @@ router.put('/books/:id', async (req, res) => {
         const book = await db.Book.findByPk(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
 
-        const updateData = { ...req.body };
+        const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+
+        // Permission check for editing
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (permission === 'public-edit') {
+            canEdit = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        if (!canEdit) {
+            return res.status(403).json({ error: 'Edit permission denied' });
+        }
+
+        // Prevent permission from being updated via this endpoint
+        // Use PUT /books/:id/permission instead
+        const { permission: _, ...updateData } = req.body;
 
         // Auto-parse tags from description if description is being updated
         if (updateData.description !== undefined) {
@@ -278,7 +360,39 @@ router.put('/books/:id', async (req, res) => {
         }
 
         await book.update(updateData);
-        res.json(book);
+        res.json({
+            ...book.toJSON(),
+            isOwner,
+            canEdit
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Update Book Permission (owner only)
+router.put('/books/:id/permission', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Only owner can change permission' });
+        }
+
+        const { permission } = req.body;
+        if (!VALID_BOOK_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission value' });
+        }
+
+        await book.update({ permission });
+        res.json({ success: true, permission });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -290,6 +404,25 @@ router.post('/books/:id/notes', async (req, res) => {
         const book = await db.Book.findByPk(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
 
+        const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const bookPermission = book.permission || 'private';
+
+        // Check if user can add notes
+        let canAddNote = false;
+        if (isOwner) {
+            canAddNote = true;
+        } else if (bookPermission === 'public-edit') {
+            canAddNote = true;
+        } else if (bookPermission === 'auth-edit' && userId) {
+            canAddNote = true;
+        }
+
+        if (!canAddNote) {
+            return res.status(403).json({ error: 'Cannot add notes to this book' });
+        }
+
+        // Create note with 'inherit' permission by default for notes in a book
         let id = generateId();
         let retry = 0;
         while (retry < 5) {
@@ -299,7 +432,8 @@ router.post('/books/:id/notes', async (req, res) => {
                     title: (req.body && req.body.title) || 'Untitled Note',
                     content: (req.body && req.body.content) || '',
                     bookId: book.id,
-                    ownerId: req.session.userId || null
+                    ownerId: userId,
+                    permission: 'inherit' // Default to inherit from book
                 });
                 return res.json(note);
             } catch (e) {

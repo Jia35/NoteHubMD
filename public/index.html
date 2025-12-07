@@ -74,7 +74,8 @@
     <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji@3.0.0/dist/markdown-it-emoji.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists@2.1.1/dist/markdown-it-task-lists.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
 
     <!-- Highlight.js for syntax highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
@@ -469,11 +470,31 @@
                 <h1 class="text-4xl font-bold text-gray-800 dark:text-white flex items-center">
                     <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
                 </h1>
-                <div class="flex gap-2">
-                    <button @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                <div class="flex items-center gap-3">
+                    <!-- Permission Display/Selector -->
+                    <div class="flex items-center space-x-2">
+                        <!-- Owner: Dropdown selector -->
+                        <template v-if="isOwner">
+                            <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
+                            <select v-model="permission" @change="handlePermissionChange(permission)" 
+                                    class="bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+                                <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
+                                    {{ opt.label }}
+                                </option>
+                            </select>
+                        </template>
+                        <!-- Non-owner: Show permission as badge -->
+                        <template v-else>
+                            <span class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fa-solid fa-lock text-xs"></i>
+                                <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                            </span>
+                        </template>
+                    </div>
+                    <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
                         + Add Note
                     </button>
-                    <button @click="showEditModal = true" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                    <button v-if="canEdit" @click="showEditModal = true" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                         <i class="fa-solid fa-pen"></i> 編輯
                     </button>
                 </div>
@@ -655,12 +676,17 @@
                                 {{ opt.label }}
                             </option>
                         </select>
+                        <!-- Show effective permission when using inherit -->
+                        <span v-if="permission === 'inherit'" class="text-xs text-gray-500 ml-1">
+                            ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
+                        </span>
                     </template>
                     <!-- Non-owner: Show permission as badge -->
                     <template v-else>
                         <span class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
                             <i class="fa-solid fa-lock text-xs"></i>
-                            <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                            <span v-if="permission === 'inherit'">繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})</span>
+                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
                         </span>
                     </template>
                 </div>
