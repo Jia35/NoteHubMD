@@ -678,7 +678,7 @@ const Note = {
         if (window.markdownitMark) md.use(window.markdownitMark);
         if (window.markdownitSup) md.use(window.markdownitSup);
         if (window.markdownitEmoji) md.use(window.markdownitEmoji);
-        if (window.markdownitTaskLists) md.use(window.markdownitTaskLists);
+        if (window.markdownitTaskLists) md.use(window.markdownitTaskLists, { enabled: true });
 
         const themes = [
             { label: '[深色] 預設 (Monokai)', value: 'monokai' },
@@ -876,6 +876,60 @@ const Note = {
             }
         };
 
+        const handleTaskListClick = (event) => {
+            const target = event.target;
+            // Check if checkbox
+            if (!target.classList.contains('task-list-item-checkbox')) return;
+
+            // Check if editable
+            if (!canEdit.value) return;
+
+            // Find index of clicked checkbox
+            const checkboxes = previewContainer.value.querySelectorAll('.task-list-item-checkbox');
+            let index = -1;
+            for (let i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i] === target) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index === -1) return;
+
+            // Parse tokens to find the corresponding source line
+            const tokens = md.parse(content.value, {});
+            let checkboxIndex = 0;
+
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                // markdown-it-task-lists adds 'task-list-item' class to list_item_open tokens
+                if (token.type === 'list_item_open' && token.attrs) {
+                    const classAttr = token.attrs.find(attr => attr[0] === 'class');
+                    if (classAttr && classAttr[1].includes('task-list-item')) {
+                        if (checkboxIndex === index) {
+                            // Found the token!
+                            const lineNo = token.map[0]; // Start line of the item
+                            const lineContent = cmInstance.getLine(lineNo);
+
+                            // Toggle checkbox in line content
+                            const newLineContent = lineContent.replace(/\[([ xX])\]/, (match, p1) => {
+                                return p1 === ' ' ? '[x]' : '[ ]';
+                            });
+
+                            if (newLineContent !== lineContent) {
+                                cmInstance.replaceRange(
+                                    newLineContent,
+                                    { line: lineNo, ch: 0 },
+                                    { line: lineNo, ch: lineContent.length }
+                                );
+                            }
+                            return;
+                        }
+                        checkboxIndex++;
+                    }
+                }
+            }
+        };
+
 
         onMounted(async () => {
             // Initialize Mermaid
@@ -1017,7 +1071,8 @@ const Note = {
             handlePermissionChange,
             onlineUsers,
             showOnlineUsersPopup,
-            toggleOnlineUsersPopup
+            toggleOnlineUsersPopup,
+            handleTaskListClick
         };
     }
 };
