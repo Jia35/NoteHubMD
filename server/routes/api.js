@@ -285,7 +285,7 @@ router.get('/notes', async (req, res) => {
                 canDelete = true;
             }
 
-            return { ...noteData, canEdit, canDelete };
+            return { ...noteData, isOwner, canEdit, canDelete };
         }));
 
         // Filter out null entries (items user cannot access)
@@ -539,7 +539,7 @@ router.get('/books', async (req, res) => {
                 canDelete = true;
             }
 
-            return { ...bookData, canEdit, canDelete };
+            return { ...bookData, isOwner, canEdit, canDelete };
         });
 
         // Filter out null entries (items user cannot access)

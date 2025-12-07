@@ -523,11 +523,26 @@ const Home = {
         };
 
         // Info modal functions
+        const editablePermission = ref('private');
+
+        const getPermissionLabel = (permission) => {
+            const labels = {
+                'private': '🔒 私人 (僅擁有者)',
+                'auth-view': '👁️ 登入可看',
+                'auth-edit': '✏️ 登入可編輯',
+                'public-view': '🌐 公開可看',
+                'public-edit': '📝 公開可編輯',
+                'inherit': '📚 繼承書本權限'
+            };
+            return labels[permission] || permission;
+        };
+
         const openInfoModal = (type, item) => {
             infoModalType.value = type;
             infoModalItem.value = { ...item };
             editableDescription.value = item.description || '';
             editableTags.value = [...(item.tags || [])];
+            editablePermission.value = item.permission || 'private';
             showInfoModal.value = true;
             openMenuId.value = null;
         };
@@ -550,6 +565,16 @@ const Home = {
         const saveInfoChanges = async () => {
             try {
                 const updateData = { tags: editableTags.value };
+
+                // Save permission change if owner changed it
+                if (infoModalItem.value.isOwner && editablePermission.value !== infoModalItem.value.permission) {
+                    if (infoModalType.value === 'book') {
+                        await api.updateBookPermission(infoModalItem.value.id, editablePermission.value);
+                    } else {
+                        await api.updatePermission(infoModalItem.value.id, editablePermission.value);
+                    }
+                }
+
                 if (infoModalType.value === 'book') {
                     updateData.description = editableDescription.value;
                     await api.updateBook(infoModalItem.value.id, updateData);
@@ -558,6 +583,7 @@ const Home = {
                     if (bookIndex !== -1) {
                         books.value[bookIndex].tags = [...editableTags.value];
                         books.value[bookIndex].description = editableDescription.value;
+                        books.value[bookIndex].permission = editablePermission.value;
                     }
                 } else {
                     await api.updateNote(infoModalItem.value.id, updateData);
@@ -565,6 +591,7 @@ const Home = {
                     const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
                     if (noteIndex !== -1) {
                         notes.value[noteIndex].tags = [...editableTags.value];
+                        notes.value[noteIndex].permission = editablePermission.value;
                     }
                     // Also update in allNotesForTags
                     const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === infoModalItem.value.id);
@@ -592,8 +619,8 @@ const Home = {
             searchQuery, includeContent,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem,
-            editableDescription, editableTags, newTag,
-            openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges,
+            editableDescription, editableTags, newTag, editablePermission,
+            openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges, getPermissionLabel,
             showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal
         };
     }

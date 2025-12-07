@@ -398,6 +398,26 @@
                             <div class="text-gray-500 dark:text-gray-400">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
                         </div>
 
+                        <!-- Permission Editor (owner only can change) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-lock mr-1"></i> 權限
+                            </label>
+                            <select v-if="infoModalItem.isOwner" 
+                                    v-model="editablePermission"
+                                    class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option v-if="infoModalType === 'note' && infoModalItem.bookId" value="inherit">📚 繼承書本權限</option>
+                                <option value="public-edit">可編輯</option>
+                                <option value="auth-edit">可編輯(需登入)</option>
+                                <option value="public-view">唯讀</option>
+                                <option value="auth-view">唯讀(需登入)</option>
+                                <option value="private">私人</option>
+                            </select>
+                            <div v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                                {{ getPermissionLabel(infoModalItem.permission) }}
+                            </div>
+                        </div>
+
                         <!-- Description Editor (for books only) -->
                         <div v-if="infoModalType === 'book'">
                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
