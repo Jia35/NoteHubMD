@@ -675,6 +675,15 @@ const Note = {
 
         // if (window.markdownitImsize) md.use(window.markdownitImsize);
         if (window["markdown-it-imsize.js"]) md.use(window["markdown-it-imsize.js"]);
+
+        if (window.markdownItAnchor) {
+            md.use(window.markdownItAnchor, {
+                permalink: true,
+                permalinkBefore: true,
+                permalinkSymbol: '#'
+            });
+        }
+
         if (window.markdownitMark) md.use(window.markdownitMark);
         if (window.markdownitSup) md.use(window.markdownitSup);
         if (window.markdownitEmoji) md.use(window.markdownitEmoji);
