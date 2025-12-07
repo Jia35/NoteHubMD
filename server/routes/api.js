@@ -93,7 +93,11 @@ router.post('/notes', async (req, res) => {
 // Get Note
 router.get('/notes/:id', async (req, res) => {
     try {
-        const note = await db.Note.findByPk(req.params.id);
+        const note = await db.Note.findByPk(req.params.id, {
+            include: [
+                { model: db.Book, attributes: ['id', 'title'] }
+            ]
+        });
         if (!note) return res.status(404).json({ error: 'Note not found' });
 
         const userId = req.session.userId || null;

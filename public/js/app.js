@@ -693,6 +693,7 @@ const Note = {
         const effectivePermission = ref('private'); // Actual permission after resolving inherit
         const isOwner = ref(false);
         const bookId = ref(null); // Track if note belongs to a book
+        const book = ref(null); // Store book info if note is in a book
 
         // Online users tracking
         const onlineUsers = ref([]);
@@ -1125,6 +1126,7 @@ const Note = {
                 isOwner.value = note.isOwner || false;
                 canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
                 bookId.value = note.bookId || null;
+                book.value = note.Book || null;
             } catch (e) {
                 console.error('Failed to load note', e);
                 // Handle access errors
@@ -1245,6 +1247,7 @@ const Note = {
             setMode,
             handlePreviewScroll,
             saving,
+            title,
             themes,
             selectedTheme,
             toc,
@@ -1253,6 +1256,7 @@ const Note = {
             permission,
             effectivePermission,
             bookId,
+            book,
             isOwner,
             canEdit,
             permissionOptions,
