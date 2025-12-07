@@ -244,6 +244,7 @@ router.put('/notes/:id/permission', async (req, res) => {
 // ?includeBookNotes=true to include notes inside books (for tag filtering)
 router.get('/notes', async (req, res) => {
     try {
+        const userId = req.session.userId || null;
         const whereClause = req.query.includeBookNotes === 'true'
             ? {} // All notes
             : { bookId: null }; // Only standalone notes
@@ -257,7 +258,38 @@ router.get('/notes', async (req, res) => {
                 { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
             ]
         });
-        res.json(notes);
+
+        // Add canDelete and canEdit for each note, and filter by permission
+        const notesWithPermissions = await Promise.all(notes.map(async (note) => {
+            const noteData = note.toJSON();
+            const isOwner = noteData.ownerId && noteData.ownerId === userId;
+            const effectivePermission = await resolveNotePermission(note);
+
+            // Filter out items the user cannot access
+            // Private: only owner can see
+            if (effectivePermission === 'private' && !isOwner) {
+                return null;
+            }
+            // Auth-view or auth-edit: must be logged in
+            if ((effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') && !userId) {
+                return null;
+            }
+
+            let canEdit = false;
+            let canDelete = false;
+            if (isOwner) {
+                canEdit = true;
+                canDelete = true;
+            } else if ((effectivePermission === 'public-edit' || effectivePermission === 'auth-edit') && userId) {
+                canEdit = true;
+                canDelete = true;
+            }
+
+            return { ...noteData, canEdit, canDelete };
+        }));
+
+        // Filter out null entries (items user cannot access)
+        res.json(notesWithPermissions.filter(n => n !== null));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -471,6 +503,7 @@ router.post('/books/:id/notes', async (req, res) => {
 // Get All Books (Home)
 router.get('/books', async (req, res) => {
     try {
+        const userId = req.session.userId || null;
         const books = await db.Book.findAll({
             order: [['updatedAt', 'DESC']],
             limit: 20,
@@ -479,7 +512,38 @@ router.get('/books', async (req, res) => {
                 { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
             ]
         });
-        res.json(books);
+
+        // Add canDelete and canEdit for each book, and filter by permission
+        const booksWithPermissions = books.map(book => {
+            const bookData = book.toJSON();
+            const isOwner = bookData.ownerId && bookData.ownerId === userId;
+            const permission = bookData.permission || 'private';
+
+            // Filter out items the user cannot access
+            // Private: only owner can see
+            if (permission === 'private' && !isOwner) {
+                return null;
+            }
+            // Auth-view or auth-edit: must be logged in
+            if ((permission === 'auth-view' || permission === 'auth-edit') && !userId) {
+                return null;
+            }
+
+            let canEdit = false;
+            let canDelete = false;
+            if (isOwner) {
+                canEdit = true;
+                canDelete = true;
+            } else if ((permission === 'public-edit' || permission === 'auth-edit') && userId) {
+                canEdit = true;
+                canDelete = true;
+            }
+
+            return { ...bookData, canEdit, canDelete };
+        });
+
+        // Filter out null entries (items user cannot access)
+        res.json(booksWithPermissions.filter(b => b !== null));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -491,8 +555,25 @@ router.delete('/books/:id', async (req, res) => {
         const book = await db.Book.findByPk(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
 
-        // Record who deleted this book
         const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+
+        // Permission check: only owner or users with edit permission can delete
+        let canDelete = false;
+        if (isOwner) {
+            canDelete = true;
+        } else if (permission === 'public-edit' && userId) {
+            canDelete = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canDelete = true;
+        }
+
+        if (!canDelete) {
+            return res.status(403).json({ error: '沒有刪除權限' });
+        }
+
+        // Record who deleted this book
         if (userId) {
             await book.update({ deletedById: userId });
         }
@@ -536,8 +617,27 @@ router.delete('/notes/:id', async (req, res) => {
         const note = await db.Note.findByPk(req.params.id);
         if (!note) return res.status(404).json({ error: 'Note not found' });
 
-        // Record who deleted this note
         const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+
+        // Resolve effective permission (handle 'inherit' case)
+        const effectivePermission = await resolveNotePermission(note);
+
+        // Permission check: only owner or users with edit permission can delete
+        let canDelete = false;
+        if (isOwner) {
+            canDelete = true;
+        } else if (effectivePermission === 'public-edit' && userId) {
+            canDelete = true;
+        } else if (effectivePermission === 'auth-edit' && userId) {
+            canDelete = true;
+        }
+
+        if (!canDelete) {
+            return res.status(403).json({ error: '沒有刪除權限' });
+        }
+
+        // Record who deleted this note
         if (userId) {
             await note.update({ deletedById: userId });
         }

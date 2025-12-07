@@ -304,7 +304,10 @@
                                 <button @click.stop="openInfoModal('book', book)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
                                     <i class="fa-solid fa-circle-info mr-2"></i>資訊
                                 </button>
-                                <button @click.stop="deleteBook(book.id, $event)" class="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                <button @click.stop="book.canDelete && deleteBook(book.id, $event)" 
+                                        :class="book.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+                                        class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
+                                        :disabled="!book.canDelete">
                                     <i class="fa-solid fa-trash mr-2"></i>刪除
                                 </button>
                             </div>
@@ -343,7 +346,10 @@
                                 <button @click.stop="openInfoModal('note', note)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
                                     <i class="fa-solid fa-circle-info mr-2"></i>資訊
                                 </button>
-                                <button @click.stop="deleteNote(note.id, $event)" class="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                <button @click.stop="note.canDelete && deleteNote(note.id, $event)" 
+                                        :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+                                        class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
+                                        :disabled="!note.canDelete">
                                     <i class="fa-solid fa-trash mr-2"></i>刪除
                                 </button>
                             </div>
@@ -397,10 +403,12 @@
                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                                 <i class="fa-solid fa-align-left mr-1"></i> 描述
                             </label>
-                            <textarea v-model="editableDescription"
+                            <textarea v-if="infoModalItem.canEdit"
+                                      v-model="editableDescription"
                                       rows="3"
                                       placeholder="輸入描述..."
                                       class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <p v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">{{ editableDescription || '無描述' }}</p>
                         </div>
 
                         <!-- Tags Editor -->
@@ -413,13 +421,13 @@
                                       :class="infoModalType === 'book' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'"
                                       class="px-3 py-1 text-sm rounded-full flex items-center">
                                     {{ tag }}
-                                    <button @click="removeEditableTag(tag)" class="ml-2 hover:text-red-500">
+                                    <button v-if="infoModalItem.canEdit" @click="removeEditableTag(tag)" class="ml-2 hover:text-red-500">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </span>
                                 <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
                             </div>
-                            <div class="flex gap-2">
+                            <div v-if="infoModalItem.canEdit" class="flex gap-2">
                                 <input v-model="newTag" 
                                        @keyup.enter="addEditableTag"
                                        type="text" 
@@ -435,9 +443,9 @@
                     <!-- Modal Footer -->
                     <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
                         <button @click="showInfoModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                            取消
+                            {{ infoModalItem.canEdit ? '取消' : '關閉' }}
                         </button>
-                        <button @click="saveInfoChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        <button v-if="infoModalItem.canEdit" @click="saveInfoChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                             <i class="fa-solid fa-save mr-1"></i> 儲存
                         </button>
                     </div>
