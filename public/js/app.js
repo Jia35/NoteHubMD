@@ -637,23 +637,26 @@ const Note = {
         });
 
         const themes = [
-            { label: '預設', value: 'default' },
-            { label: 'Ayu Dark', value: 'ayu-dark' },
-            { label: 'Bespin', value: 'bespin' },
-            { label: 'Colorforth', value: 'colorforth' },
-            { label: 'Duotone Dark', value: 'duotone-dark' },
-            { label: 'Eclipse', value: 'eclipse' },
-            { label: 'Material Darker', value: 'material-darker' },
-            { label: 'Material Palenight', value: 'material-palenight' },
-            { label: 'Material', value: 'material' },
-            { label: 'Monokai', value: 'monokai' },
-            { label: 'Nord', value: 'nord' },
-            { label: 'Panda Syntax', value: 'panda-syntax' },
-            { label: 'Railscats', value: 'railscats' },
-            { label: 'Rubyblue', value: 'rubyblue' },
-            { label: 'Solarized', value: 'solarized' },
-            { label: 'XQ Light', value: 'xq-light' },
-            { label: 'XQ Dark', value: 'xq-dark' },
+            { label: '[深色] 預設 (Monokai)', value: 'monokai' },
+            { label: '[深色] 3024 Night', value: '3024-night' },
+            { label: '[深色] Ayu Dark', value: 'ayu-dark' },
+            { label: '[深色] Bespin', value: 'bespin' },
+            { label: '[深色] Colorforth', value: 'colorforth' },
+            { label: '[深色] Dracula', value: 'dracula' },
+            { label: '[深色] Duotone Dark', value: 'duotone-dark' },
+            { label: '[深色] Material Darker', value: 'material-darker' },
+            { label: '[深色] Material Palenight', value: 'material-palenight' },
+            { label: '[深色] Material', value: 'material' },
+            { label: '[深色] Nord', value: 'nord' },
+            { label: '[深色] Panda Syntax', value: 'panda-syntax' },
+            { label: '[深色] Rubyblue', value: 'rubyblue' },
+            { label: '[深色] XQ Dark', value: 'xq-dark' },
+            
+            { label: '[亮色] 預設', value: 'default' },
+            { label: '[亮色] 3024 Day', value: '3024-day' },
+            { label: '[亮色] Eclipse', value: 'eclipse' },
+            { label: '[亮色] Solarized', value: 'solarized' },
+            { label: '[亮色] XQ Light', value: 'xq-light' },
         ];
         const selectedTheme = ref(localStorage.getItem('editorTheme') || 'duotone-dark');
 
