@@ -636,6 +636,47 @@ const Note = {
             }
         });
 
+        // Configure Markdown-it plugins
+        if (window.markdownitContainer) {
+            ['success', 'info', 'warning', 'danger'].forEach(type => {
+                md.use(window.markdownitContainer, type, {
+                    render: function (tokens, idx) {
+                        const m = tokens[idx].info.trim().match(new RegExp(`^${type}\\s*(.*)$`));
+                        if (tokens[idx].nesting === 1) {
+                            // opening tag
+                            return '<div class="alert alert-' + type + '">\n' +
+                                (m[1] ? '<strong>' + md.utils.escapeHtml(m[1]) + '</strong>' : '');
+                        } else {
+                            // closing tag
+                            return '</div>\n';
+                        }
+                    }
+                });
+            });
+
+            // Spoiler
+            md.use(window.markdownitContainer, 'spoiler', {
+                validate: function (params) {
+                    return params.trim().match(/^spoiler\s+(.*)$/);
+                },
+                render: function (tokens, idx) {
+                    var m = tokens[idx].info.trim().match(/^spoiler\s+(.*)$/);
+                    if (tokens[idx].nesting === 1) {
+                        // opening tag
+                        return '<details><summary>' + md.utils.escapeHtml(m[1]) + '</summary>\n';
+                    } else {
+                        // closing tag
+                        return '</details>\n';
+                    }
+                }
+            });
+        }
+
+        if (window.markdownitImsize) md.use(window.markdownitImsize);
+        if (window.markdownitMark) md.use(window.markdownitMark);
+        if (window.markdownitSup) md.use(window.markdownitSup);
+        if (window.markdownitEmoji) md.use(window.markdownitEmoji);
+
         const themes = [
             { label: '[深色] 預設 (Monokai)', value: 'monokai' },
             { label: '[深色] 3024 Night', value: '3024-night' },
@@ -651,7 +692,7 @@ const Note = {
             { label: '[深色] Panda Syntax', value: 'panda-syntax' },
             { label: '[深色] Rubyblue', value: 'rubyblue' },
             { label: '[深色] XQ Dark', value: 'xq-dark' },
-            
+
             { label: '[亮色] 預設', value: 'default' },
             { label: '[亮色] 3024 Day', value: '3024-day' },
             { label: '[亮色] Eclipse', value: 'eclipse' },
