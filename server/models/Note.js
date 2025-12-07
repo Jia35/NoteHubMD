@@ -18,6 +18,14 @@ module.exports = (sequelize, DataTypes) => {
         },
         tags: {
             type: DataTypes.JSON
+        },
+        lastEditorId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        deletedById: {
+            type: DataTypes.INTEGER,
+            allowNull: true
         }
     }, {
         paranoid: true

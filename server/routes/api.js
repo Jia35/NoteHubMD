@@ -170,6 +170,11 @@ router.put('/notes/:id', async (req, res) => {
             updateData.tags = parseTags(updateData.content);
         }
 
+        // Set last editor
+        if (userId) {
+            updateData.lastEditorId = userId;
+        }
+
         await note.update(updateData);
         res.json({
             ...note.toJSON(),
@@ -242,7 +247,11 @@ router.get('/notes', async (req, res) => {
         const notes = await db.Note.findAll({
             where: whereClause,
             order: [['updatedAt', 'DESC']],
-            limit: req.query.includeBookNotes === 'true' ? 100 : 20
+            limit: req.query.includeBookNotes === 'true' ? 100 : 20,
+            include: [
+                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+            ]
         });
         res.json(notes);
     } catch (e) {
@@ -354,9 +363,9 @@ router.put('/books/:id', async (req, res) => {
         // Use PUT /books/:id/permission instead
         const { permission: _, ...updateData } = req.body;
 
-        // Auto-parse tags from description if description is being updated
-        if (updateData.description !== undefined) {
-            updateData.tags = parseTags(updateData.description);
+        // Set last editor
+        if (userId) {
+            updateData.lastEditorId = userId;
         }
 
         await book.update(updateData);
@@ -456,7 +465,11 @@ router.get('/books', async (req, res) => {
     try {
         const books = await db.Book.findAll({
             order: [['updatedAt', 'DESC']],
-            limit: 20
+            limit: 20,
+            include: [
+                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+            ]
         });
         res.json(books);
     } catch (e) {
@@ -469,6 +482,13 @@ router.delete('/books/:id', async (req, res) => {
     try {
         const book = await db.Book.findByPk(req.params.id);
         if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        // Record who deleted this book
+        const userId = req.session.userId || null;
+        if (userId) {
+            await book.update({ deletedById: userId });
+        }
+
         await book.destroy();
         res.json({ success: true });
     } catch (e) {
@@ -507,6 +527,13 @@ router.delete('/notes/:id', async (req, res) => {
     try {
         const note = await db.Note.findByPk(req.params.id);
         if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        // Record who deleted this note
+        const userId = req.session.userId || null;
+        if (userId) {
+            await note.update({ deletedById: userId });
+        }
+
         await note.destroy();
         res.json({ success: true });
     } catch (e) {
@@ -543,11 +570,19 @@ router.get('/trash', async (req, res) => {
     try {
         const notes = await db.Note.findAll({
             where: { deletedAt: { [db.Sequelize.Op.ne]: null } },
-            paranoid: false
+            paranoid: false,
+            include: [
+                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+                { model: db.User, as: 'deletedBy', attributes: ['id', 'username'] }
+            ]
         });
         const books = await db.Book.findAll({
             where: { deletedAt: { [db.Sequelize.Op.ne]: null } },
-            paranoid: false
+            paranoid: false,
+            include: [
+                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+                { model: db.User, as: 'deletedBy', attributes: ['id', 'username'] }
+            ]
         });
         res.json({ notes, books });
     } catch (e) {

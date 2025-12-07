@@ -267,18 +267,21 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="flex items-center mb-2">
-                            <span class="text-xl mr-2"><i class="fa-solid fa-book"></i></span>
-                            <h3 class="font-bold text-xl text-gray-800 dark:text-white truncate">{{ book.title }}</h3>
+                        <div class="flex items-center mb-1">
+                            <span class="text-lg mr-2"><i class="fa-solid fa-book"></i></span>
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ book.title }}</h3>
+                        </div>
+                        <div class="mb-2">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ new Date(book.updatedAt).toLocaleString() }}</p>
+                            <p v-if="book.lastEditor || book.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ book.lastEditor?.username || book.owner?.username }}</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ book.description || '' }}</p>
                         </div>
                         <!-- Tags -->
-                        <div v-if="book.tags && book.tags.length > 0" class="mb-2 flex flex-wrap gap-1">
+                        <div v-if="book.tags && book.tags.length > 0" class="flex flex-wrap gap-1">
                             <span v-for="tag in book.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
                                 {{ tag }}
                             </span>
                         </div>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(book.updatedAt).toLocaleString() }}</p>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ book.description || 'No description' }}</p>
                     </div>
                 </div>
             </div>
@@ -303,17 +306,20 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="flex items-center mb-2">
-                            <span class="text-xl mr-2"><i class="fa-solid fa-note-sticky"></i></span>
-                            <h3 class="font-bold text-xl text-gray-800 dark:text-white truncate">{{ note.title }}</h3>
+                        <div class="flex items-center mb-1">
+                            <span class="text-lg mr-2"><i class="fa-solid fa-note-sticky"></i></span>
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ note.title }}</h3>
+                        </div>
+                        <div class="mb-2">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ new Date(note.updatedAt).toLocaleString() }}</p>
+                            <p v-if="note.lastEditor || note.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ note.lastEditor?.username || note.owner?.username }}</p>
                         </div>
                         <!-- Tags -->
-                        <div v-if="note.tags && note.tags.length > 0" class="mb-2 flex flex-wrap gap-1">
+                        <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
                             <span v-for="tag in note.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                                 {{ tag }}
                             </span>
                         </div>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm" title="Last updated">{{ new Date(note.updatedAt).toLocaleString() }}</p>
                     </div>
                 </div>
             </div>
@@ -336,10 +342,12 @@
                     <div class="p-4 space-y-4">
                         <!-- Item Info -->
                         <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ infoModalItem.id }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">標題: <span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.title }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.createdAt).toLocaleString() }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400">更新時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ infoModalItem.id }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.title }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立者：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.owner?.username || '(未知)' }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.createdAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.lastEditor?.username || infoModalItem.owner?.username || '(未知)' }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
                         </div>
 
                         <!-- Description Editor (for books only) -->
@@ -554,7 +562,7 @@
                         <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
                             <div class="text-gray-500 dark:text-gray-400 mb-1">書本 ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ book.id }}</span></div>
                             <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.createdAt).toLocaleString() }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400">更新時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.updatedAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400">最後編輯時間: <span class="text-gray-700 dark:text-gray-300">{{ new Date(book.updatedAt).toLocaleString() }}</span></div>
                         </div>
 
                         <!-- Description Editor -->

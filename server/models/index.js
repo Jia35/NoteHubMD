@@ -18,12 +18,20 @@ db.Note = require('./Note')(sequelize, Sequelize);
 
 // Associations
 db.User.hasMany(db.Book, { foreignKey: 'ownerId' });
-db.Book.belongsTo(db.User, { foreignKey: 'ownerId' });
+db.Book.belongsTo(db.User, { foreignKey: 'ownerId', as: 'owner' });
 
 db.User.hasMany(db.Note, { foreignKey: 'ownerId' });
-db.Note.belongsTo(db.User, { foreignKey: 'ownerId' });
+db.Note.belongsTo(db.User, { foreignKey: 'ownerId', as: 'owner' });
 
 db.Book.hasMany(db.Note, { foreignKey: 'bookId' });
 db.Note.belongsTo(db.Book, { foreignKey: 'bookId' });
+
+// LastEditor associations
+db.Book.belongsTo(db.User, { foreignKey: 'lastEditorId', as: 'lastEditor' });
+db.Note.belongsTo(db.User, { foreignKey: 'lastEditorId', as: 'lastEditor' });
+
+// DeletedBy associations
+db.Book.belongsTo(db.User, { foreignKey: 'deletedById', as: 'deletedBy' });
+db.Note.belongsTo(db.User, { foreignKey: 'deletedById', as: 'deletedBy' });
 
 module.exports = db;
