@@ -94,11 +94,11 @@ const api = {
         });
         return res.json();
     },
-    async createBook() {
+    async createBook(data = {}) {
         const res = await fetch('/api/books', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
+            body: JSON.stringify(data)
         });
         return res.json();
     },
@@ -309,6 +309,11 @@ const Home = {
         const editableTags = ref([]);
         const newTag = ref('');
 
+        // Create Book modal state
+        const showCreateBookModal = ref(false);
+        const newBookTitle = ref('');
+        const newBookDescription = ref('');
+
         const loadData = async () => {
             try {
                 notes.value = await api.getNotes();
@@ -428,9 +433,23 @@ const Home = {
             } catch (e) { alert('Error creating note'); }
         };
 
+        const openCreateBookModal = () => {
+            newBookTitle.value = '';
+            newBookDescription.value = '';
+            showCreateBookModal.value = true;
+        };
+
         const createBook = async () => {
+            if (!newBookTitle.value.trim()) {
+                alert('請輸入書本標題');
+                return;
+            }
             try {
-                const book = await api.createBook();
+                const book = await api.createBook({
+                    title: newBookTitle.value.trim(),
+                    description: newBookDescription.value.trim()
+                });
+                showCreateBookModal.value = false;
                 router.push('/book/' + book.id);
             } catch (e) { alert('Error creating book'); }
         };
@@ -527,7 +546,8 @@ const Home = {
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem,
             editableDescription, editableTags, newTag,
-            openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges
+            openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges,
+            showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal
         };
     }
 };
