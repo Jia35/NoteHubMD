@@ -620,6 +620,7 @@ const Note = {
         const md = window.markdownit({
             html: true,
             breaks: true,
+            linkify: true,
             highlight: function (str, lang) {
                 // Handle mermaid code blocks specially
                 if (lang && lang.toLowerCase() === 'mermaid') {
@@ -672,10 +673,12 @@ const Note = {
             });
         }
 
-        if (window.markdownitImsize) md.use(window.markdownitImsize);
+        // if (window.markdownitImsize) md.use(window.markdownitImsize);
+        if (window["markdown-it-imsize.js"]) md.use(window["markdown-it-imsize.js"]);
         if (window.markdownitMark) md.use(window.markdownitMark);
         if (window.markdownitSup) md.use(window.markdownitSup);
         if (window.markdownitEmoji) md.use(window.markdownitEmoji);
+        if (window.markdownitTaskLists) md.use(window.markdownitTaskLists);
 
         const themes = [
             { label: '[深色] 預設 (Monokai)', value: 'monokai' },
