@@ -645,6 +645,7 @@ const Book = {
         const showEditModal = ref(false);
         const editableDescription = ref('');
         const editableTags = ref([]);
+        const editablePermission = ref('private');
         const notesList = ref(null);
         let sortableInstance = null;
 
@@ -750,6 +751,7 @@ const Book = {
             if (newVal) {
                 editableDescription.value = book.value.description || '';
                 editableTags.value = [...(book.value.tags || [])];
+                editablePermission.value = permission.value;
             }
         });
 
@@ -770,6 +772,11 @@ const Book = {
 
         const saveBookChanges = async () => {
             try {
+                // Save permission if changed (owner only)
+                if (isOwner.value && editablePermission.value !== permission.value) {
+                    await api.updateBookPermission(book.value.id, editablePermission.value);
+                    permission.value = editablePermission.value;
+                }
                 await api.updateBook(book.value.id, {
                     description: editableDescription.value,
                     tags: editableTags.value
@@ -791,7 +798,7 @@ const Book = {
 
         return {
             book, createNote, showEditModal,
-            editableDescription, editableTags, newTag,
+            editableDescription, editableTags, newTag, editablePermission,
             addEditableTag, removeEditableTag, saveBookChanges,
             permission, isOwner, canEdit, canAddNote,
             permissionOptions, handlePermissionChange,
