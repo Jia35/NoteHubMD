@@ -939,6 +939,71 @@ const Note = {
             }
         };
 
+        // --- Image Upload ---
+        const uploadImage = async (file) => {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('/api/upload/image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Upload failed');
+            }
+
+            return response.json();
+        };
+
+        const handleImageDrop = async (cm, e) => {
+            // Check if there are image files
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+
+            const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (imageFiles.length === 0) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            for (const file of imageFiles) {
+                try {
+                    const result = await uploadImage(file);
+                    const markdown = `![${file.name}](${result.url})`;
+                    const cursor = cm.getCursor();
+                    cm.replaceRange(markdown + '\n', cursor);
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    alert('圖片上傳失敗：' + error.message);
+                }
+            }
+        };
+
+        const handleImagePaste = async (cm, e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (!file) continue;
+
+                    try {
+                        const result = await uploadImage(file);
+                        const markdown = `![image](${result.url})`;
+                        const cursor = cm.getCursor();
+                        cm.replaceRange(markdown, cursor);
+                    } catch (error) {
+                        console.error('Upload failed:', error);
+                        alert('圖片上傳失敗：' + error.message);
+                    }
+                    return; // Only handle first image
+                }
+            }
+        };
 
         onMounted(async () => {
             // Initialize Mermaid
@@ -1003,6 +1068,17 @@ const Note = {
                 });
 
                 cmInstance.on('scroll', handleEditorScroll);
+
+                // Image upload - drag and drop
+                const wrapper = cmInstance.getWrapperElement();
+                wrapper.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                });
+                wrapper.addEventListener('drop', (e) => handleImageDrop(cmInstance, e));
+
+                // Image upload - paste
+                cmInstance.on('paste', (cm, e) => handleImagePaste(cm, e));
 
                 // Initial render
                 updatePreview();

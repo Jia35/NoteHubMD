@@ -1,7 +1,53 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const db = require('../models');
 const { generateId } = require('../utils/idGenerator');
+
+// --- Image Upload ---
+
+// Configure multer storage
+const uploadDir = path.join(__dirname, '../../_uploads');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const now = new Date();
+        const yyyyMM = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const random5 = generateId(5); // 5-character Base32 string
+        const ext = path.extname(file.originalname).toLowerCase();
+        const filename = `${yyyyMM}_${random5}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.'));
+        }
+    }
+});
+
+// Image upload endpoint
+router.post('/upload/image', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const imageUrl = `/_uploads/${req.file.filename}`;
+    res.json({ url: imageUrl, filename: req.file.filename });
+});
 
 // Parse tags from markdown content
 // Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
