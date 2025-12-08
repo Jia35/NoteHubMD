@@ -1313,6 +1313,175 @@ const Note = {
             }
         };
 
+        // --- Markdown Autocomplete Hints ---
+        const markdownHints = [
+            // Headings
+            { text: '# ', displayText: '# 標題 1', trigger: '#' },
+            { text: '## ', displayText: '## 標題 2', trigger: '#' },
+            { text: '### ', displayText: '### 標題 3', trigger: '#' },
+            { text: '#### ', displayText: '#### 標題 4', trigger: '#' },
+            { text: '##### ', displayText: '##### 標題 5', trigger: '#' },
+            { text: '###### ', displayText: '###### 標題 6', trigger: '#' },
+            { text: '###### tags: `標籤1`、`標籤2`、`標籤3`', displayText: '###### tags: `標籤1`、`標籤2`...', trigger: '#' },
+            // Containers
+            { text: '::: success\n\n:::', displayText: '::: success (成功提示)', trigger: ':::' },
+            { text: '::: info\n\n:::', displayText: '::: info (資訊提示)', trigger: ':::' },
+            { text: '::: warning\n\n:::', displayText: '::: warning (警告提示)', trigger: ':::' },
+            { text: '::: danger\n\n:::', displayText: '::: danger (危險提示)', trigger: ':::' },
+            { text: '::: spoiler 點擊展開\n\n:::', displayText: '::: spoiler (折疊區塊)', trigger: ':::' },
+            // Code blocks
+            { text: '```\n\n```', displayText: '``` 程式碼區塊', trigger: '`' },
+            { text: '```javascript\n\n```', displayText: '```javascript', trigger: '`' },
+            { text: '```python\n\n```', displayText: '```python', trigger: '`' },
+            { text: '```html\n\n```', displayText: '```html', trigger: '`' },
+            { text: '```css\n\n```', displayText: '```css', trigger: '`' },
+            { text: '```sql\n\n```', displayText: '```sql', trigger: '`' },
+            { text: '```bash\n\n```', displayText: '```bash', trigger: '`' },
+            { text: '```mermaid\n\n```', displayText: '```mermaid (流程圖)', trigger: '`' },
+            // Links and images
+            { text: '[](url)', displayText: '[]() 連結', trigger: '[' },
+            { text: '![](image_url)', displayText: '![]() 圖片', trigger: '!' },
+            // Lists
+            { text: '- [ ] ', displayText: '- [ ] 待辦事項 (未完成)', trigger: '-' },
+            { text: '- [x] ', displayText: '- [x] 待辦事項 (已完成)', trigger: '-' },
+            // Text formatting
+            { text: '**粗體**', displayText: '**粗體**', trigger: '*' },
+            { text: '*斜體*', displayText: '*斜體*', trigger: '*' },
+            { text: '~~刪除線~~', displayText: '~~刪除線~~', trigger: '~' },
+            { text: '==標記==', displayText: '==標記/螢光==', trigger: '=' },
+            { text: '^上標^', displayText: '^上標^', trigger: '^' },
+            // Tables
+            { text: '| 欄位1 | 欄位2 | 欄位3 |\n| --- | --- | --- |\n| 內容1 | 內容2 | 內容3 |', displayText: '| 表格 |', trigger: '|' },
+        ];
+
+        const getMarkdownHints = (cm) => {
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            const lineStart = line.substring(0, cursor.ch);
+
+            // Find the trigger pattern at the start of the line or current position
+            let matchingHints = [];
+            let startCh = 0;
+
+            // Check for heading pattern at line start
+            const headingMatch = lineStart.match(/^(#{1,6})$/);
+            if (headingMatch) {
+                startCh = 0;
+                const prefix = headingMatch[1];
+                matchingHints = markdownHints.filter(h =>
+                    h.trigger === '#' && h.text.startsWith(prefix)
+                );
+            }
+
+            // Check for container pattern at line start
+            const containerMatch = lineStart.match(/^(:{1,3})$/);
+            if (containerMatch) {
+                startCh = 0;
+                matchingHints = markdownHints.filter(h => h.trigger === ':::');
+            }
+
+            // Check for code block pattern at line start
+            const codeMatch = lineStart.match(/^(`{1,3})$/);
+            if (codeMatch) {
+                startCh = 0;
+                matchingHints = markdownHints.filter(h => h.trigger === '`');
+            }
+
+            // Check for list pattern at line start
+            const listMatch = lineStart.match(/^(-)$/);
+            if (listMatch) {
+                startCh = 0;
+                matchingHints = markdownHints.filter(h => h.trigger === '-');
+            }
+
+            // Check for link pattern
+            const linkMatch = lineStart.match(/(\[)$/);
+            if (linkMatch) {
+                startCh = cursor.ch - 1;
+                matchingHints = markdownHints.filter(h => h.trigger === '[');
+            }
+
+            // Check for image pattern
+            const imageMatch = lineStart.match(/(!)$/);
+            if (imageMatch) {
+                startCh = cursor.ch - 1;
+                matchingHints = markdownHints.filter(h => h.trigger === '!');
+            }
+
+            // Check for bold/italic pattern
+            const boldMatch = lineStart.match(/(\*{1,2})$/);
+            if (boldMatch) {
+                startCh = cursor.ch - boldMatch[1].length;
+                matchingHints = markdownHints.filter(h => h.trigger === '*');
+            }
+
+            // Check for strikethrough pattern
+            const strikeMatch = lineStart.match(/(~{1,2})$/);
+            if (strikeMatch) {
+                startCh = cursor.ch - strikeMatch[1].length;
+                matchingHints = markdownHints.filter(h => h.trigger === '~');
+            }
+
+            // Check for mark pattern
+            const markMatch = lineStart.match(/(={1,2})$/);
+            if (markMatch) {
+                startCh = cursor.ch - markMatch[1].length;
+                matchingHints = markdownHints.filter(h => h.trigger === '=');
+            }
+
+            // Check for superscript pattern
+            const supMatch = lineStart.match(/(\^)$/);
+            if (supMatch) {
+                startCh = cursor.ch - 1;
+                matchingHints = markdownHints.filter(h => h.trigger === '^');
+            }
+
+            // Check for table pattern
+            const tableMatch = lineStart.match(/(\|)$/);
+            if (tableMatch) {
+                startCh = cursor.ch - 1;
+                matchingHints = markdownHints.filter(h => h.trigger === '|');
+            }
+
+            if (matchingHints.length === 0) {
+                return null;
+            }
+
+            return {
+                list: matchingHints.map(hint => ({
+                    text: hint.text,
+                    displayText: hint.displayText,
+                    hint: (cm, data, completion) => {
+                        cm.replaceRange(
+                            completion.text,
+                            { line: cursor.line, ch: startCh },
+                            cursor
+                        );
+                        // Position cursor appropriately
+                        const newCursor = cm.getCursor();
+                        // For code blocks and containers, move cursor to middle
+                        if (completion.text.includes('\n\n')) {
+                            const lines = completion.text.split('\n');
+                            cm.setCursor({ line: cursor.line + 1, ch: 0 });
+                        }
+                    }
+                })),
+                from: { line: cursor.line, ch: startCh },
+                to: cursor
+            };
+        };
+
+        const triggerMarkdownHint = (cm) => {
+            if (!canEdit.value) return;
+
+            cm.showHint({
+                hint: getMarkdownHints,
+                completeSingle: false,
+                closeOnUnfocus: true,
+                closeCharacters: /[\s]/
+            });
+        };
+
         onMounted(async () => {
             // Initialize Mermaid
             if (window.mermaid) {
@@ -1390,6 +1559,36 @@ const Note = {
 
                 // Image upload - paste
                 cmInstance.on('paste', (cm, e) => handleImagePaste(cm, e));
+
+                // Markdown autocomplete hints
+                cmInstance.on('inputRead', (cm, change) => {
+                    if (!canEdit.value) return;
+                    if (change.origin !== '+input') return;
+
+                    const cursor = cm.getCursor();
+                    const line = cm.getLine(cursor.line);
+                    const lineStart = line.substring(0, cursor.ch);
+                    
+                    // Trigger when typing these patterns (no trailing whitespace required)
+                    const triggerPatterns = [
+                        /^#{1,6}$/,              // Headings (e.g., "###")
+                        /^:{1,3}$/,               // Containers (e.g., ":::")
+                        /^`{1,3}$/,               // Code blocks (e.g., "```")
+                        /^-$/,                    // Lists
+                        /\[$/,                    // Links (anywhere on line)
+                        /!$/,                     // Images (anywhere on line)
+                        /\*{1,2}$/,               // Bold/italic (anywhere on line)
+                        /~{1,2}$/,                // Strikethrough (anywhere on line)
+                        /={1,2}$/,                // Highlight (anywhere on line)
+                        /\^$/,                    // Superscript (anywhere on line)
+                        /\|$/,                    // Tables (anywhere on line)
+                    ];
+
+                    const shouldTrigger = triggerPatterns.some(pattern => pattern.test(lineStart));
+                    if (shouldTrigger) {
+                        triggerMarkdownHint(cm);
+                    }
+                });
 
                 // Initial render
                 updatePreview();

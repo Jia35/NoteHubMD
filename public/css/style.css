@@ -584,3 +584,64 @@
 .note-sidebar-slide-leave-to>div:last-child {
     transform: translateX(-100%);
 }
+
+/* CodeMirror Autocomplete Hints */
+.CodeMirror-hints {
+    position: absolute;
+    z-index: 100;
+    overflow: hidden;
+    list-style: none;
+    margin: 0;
+    padding: 2px;
+    border-radius: 6px;
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Light mode hints */
+.CodeMirror-hints {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+}
+
+.CodeMirror-hint {
+    margin: 0;
+    padding: 6px 12px;
+    white-space: pre;
+    color: #24292e;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.1s ease;
+}
+
+.CodeMirror-hint:hover {
+    background-color: #f0f4f8;
+}
+
+li.CodeMirror-hint-active {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+/* Dark mode hints */
+.dark .CodeMirror-hints {
+    background: #1f2937;
+    border: 1px solid #374151;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark .CodeMirror-hint {
+    color: #e5e7eb;
+}
+
+.dark .CodeMirror-hint:hover {
+    background-color: #374151;
+}
+
+.dark li.CodeMirror-hint-active {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
