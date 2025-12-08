@@ -347,6 +347,7 @@ const Home = {
         const selectedTag = ref('');
         const searchQuery = ref('');
         const includeContent = ref(false);
+        const notesViewMode = ref('my'); // 'my' or 'all'
 
         // Menu and modal state
         const openMenuId = ref(null);
@@ -403,10 +404,15 @@ const Home = {
             return titleMatch || descMatch;
         };
 
-        // Filter notes by selected tag and search query
+        // Filter notes by selected tag, search query, and ownership view mode
         // Only show STANDALONE notes (notes inside books will show as their parent book)
         const filteredNotes = computed(() => {
             let result = notes.value;
+
+            // Apply ownership filter (my notes vs all notes)
+            if (notesViewMode.value === 'my') {
+                result = result.filter(note => note.isOwner);
+            }
 
             // Apply tag filter
             if (selectedTag.value) {
@@ -423,10 +429,15 @@ const Home = {
             return result;
         });
 
-        // Filter books by selected tag and search query
+        // Filter books by selected tag, search query, and ownership view mode
         // Include books that either: 1) have matching tag, OR 2) contain notes with matching tag
         const filteredBooks = computed(() => {
             let result = books.value;
+
+            // Apply ownership filter (my items vs all items)
+            if (notesViewMode.value === 'my') {
+                result = result.filter(book => book.isOwner);
+            }
 
             // Apply tag filter
             if (selectedTag.value) {
@@ -625,7 +636,7 @@ const Home = {
         return {
             notes, books, createNote, createBook, deleteNote, deleteBook,
             allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
-            searchQuery, includeContent,
+            searchQuery, includeContent, notesViewMode,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem,
             editableDescription, editableTags, newTag, editablePermission,
