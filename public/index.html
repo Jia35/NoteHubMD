@@ -162,9 +162,9 @@
 
             <!-- User & Settings -->
             <div class="p-4 border-t border-gray-800 bg-gray-900">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center overflow-hidden">
-                        <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center mr-2 shrink-0">
+                        <div class="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center mr-2 shrink-0">
                             {{ user?.username?.charAt(0).toUpperCase() || '?' }}
                         </div>
                         <span class="text-sm font-medium truncate">{{ user?.username || 'Guest' }}</span>
@@ -197,7 +197,7 @@
                     </div>
 
                     <div class="flex justify-end mt-4">
-                        <button @click="showSettings = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">Close</button>
+                        <button @click="showSettings = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             </div>
@@ -720,140 +720,285 @@
     </script>
 
     <script type="text/x-template" id="note-template">
-        <div class="flex flex-col h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-            <!-- Toolbar -->
-            <div class="bg-gray-900 text-white p-3 flex items-center justify-center shadow-md z-10 shrink-0">
-                <div class="flex items-center space-x-2">
-                    <router-link to="/" class="hover:text-blue-400 transition font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    </router-link>
-                    <template v-if="book">
-                        <span class="text-gray-600">/</span>
-                        <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
-                            <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+        <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
+            <!-- Collapsed Sidebar Strip (always visible) -->
+            <div class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30">
+                <!-- LOGO at top - clickable to expand -->
+                <button @click="showSidebar = true" 
+                        class="w-9 h-9 bg-blue-600 rounded flex items-center justify-center font-bold text-white hover:bg-blue-500 transition-colors cursor-pointer"
+                        title="展開選單">
+                    N
+                </button>
+                
+                <!-- Spacer -->
+                <div class="flex-1"></div>
+                
+                <!-- Avatar at bottom - clickable to expand -->
+                <button @click="showSidebar = true" 
+                        class="w-9 h-9 bg-amber-800 rounded-full flex items-center justify-center text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                        title="展開選單">
+                    {{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}
+                </button>
+            </div>
+
+            <!-- Expanded Sidebar with Animation -->
+            <Transition name="note-sidebar-slide">
+                <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
+                    <!-- Backdrop with fade -->
+                    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                    <!-- Sidebar Content (positioned next to the collapsed strip) -->
+                    <div class="absolute top-0 h-full w-56 bg-gray-900 text-white flex flex-col border-r border-gray-800 shadow-2xl" @click.stop>
+                        <!-- Header -->
+                        <router-link to="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
+                            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
+                            <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
                         </router-link>
-                    </template>
-                    <span class="text-gray-600">/</span>
-                    <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
-                    <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
-                    <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
-                </div>
-                <div class="flex bg-gray-800 rounded-lg p-1 space-x-1">
-                    <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Edit">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Both">
-                        <i class="fa-solid fa-columns"></i>
-                    </button>
-                    <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="View">
-                        <i class="fa-solid fa-eye"></i>
-                    </button>
-                </div>
-                <!-- Permission Display/Selector -->
-                <div class="flex-1 flex justify-end items-center space-x-3">
-                    <!-- Online Users Badge -->
-                    <div class="relative">
-                        <button @click="toggleOnlineUsersPopup" 
-                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
-                                title="在線人數">
-                            <i class="fa-solid fa-users text-xs"></i>
-                            <span class="font-medium">{{ onlineUsers.length }}</span>
-                        </button>
-                        <!-- Online Users Popup -->
-                        <div v-if="showOnlineUsersPopup" 
-                             class="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
-                            <div class="p-3">
-                                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                                    <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
+
+                        <!-- Create Buttons -->
+                        <div class="p-4 space-y-2 border-b border-gray-800">
+                            <button @click="createNewNote" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
+                            </button>
+                            <button @click="openCreateBookModal" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 建立書本
+                            </button>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
+                            <router-link to="/" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                                <i class="fa-solid fa-house-chimney mr-3"></i> Home
+                            </router-link>
+                            <router-link to="/trash" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                                <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
+                            </router-link>
+                        </div>
+
+                        <!-- User & Settings -->
+                        <div class="p-4 border-t border-gray-800 bg-gray-900">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center overflow-hidden">
+                                    <div class="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center mr-2 shrink-0">
+                                        {{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}
+                                    </div>
+                                    <span class="text-sm font-medium truncate">{{ currentUser?.username || 'Guest' }}</span>
                                 </div>
-                                <ul class="space-y-1 max-h-48 overflow-y-auto">
-                                    <li v-for="(user, index) in onlineUsers" :key="index" 
-                                        class="flex items-center text-sm text-gray-200 py-1">
-                                        <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0">
-                                            {{ user.username?.charAt(0).toUpperCase() || '?' }}
-                                        </span>
-                                        <span class="truncate">{{ user.username || 'Guest' }}</span>
-                                    </li>
-                                    <li v-if="onlineUsers.length === 0" class="text-gray-500 text-sm italic py-1">
-                                        無在線用戶
-                                    </li>
-                                </ul>
+                                <button @click="showSettingsModal = true" class="text-gray-400 hover:text-white transition ml-2">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <!-- Owner: Dropdown selector -->
-                    <template v-if="isOwner">
-                        <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
-                        <select v-model="permission" @change="handlePermissionChange(permission)" 
-                                class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
-                            <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                                {{ opt.label }}
-                            </option>
-                        </select>
-                        <!-- Show effective permission when using inherit -->
-                        <span v-if="permission === 'inherit'" class="text-xs text-gray-500 ml-1">
-                            ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
-                        </span>
-                    </template>
-                    <!-- Non-owner: Show permission as badge -->
-                    <template v-else>
-                        <span class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
-                            <i class="fa-solid fa-lock text-xs"></i>
-                            <span v-if="permission === 'inherit'">繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})</span>
-                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
-                        </span>
-                    </template>
                 </div>
-            </div>
+            </Transition>
             
-            <!-- Content -->
-            <div class="flex-1 flex overflow-hidden relative">
-                <!-- Editor -->
-                <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
-                    <div class="flex-1 overflow-hidden relative">
-                        <textarea ref="editorTextarea"></textarea>
+            <!-- Main Content Area -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+
+                <!-- Settings Modal -->
+                <div v-if="showSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettingsModal = false">
+                    <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
+                        <h2 class="text-xl font-bold mb-4">設定</h2>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">Theme</label>
+                            <div class="flex space-x-2">
+                                <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                    <i class="fa-solid fa-sun"></i>
+                                </button>
+                                <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                    <i class="fa-solid fa-moon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                            <button @click="logout" class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
+                        </div>
+
+                        <div class="flex justify-end mt-4">
+                            <button @click="showSettingsModal = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">Close</button>
+                        </div>
                     </div>
-                    <!-- Editor Footer -->
-                    <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-end items-center text-xs z-10 shrink-0">
-                        <select v-model="selectedTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
-                            <option v-for="theme in themes" :key="theme.value" :value="theme.value">
-                                {{ theme.label }}
-                            </option>
-                        </select>
+                </div>
+
+                <!-- Create Book Modal -->
+                <div v-if="showCreateBookModalLocal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModalLocal = false">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                                <i class="fa-solid fa-book mr-2"></i> 新增書本
+                            </h2>
+                            <button @click="showCreateBookModalLocal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    標題 <span class="text-red-500">*</span>
+                                </label>
+                                <input v-model="newBookTitle" 
+                                    type="text" 
+                                    placeholder="輸入書本標題..." 
+                                    class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    @keyup.enter="createBookFromNote">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    描述
+                                </label>
+                                <textarea v-model="newBookDescription" 
+                                        rows="3" 
+                                        placeholder="輸入描述..."
+                                        class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                            <button @click="showCreateBookModalLocal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                取消
+                            </button>
+                            <button @click="createBookFromNote" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                <i class="fa-solid fa-plus mr-1"></i> 建立
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 text-white p-3 flex items-center shadow-md z-10 shrink-0">
+                    <div class="flex-1 flex items-center space-x-2">
+                        <router-link to="/" class="hover:text-blue-400 transition font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </router-link>
+                        <template v-if="book">
+                            <span class="text-gray-600">/</span>
+                            <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
+                                <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+                            </router-link>
+                        </template>
+                        <span class="text-gray-600">/</span>
+                        <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
+                        <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
+                        <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
+                    </div>
+                    <div class="flex bg-gray-800 rounded-lg p-1 space-x-1">
+                        <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Both">
+                            <i class="fa-solid fa-columns"></i>
+                        </button>
+                        <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="View">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <!-- Permission Display/Selector -->
+                    <div class="flex-1 flex justify-end items-center space-x-3">
+                        <!-- Online Users Badge -->
+                        <div class="relative">
+                            <button @click="toggleOnlineUsersPopup" 
+                                    class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
+                                    title="在線人數">
+                                <i class="fa-solid fa-users text-xs"></i>
+                                <span class="font-medium">{{ onlineUsers.length }}</span>
+                            </button>
+                            <!-- Online Users Popup -->
+                            <div v-if="showOnlineUsersPopup" 
+                                class="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+                                <div class="p-3">
+                                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                        <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
+                                    </div>
+                                    <ul class="space-y-1 max-h-48 overflow-y-auto">
+                                        <li v-for="(user, index) in onlineUsers" :key="index" 
+                                            class="flex items-center text-sm text-gray-200 py-1">
+                                            <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0">
+                                                {{ user.username?.charAt(0).toUpperCase() || '?' }}
+                                            </span>
+                                            <span class="truncate">{{ user.username || 'Guest' }}</span>
+                                        </li>
+                                        <li v-if="onlineUsers.length === 0" class="text-gray-500 text-sm italic py-1">
+                                            無在線用戶
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Owner: Dropdown selector -->
+                        <template v-if="isOwner">
+                            <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
+                            <select v-model="permission" @change="handlePermissionChange(permission)" 
+                                    class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                                <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
+                                    {{ opt.label }}
+                                </option>
+                            </select>
+                            <!-- Show effective permission when using inherit -->
+                            <span v-if="permission === 'inherit'" class="text-xs text-gray-500 ml-1">
+                                ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
+                            </span>
+                        </template>
+                        <!-- Non-owner: Show permission as badge -->
+                        <template v-else>
+                            <span class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
+                                <i class="fa-solid fa-lock text-xs"></i>
+                                <span v-if="permission === 'inherit'">繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})</span>
+                                <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                            </span>
+                        </template>
                     </div>
                 </div>
                 
-                <!-- Preview with TOC -->
-                <div v-show="showPreview" class="h-full flex" :class="{'flex-1': true}">
-                    <!-- Preview Content -->
-                    <div class="h-full overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300 flex-1"
-                         :class="{'flex justify-center': !showEditor}"
-                         ref="previewContainer"
-                         @scroll="handlePreviewScroll"
-                         @click="handleTaskListClick">
-                        <div :class="{'max-w-[900px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
+                <!-- Content -->
+                <div class="flex-1 flex overflow-hidden relative">
+                    <!-- Editor -->
+                    <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
+                        <div class="flex-1 overflow-hidden relative">
+                            <textarea ref="editorTextarea"></textarea>
+                        </div>
+                        <!-- Editor Footer -->
+                        <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-end items-center text-xs z-10 shrink-0">
+                            <select v-model="selectedTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+                                <option v-for="theme in themes" :key="theme.value" :value="theme.value">
+                                    {{ theme.label }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <!-- TOC Sidebar (only in view mode) -->
-                    <div v-if="toc.length > 0 && mode === 'view'" class="w-56 h-full overflow-y-auto border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 shrink-0">
-                        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">目錄</div>
-                        <nav class="space-y-1">
-                            <a v-for="item in toc" :key="item.id" 
-                               @click.prevent="scrollToHeading(item.id)"
-                               class="block text-sm cursor-pointer truncate transition border-l-2"
-                               :class="{
-                                   'pl-1': item.level === 1, 
-                                   'pl-4': item.level === 2, 
-                                   'pl-7': item.level === 3,
-                                   'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-medium': activeTocId === item.id,
-                                   'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent': activeTocId !== item.id
-                               }"
-                               :title="item.text">
-                                {{ item.text }}
-                            </a>
-                        </nav>
+                    <!-- Preview with TOC -->
+                    <div v-show="showPreview" class="h-full flex" :class="{'flex-1': true}">
+                        <!-- Preview Content -->
+                        <div class="h-full overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300 flex-1"
+                            :class="{'flex justify-center': !showEditor}"
+                            ref="previewContainer"
+                            @scroll="handlePreviewScroll"
+                            @click="handleTaskListClick">
+                            <div :class="{'max-w-[900px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
+                        </div>
+                        
+                        <!-- TOC Sidebar (only in view mode) -->
+                        <div v-if="toc.length > 0 && mode === 'view'" class="w-56 h-full overflow-y-auto border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 shrink-0">
+                            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">目錄</div>
+                            <nav class="space-y-1">
+                                <a v-for="item in toc" :key="item.id" 
+                                @click.prevent="scrollToHeading(item.id)"
+                                class="block text-sm cursor-pointer truncate transition border-l-2"
+                                :class="{
+                                    'pl-1': item.level === 1, 
+                                    'pl-4': item.level === 2, 
+                                    'pl-7': item.level === 3,
+                                    'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-medium': activeTocId === item.id,
+                                    'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent': activeTocId !== item.id
+                                }"
+                                :title="item.text">
+                                    {{ item.text }}
+                                </a>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>

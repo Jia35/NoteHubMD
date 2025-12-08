@@ -4,6 +4,10 @@
     font-size: 16px;
 }
 
+.CodeMirror-gutters {
+    padding-right: 12px;
+}
+
 /* Hide the original textarea after CodeMirror initializes */
 .CodeMirror~textarea {
     display: none !important;
@@ -558,4 +562,25 @@
 
 .note-item {
     transition: background-color 0.15s ease;
+}
+
+/* Note Page Sidebar Slide Animation */
+.note-sidebar-slide-enter-active,
+.note-sidebar-slide-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.note-sidebar-slide-enter-active>div:last-child,
+.note-sidebar-slide-leave-active>div:last-child {
+    transition: transform 0.3s ease;
+}
+
+.note-sidebar-slide-enter-from,
+.note-sidebar-slide-leave-to {
+    opacity: 0;
+}
+
+.note-sidebar-slide-enter-from>div:last-child,
+.note-sidebar-slide-leave-to>div:last-child {
+    transform: translateX(-100%);
 }

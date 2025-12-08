@@ -829,6 +829,69 @@ const Note = {
         const bookId = ref(null); // Track if note belongs to a book
         const book = ref(null); // Store book info if note is in a book
 
+        // Sidebar state
+        const showSidebar = ref(false);
+        const showCreateBookModalLocal = ref(false);
+        const newBookTitle = ref('');
+        const newBookDescription = ref('');
+
+        const createNewNote = async () => {
+            try {
+                const note = await api.createNote();
+                router.push('/note/' + note.id);
+                showSidebar.value = false;
+            } catch (e) { alert('Error creating note'); }
+        };
+
+        const openCreateBookModal = () => {
+            newBookTitle.value = '';
+            newBookDescription.value = '';
+            showCreateBookModalLocal.value = true;
+            showSidebar.value = false;
+        };
+
+        const createBookFromNote = async () => {
+            if (!newBookTitle.value.trim()) {
+                alert('請輸入書本標題');
+                return;
+            }
+            try {
+                const book = await api.createBook({
+                    title: newBookTitle.value.trim(),
+                    description: newBookDescription.value.trim()
+                });
+                showCreateBookModalLocal.value = false;
+                router.push('/book/' + book.id);
+            } catch (e) { alert('Error creating book'); }
+        };
+
+        // Settings modal state
+        const showSettingsModal = ref(false);
+        const currentUser = ref(null);
+        const theme = ref(localStorage.getItem('theme') || 'light');
+
+        const setTheme = (newTheme) => {
+            theme.value = newTheme;
+            localStorage.setItem('theme', newTheme);
+            if (newTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        };
+
+        const logout = async () => {
+            try {
+                await api.logout();
+                router.push('/login');
+            } catch (e) { console.error('Logout failed', e); }
+        };
+
+        // Load current user
+        getCurrentUser().then(user => {
+            currentUser.value = user;
+        });
+
         // Online users tracking
         const onlineUsers = ref([]);
         const showOnlineUsersPopup = ref(false);
@@ -1398,7 +1461,19 @@ const Note = {
             onlineUsers,
             showOnlineUsersPopup,
             toggleOnlineUsersPopup,
-            handleTaskListClick
+            handleTaskListClick,
+            showSidebar,
+            showCreateBookModalLocal,
+            newBookTitle,
+            newBookDescription,
+            createNewNote,
+            openCreateBookModal,
+            createBookFromNote,
+            showSettingsModal,
+            currentUser,
+            theme,
+            setTheme,
+            logout
         };
     }
 };
