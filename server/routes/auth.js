@@ -59,7 +59,7 @@ router.get('/me', async (req, res) => {
     }
     try {
         const user = await db.User.findByPk(req.session.userId, {
-            attributes: ['id', 'username', 'avatar']
+            attributes: ['id', 'username', 'name', 'avatar']
         });
         if (!user) {
             req.session.destroy();
@@ -71,4 +71,38 @@ router.get('/me', async (req, res) => {
     }
 });
 
+// Update Profile
+router.put('/profile', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    try {
+        const user = await db.User.findByPk(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const { name, avatar } = req.body;
+        const updateData = {};
+
+        if (name !== undefined) {
+            updateData.name = name;
+        }
+        if (avatar !== undefined) {
+            updateData.avatar = avatar;
+        }
+
+        await user.update(updateData);
+        res.json({
+            id: user.id,
+            username: user.username,
+            name: user.name,
+            avatar: user.avatar
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
+

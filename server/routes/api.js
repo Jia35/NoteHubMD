@@ -49,6 +49,52 @@ router.post('/upload/image', upload.single('image'), (req, res) => {
     res.json({ url: imageUrl, filename: req.file.filename });
 });
 
+// --- Avatar Upload ---
+
+// Configure multer storage for avatars
+const avatarUploadDir = path.join(__dirname, '../../_uploads/avatars');
+const avatarStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (!fs.existsSync(avatarUploadDir)) {
+            fs.mkdirSync(avatarUploadDir, { recursive: true });
+        }
+        cb(null, avatarUploadDir);
+    },
+    filename: (req, file, cb) => {
+        const userId = req.session.userId || 'guest';
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname).toLowerCase();
+        const filename = `${userId}_${timestamp}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const avatarUpload = multer({
+    storage: avatarStorage,
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB for avatars
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.'));
+        }
+    }
+});
+
+// Avatar upload endpoint
+router.post('/upload/avatar', avatarUpload.single('avatar'), (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Login required' });
+    }
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const avatarUrl = `/_uploads/avatars/${req.file.filename}`;
+    res.json({ url: avatarUrl, filename: req.file.filename });
+});
+
+
 // Parse tags from markdown content
 // Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
 function parseTags(content) {

@@ -70,6 +70,31 @@ const api = {
         if (!res.ok) throw new Error('Not authenticated');
         return res.json();
     },
+    async updateProfile(data) {
+        const res = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const result = await res.json();
+            throw new Error(result.error || 'Failed to update profile');
+        }
+        return res.json();
+    },
+    async uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        const res = await fetch('/api/upload/avatar', {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) {
+            const result = await res.json();
+            throw new Error(result.error || 'Failed to upload avatar');
+        }
+        return res.json();
+    },
     async createNote() {
         const res = await fetch('/api/notes', {
             method: 'POST',
@@ -248,9 +273,70 @@ const Login = {
 const Sidebar = {
     template: '#sidebar-template',
     props: ['user'],
-    setup() {
+    setup(props) {
         const showSettings = ref(false);
         const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
+
+        // User Profile Modal
+        const showUserProfileModal = ref(false);
+        const editableName = ref('');
+        const avatarPreview = ref('');
+        const avatarFile = ref(null);
+        const savingProfile = ref(false);
+
+        const openUserProfileModal = () => {
+            if (!props.user) return;
+            editableName.value = props.user.name || '';
+            avatarPreview.value = props.user.avatar || '';
+            avatarFile.value = null;
+            showUserProfileModal.value = true;
+        };
+
+        const handleAvatarChange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            avatarFile.value = file;
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                avatarPreview.value = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const saveProfile = async () => {
+            savingProfile.value = true;
+            try {
+                let avatarUrl = props.user.avatar;
+
+                // Upload avatar if changed
+                if (avatarFile.value) {
+                    const uploadResult = await api.uploadAvatar(avatarFile.value);
+                    avatarUrl = uploadResult.url;
+                }
+
+                // Update profile
+                const result = await api.updateProfile({
+                    name: editableName.value,
+                    avatar: avatarUrl
+                });
+
+                // Update local user data
+                if (props.user) {
+                    props.user.name = result.name;
+                    props.user.avatar = result.avatar;
+                }
+
+                // Clear cache so next getMe fetches updated data
+                currentUserCache = null;
+
+                showUserProfileModal.value = false;
+            } catch (e) {
+                alert('儲存失敗：' + e.message);
+            } finally {
+                savingProfile.value = false;
+            }
+        };
 
         const setTheme = (t) => {
             theme.value = t;
@@ -313,7 +399,10 @@ const Sidebar = {
             showSettings, theme, setTheme, logout,
             createNote,
             showCreateBookModal, newBookTitle, newBookDescription,
-            openCreateBookModal, createBook
+            openCreateBookModal, createBook,
+            // Profile modal
+            showUserProfileModal, editableName, avatarPreview,
+            openUserProfileModal, handleAvatarChange, saveProfile, savingProfile
         };
     }
 };
@@ -910,6 +999,61 @@ const Note = {
         const showSettingsModal = ref(false);
         const currentUser = ref(null);
         const theme = ref(localStorage.getItem('theme') || 'light');
+
+        // User Profile Modal for Note Page
+        const showUserProfileModal = ref(false);
+        const editableName = ref('');
+        const avatarPreview = ref('');
+        const avatarFile = ref(null);
+        const savingProfile = ref(false);
+
+        const openUserProfileModal = () => {
+            if (!currentUser.value) return;
+            editableName.value = currentUser.value.name || '';
+            avatarPreview.value = currentUser.value.avatar || '';
+            avatarFile.value = null;
+            showUserProfileModal.value = true;
+        };
+
+        const handleAvatarChange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            avatarFile.value = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                avatarPreview.value = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const saveProfile = async () => {
+            savingProfile.value = true;
+            try {
+                let avatarUrl = currentUser.value.avatar;
+
+                if (avatarFile.value) {
+                    const uploadResult = await api.uploadAvatar(avatarFile.value);
+                    avatarUrl = uploadResult.url;
+                }
+
+                const result = await api.updateProfile({
+                    name: editableName.value,
+                    avatar: avatarUrl
+                });
+
+                if (currentUser.value) {
+                    currentUser.value.name = result.name;
+                    currentUser.value.avatar = result.avatar;
+                }
+
+                currentUserCache = null;
+                showUserProfileModal.value = false;
+            } catch (e) {
+                alert('儲存失敗：' + e.message);
+            } finally {
+                savingProfile.value = false;
+            }
+        };
 
         const setTheme = (newTheme) => {
             theme.value = newTheme;
@@ -1744,7 +1888,15 @@ const Note = {
             selectedChars,
             noteOwner,
             lastEditor,
-            relativeUpdatedTime
+            relativeUpdatedTime,
+            // Profile modal
+            showUserProfileModal,
+            editableName,
+            avatarPreview,
+            openUserProfileModal,
+            handleAvatarChange,
+            saveProfile,
+            savingProfile
         };
     }
 };
