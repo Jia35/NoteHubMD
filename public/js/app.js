@@ -840,6 +840,12 @@ const Note = {
         const bookId = ref(null); // Track if note belongs to a book
         const book = ref(null); // Store book info if note is in a book
 
+        // Editor statistics
+        const charCount = computed(() => content.value.length);
+        const lineCount = computed(() => content.value.split('\n').length);
+        const selectedLines = ref(0);
+        const selectedChars = ref(0);
+
         // Sidebar state
         const showSidebar = ref(false);
         const showCreateBookModalLocal = ref(false);
@@ -1554,6 +1560,22 @@ const Note = {
 
                 cmInstance.on('scroll', handleEditorScroll);
 
+                // Track selection for editor statistics
+                cmInstance.on('cursorActivity', (cm) => {
+                    const selections = cm.listSelections();
+                    const selectedText = cm.getSelection();
+                    selectedChars.value = selectedText.length;
+
+                    if (selections.length === 1 && cm.somethingSelected()) {
+                        const sel = selections[0];
+                        const fromLine = Math.min(sel.anchor.line, sel.head.line);
+                        const toLine = Math.max(sel.anchor.line, sel.head.line);
+                        selectedLines.value = toLine - fromLine + 1;
+                    } else {
+                        selectedLines.value = 0;
+                    }
+                });
+
                 // Image upload - drag and drop
                 const wrapper = cmInstance.getWrapperElement();
                 wrapper.addEventListener('dragover', (e) => {
@@ -1688,7 +1710,11 @@ const Note = {
             currentUser,
             theme,
             setTheme,
-            logout
+            logout,
+            charCount,
+            lineCount,
+            selectedLines,
+            selectedChars
         };
     }
 };
