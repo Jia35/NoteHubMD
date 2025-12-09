@@ -1504,6 +1504,11 @@ const Note = {
                 canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
                 bookId.value = note.bookId || null;
                 book.value = note.Book || null;
+
+                // If user can't edit and no specific mode was requested, default to 'view' mode
+                if (!canEdit.value && !('edit' in route.query) && !('both' in route.query) && !('view' in route.query)) {
+                    mode.value = 'view';
+                }
             } catch (e) {
                 console.error('Failed to load note', e);
                 // Handle access errors
@@ -1568,7 +1573,7 @@ const Note = {
                     const cursor = cm.getCursor();
                     const line = cm.getLine(cursor.line);
                     const lineStart = line.substring(0, cursor.ch);
-                    
+
                     // Trigger when typing these patterns (no trailing whitespace required)
                     const triggerPatterns = [
                         /^#{1,6}$/,              // Headings (e.g., "###")
