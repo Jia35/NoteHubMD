@@ -283,12 +283,14 @@ const Sidebar = {
         const avatarPreview = ref('');
         const avatarFile = ref(null);
         const savingProfile = ref(false);
+        const avatarRemoved = ref(false);
 
         const openUserProfileModal = () => {
             if (!props.user) return;
             editableName.value = props.user.name || '';
             avatarPreview.value = props.user.avatar || '';
             avatarFile.value = null;
+            avatarRemoved.value = false;
             showUserProfileModal.value = true;
         };
 
@@ -296,7 +298,7 @@ const Sidebar = {
             const file = event.target.files[0];
             if (!file) return;
             avatarFile.value = file;
-            // Preview
+            avatarRemoved.value = false;
             const reader = new FileReader();
             reader.onload = (e) => {
                 avatarPreview.value = e.target.result;
@@ -304,32 +306,36 @@ const Sidebar = {
             reader.readAsDataURL(file);
         };
 
+        const removeAvatar = () => {
+            avatarPreview.value = '';
+            avatarFile.value = null;
+            avatarRemoved.value = true;
+        };
+
         const saveProfile = async () => {
             savingProfile.value = true;
             try {
                 let avatarUrl = props.user.avatar;
 
-                // Upload avatar if changed
-                if (avatarFile.value) {
+                if (avatarRemoved.value) {
+                    avatarUrl = null;
+                } else if (avatarFile.value) {
                     const uploadResult = await api.uploadAvatar(avatarFile.value);
                     avatarUrl = uploadResult.url;
                 }
 
-                // Update profile
                 const result = await api.updateProfile({
                     name: editableName.value,
                     avatar: avatarUrl
                 });
 
-                // Update local user data
                 if (props.user) {
                     props.user.name = result.name;
                     props.user.avatar = result.avatar;
                 }
 
-                // Clear cache so next getMe fetches updated data
                 currentUserCache = null;
-
+                avatarRemoved.value = false;
                 showUserProfileModal.value = false;
             } catch (e) {
                 alert('儲存失敗：' + e.message);
@@ -402,7 +408,7 @@ const Sidebar = {
             openCreateBookModal, createBook,
             // Profile modal
             showUserProfileModal, editableName, avatarPreview,
-            openUserProfileModal, handleAvatarChange, saveProfile, savingProfile
+            openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile
         };
     }
 };
@@ -1006,12 +1012,14 @@ const Note = {
         const avatarPreview = ref('');
         const avatarFile = ref(null);
         const savingProfile = ref(false);
+        const avatarRemoved = ref(false);
 
         const openUserProfileModal = () => {
             if (!currentUser.value) return;
             editableName.value = currentUser.value.name || '';
             avatarPreview.value = currentUser.value.avatar || '';
             avatarFile.value = null;
+            avatarRemoved.value = false;
             showUserProfileModal.value = true;
         };
 
@@ -1019,6 +1027,7 @@ const Note = {
             const file = event.target.files[0];
             if (!file) return;
             avatarFile.value = file;
+            avatarRemoved.value = false;
             const reader = new FileReader();
             reader.onload = (e) => {
                 avatarPreview.value = e.target.result;
@@ -1026,12 +1035,20 @@ const Note = {
             reader.readAsDataURL(file);
         };
 
+        const removeAvatar = () => {
+            avatarPreview.value = '';
+            avatarFile.value = null;
+            avatarRemoved.value = true;
+        };
+
         const saveProfile = async () => {
             savingProfile.value = true;
             try {
                 let avatarUrl = currentUser.value.avatar;
 
-                if (avatarFile.value) {
+                if (avatarRemoved.value) {
+                    avatarUrl = null;
+                } else if (avatarFile.value) {
                     const uploadResult = await api.uploadAvatar(avatarFile.value);
                     avatarUrl = uploadResult.url;
                 }
@@ -1047,6 +1064,7 @@ const Note = {
                 }
 
                 currentUserCache = null;
+                avatarRemoved.value = false;
                 showUserProfileModal.value = false;
             } catch (e) {
                 alert('儲存失敗：' + e.message);
@@ -1895,6 +1913,7 @@ const Note = {
             avatarPreview,
             openUserProfileModal,
             handleAvatarChange,
+            removeAvatar,
             saveProfile,
             savingProfile
         };

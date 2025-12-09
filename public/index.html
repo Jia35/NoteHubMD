@@ -193,10 +193,15 @@
                             <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
                             <span v-else class="text-3xl text-white">{{ user?.username?.charAt(0).toUpperCase() || '?' }}</span>
                         </div>
-                        <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
-                            <i class="fa-solid fa-camera mr-1"></i>變更頭像
-                            <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
-                        </label>
+                        <div class="flex gap-3">
+                            <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
+                                <i class="fa-solid fa-camera mr-1"></i>變更頭像
+                                <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                            </label>
+                            <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
+                                <i class="fa-solid fa-trash mr-1"></i>移除頭像
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Username (read-only) -->
@@ -809,10 +814,11 @@
                 
                 <!-- Avatar at bottom - clickable to expand -->
                 <button @click="showSidebar = true" 
-                        class="w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
+                        class="w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer overflow-hidden"
                         :class="currentUser ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-500 hover:bg-gray-400'"
                         title="展開選單">
-                    {{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}
+                    <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
+                    <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
                 </button>
             </div>
 
@@ -885,10 +891,15 @@
                                 <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
                                 <span v-else class="text-3xl text-white">{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
                             </div>
-                            <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
-                                <i class="fa-solid fa-camera mr-1"></i>變更頭像
-                                <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
-                            </label>
+                            <div class="flex gap-3">
+                                <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
+                                    <i class="fa-solid fa-camera mr-1"></i>變更頭像
+                                    <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                                </label>
+                                <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i>移除頭像
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Username (read-only) -->
@@ -1112,19 +1123,21 @@
                                 <div class="flex items-center space-x-4">
                                     <!-- Owner -->
                                     <div v-if="noteOwner" class="flex items-center">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0"
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0 overflow-hidden"
                                               :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
-                                            {{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}
+                                            <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
+                                            <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
                                         </span>
-                                        <span>擁有這篇筆記</span>
+                                        <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
                                     </div>
                                     <!-- Last Editor -->
                                     <div v-if="lastEditor" class="flex items-center">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0"
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0 overflow-hidden"
                                               :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
-                                            {{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}
+                                            <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
+                                            <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
                                         </span>
-                                        <span>變更於 {{ relativeUpdatedTime }}</span>
+                                        <span>{{ lastEditor.name || lastEditor.username || '?' }} 變更於 {{ relativeUpdatedTime }}</span>
                                     </div>
                                 </div>
                             </div>
