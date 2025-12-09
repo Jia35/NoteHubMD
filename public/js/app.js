@@ -36,14 +36,25 @@ function extractTags(content) {
     return tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
 }
 
-// Compress image before upload (max 512px for avatar, max 1.5MB)
+// Compress image before upload (max 512px for avatar)
+// Preserves GIF (for animation) and PNG (for transparency)
 async function compressImage(file, maxWidth = 512, maxHeight = 512, quality = 0.8) {
+    const isGif = file.type === 'image/gif';
+    const isPng = file.type === 'image/png';
+
+    // For GIF: check size only, don't compress (preserves animation)
+    if (isGif) {
+        if (file.size <= 2 * 1024 * 1024) {
+            return file; // Under 2MB, use as-is
+        }
+        throw new Error('GIF 檔案過大（最大 2MB）。請選擇較小的 GIF 或使用其他圖片格式。');
+    }
+
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                // Calculate new dimensions
                 let width = img.width;
                 let height = img.height;
 
@@ -53,26 +64,29 @@ async function compressImage(file, maxWidth = 512, maxHeight = 512, quality = 0.
                     height = Math.round(height * ratio);
                 }
 
-                // Create canvas and draw resized image
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Convert to blob
+                // Use PNG for transparency, JPEG for others
+                const outputType = isPng ? 'image/png' : 'image/jpeg';
+                const outputQuality = isPng ? undefined : quality;
+
                 canvas.toBlob((blob) => {
                     if (blob) {
-                        // Create a new File object with the same name
-                        const compressedFile = new File([blob], file.name, {
-                            type: 'image/jpeg',
+                        const ext = isPng ? '.png' : '.jpg';
+                        const baseName = file.name.replace(/\.[^/.]+$/, '') + ext;
+                        const compressedFile = new File([blob], baseName, {
+                            type: outputType,
                             lastModified: Date.now()
                         });
                         resolve(compressedFile);
                     } else {
                         reject(new Error('Failed to compress image'));
                     }
-                }, 'image/jpeg', quality);
+                }, outputType, outputQuality);
             };
             img.onerror = () => reject(new Error('Failed to load image'));
             img.src = e.target.result;
