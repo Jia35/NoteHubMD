@@ -36,6 +36,52 @@ function extractTags(content) {
     return tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
 }
 
+// Compress image before upload (max 512px for avatar, max 1.5MB)
+async function compressImage(file, maxWidth = 512, maxHeight = 512, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Calculate new dimensions
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                // Create canvas and draw resized image
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to blob
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        // Create a new File object with the same name
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    } else {
+                        reject(new Error('Failed to compress image'));
+                    }
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
 // API Helper
 const api = {
     async login(username, password) {
@@ -294,16 +340,25 @@ const Sidebar = {
             showUserProfileModal.value = true;
         };
 
-        const handleAvatarChange = (event) => {
+        const handleAvatarChange = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            avatarFile.value = file;
-            avatarRemoved.value = false;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                avatarPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
+
+            try {
+                // Compress image before storing
+                const compressedFile = await compressImage(file);
+                avatarFile.value = compressedFile;
+                avatarRemoved.value = false;
+
+                // Preview compressed image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreview.value = e.target.result;
+                };
+                reader.readAsDataURL(compressedFile);
+            } catch (e) {
+                alert('圖片處理失敗：' + e.message);
+            }
         };
 
         const removeAvatar = () => {
@@ -1023,16 +1078,25 @@ const Note = {
             showUserProfileModal.value = true;
         };
 
-        const handleAvatarChange = (event) => {
+        const handleAvatarChange = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            avatarFile.value = file;
-            avatarRemoved.value = false;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                avatarPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
+
+            try {
+                // Compress image before storing
+                const compressedFile = await compressImage(file);
+                avatarFile.value = compressedFile;
+                avatarRemoved.value = false;
+
+                // Preview compressed image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreview.value = e.target.result;
+                };
+                reader.readAsDataURL(compressedFile);
+            } catch (e) {
+                alert('圖片處理失敗：' + e.message);
+            }
         };
 
         const removeAvatar = () => {
