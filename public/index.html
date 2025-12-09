@@ -188,11 +188,18 @@
                     
                     <!-- Avatar Section -->
                     <div class="flex flex-col items-center mb-6">
-                        <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3"
-                             :class="user ? 'bg-blue-600' : 'bg-gray-500'">
-                            <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
-                            <span v-else class="text-3xl text-white">{{ user?.username?.charAt(0).toUpperCase() || '?' }}</span>
-                        </div>
+                        <label class="cursor-pointer group">
+                            <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3 relative"
+                                 :class="user ? 'bg-blue-600' : 'bg-gray-500'">
+                                <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
+                                <span v-else class="text-3xl text-white">{{ user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                <!-- Hover overlay -->
+                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                    <i class="fa-solid fa-camera text-white text-xl"></i>
+                                </div>
+                            </div>
+                            <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                        </label>
                         <div class="flex gap-3">
                             <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
                                 <i class="fa-solid fa-camera mr-1"></i>變更頭像
@@ -886,11 +893,18 @@
                         
                         <!-- Avatar Section -->
                         <div class="flex flex-col items-center mb-6">
-                            <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3"
-                                 :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
-                                <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
-                                <span v-else class="text-3xl text-white">{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
-                            </div>
+                            <label class="cursor-pointer group">
+                                <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3 relative"
+                                     :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
+                                    <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
+                                    <span v-else class="text-3xl text-white">{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                    <!-- Hover overlay -->
+                                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                        <i class="fa-solid fa-camera text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                            </label>
                             <div class="flex gap-3">
                                 <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
                                     <i class="fa-solid fa-camera mr-1"></i>變更頭像
