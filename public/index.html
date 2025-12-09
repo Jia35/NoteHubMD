@@ -1005,13 +1005,37 @@
                     
                     <!-- Preview with TOC -->
                     <div v-show="showPreview" class="h-full flex" :class="{'flex-1': true}">
-                        <!-- Preview Content -->
-                        <div class="h-full overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300 flex-1"
-                            :class="{'flex justify-center': !showEditor}"
-                            ref="previewContainer"
-                            @scroll="handlePreviewScroll"
-                            @click="handleTaskListClick">
-                            <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
+                        <!-- Preview Content with Info Bar -->
+                        <div class="h-full flex flex-col flex-1">
+                            <!-- Preview Info Bar -->
+                            <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                                <div class="flex items-center space-x-4">
+                                    <!-- Owner -->
+                                    <div v-if="noteOwner" class="flex items-center">
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0"
+                                              :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                            {{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}
+                                        </span>
+                                        <span>擁有這篇筆記</span>
+                                    </div>
+                                    <!-- Last Editor -->
+                                    <div v-if="lastEditor" class="flex items-center">
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0"
+                                              :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                            {{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}
+                                        </span>
+                                        <span>變更於 {{ relativeUpdatedTime }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Preview Content -->
+                            <div class="flex-1 overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300"
+                                :class="{'flex justify-center': !showEditor}"
+                                ref="previewContainer"
+                                @scroll="handlePreviewScroll"
+                                @click="handleTaskListClick">
+                                <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
+                            </div>
                         </div>
                         
                         <!-- TOC Sidebar (only in view mode) -->

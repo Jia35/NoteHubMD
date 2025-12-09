@@ -846,6 +846,30 @@ const Note = {
         const selectedLines = ref(0);
         const selectedChars = ref(0);
 
+        // Note metadata for preview info bar
+        const noteOwner = ref(null);
+        const lastEditor = ref(null);
+        const updatedAt = ref(null);
+
+        // Format relative time (e.g., "5 分鐘前", "3 小時前", "2 天前")
+        const formatRelativeTime = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSeconds = Math.floor(diffMs / 1000);
+            const diffMinutes = Math.floor(diffSeconds / 60);
+            const diffHours = Math.floor(diffMinutes / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffDays > 0) return `${diffDays} 天前`;
+            if (diffHours > 0) return `${diffHours} 小時前`;
+            if (diffMinutes > 0) return `${diffMinutes} 分鐘前`;
+            return '剛剛';
+        };
+
+        const relativeUpdatedTime = computed(() => formatRelativeTime(updatedAt.value));
+
         // Sidebar state
         const showSidebar = ref(false);
         const showCreateBookModalLocal = ref(false);
@@ -1510,6 +1534,9 @@ const Note = {
                 canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
                 bookId.value = note.bookId || null;
                 book.value = note.Book || null;
+                noteOwner.value = note.owner || null;
+                lastEditor.value = note.lastEditor || null;
+                updatedAt.value = note.updatedAt || null;
 
                 // If user can't edit and no specific mode was requested, default to 'view' mode
                 if (!canEdit.value && !('edit' in route.query) && !('both' in route.query) && !('view' in route.query)) {
@@ -1714,7 +1741,10 @@ const Note = {
             charCount,
             lineCount,
             selectedLines,
-            selectedChars
+            selectedChars,
+            noteOwner,
+            lastEditor,
+            relativeUpdatedTime
         };
     }
 };
