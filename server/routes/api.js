@@ -141,7 +141,13 @@ router.get('/notes/:id', async (req, res) => {
     try {
         const note = await db.Note.findByPk(req.params.id, {
             include: [
-                { model: db.Book, attributes: ['id', 'title'] },
+                {
+                    model: db.Book,
+                    attributes: ['id', 'title'],
+                    include: [
+                        { model: db.Note, attributes: ['id', 'title', 'order'], order: [['order', 'ASC']] }
+                    ]
+                },
                 { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
                 { model: db.User, as: 'lastEditor', attributes: ['id', 'username', 'name', 'avatar'] }
             ]

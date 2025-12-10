@@ -1026,9 +1026,34 @@
                         </router-link>
                         <template v-if="book">
                             <span class="text-gray-600">/</span>
-                            <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
-                                <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
-                            </router-link>
+                            <div class="relative group">
+                                <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
+                                    <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+                                </router-link>
+                                <!-- Book Notes Tooltip -->
+                                <div v-if="book.Notes && book.Notes.length > 0" 
+                                     class="absolute left-0 top-full mt-2 hidden group-hover:block z-50 min-w-[280px] max-w-[400px] bg-gray-800 rounded-lg shadow-xl border border-gray-700">
+                                    <!-- Arrow -->
+                                    <div class="absolute -top-2 left-4 w-4 h-4 bg-gray-800 border-t border-l border-gray-700 transform rotate-45"></div>
+                                    <div class="relative z-10 p-3">
+                                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                                            <i class="fa-solid fa-list mr-2"></i>
+                                            書本筆記 ({{ book.Notes.length }})
+                                        </div>
+                                        <ul class="space-y-1 max-h-64 overflow-y-auto">
+                                            <li v-for="bookNote in book.Notes" :key="bookNote.id">
+                                                <router-link 
+                                                    :to="'/note/' + bookNote.id"
+                                                    class="flex items-center text-sm py-1.5 px-2 rounded transition"
+                                                    :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
+                                                    <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
+                                                    <span class="truncate">{{ bookNote.title || 'Untitled' }}</span>
+                                                </router-link>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </template>
                         <span class="text-gray-600">/</span>
                         <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>

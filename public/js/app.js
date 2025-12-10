@@ -1951,6 +1951,55 @@ const Note = {
             });
         }, { deep: true });
 
+        // Watch for noteId changes (when navigating between notes using router-link)
+        watch(noteId, async (newNoteId, oldNoteId) => {
+            if (newNoteId && newNoteId !== oldNoteId) {
+                // Leave old note room
+                if (oldNoteId) {
+                    socket.emit('leave-note', oldNoteId);
+                }
+
+                // Reload note data
+                try {
+                    const note = await api.getNote(newNoteId);
+                    content.value = note.content || '';
+                    title.value = note.title || 'Untitled';
+                    permission.value = note.permission || 'private';
+                    effectivePermission.value = note.effectivePermission || note.permission || 'private';
+                    isOwner.value = note.isOwner || false;
+                    canEdit.value = note.canEdit !== undefined ? note.canEdit : true;
+                    bookId.value = note.bookId || null;
+                    book.value = note.Book || null;
+                    noteOwner.value = note.owner || null;
+                    lastEditor.value = note.lastEditor || null;
+                    updatedAt.value = note.updatedAt || null;
+
+                    // Update editor content
+                    if (cmInstance) {
+                        cmInstance.setValue(note.content || '');
+                        cmInstance.setOption('readOnly', !canEdit.value);
+                    }
+
+                    // Update preview
+                    updatePreview();
+
+                    // Join new note room
+                    const currentUserData = await getCurrentUser();
+                    const username = currentUserData?.username || 'Guest';
+                    socket.emit('join-note', { noteId: newNoteId, username });
+                } catch (e) {
+                    console.error('Failed to load note', e);
+                    if (e.message.includes('Login required')) {
+                        alert('需要登入才能存取此筆記');
+                        router.push('/login');
+                    } else if (e.message.includes('Access denied')) {
+                        alert('您沒有權限存取此筆記');
+                        router.push('/');
+                    }
+                }
+            }
+        });
+
         return {
             noteId,
             editorTextarea,
