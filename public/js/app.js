@@ -1453,6 +1453,17 @@ const Note = {
             }
         }, 1000);
 
+        const handleGlobalSave = (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                if (cmInstance) {
+                    const val = cmInstance.getValue();
+                    const newTitle = extractTitle(val);
+                    saveContent(val, newTitle);
+                }
+            }
+        };
+
         const handlePermissionChange = async (newPermission) => {
             try {
                 await api.updatePermission(noteId.value, newPermission);
@@ -1753,6 +1764,9 @@ const Note = {
         };
 
         onMounted(async () => {
+            // Global Ctrl+S handler
+            window.addEventListener('keydown', handleGlobalSave);
+
             // Initialize Mermaid
             if (window.mermaid) {
                 const isDark = document.documentElement.classList.contains('dark');
@@ -1914,6 +1928,7 @@ const Note = {
 
         // Cleanup on unmount
         onUnmounted(() => {
+            window.removeEventListener('keydown', handleGlobalSave);
             socket.emit('leave-note', noteId.value);
             socket.off('users-in-note');
             socket.off('note-updated');
