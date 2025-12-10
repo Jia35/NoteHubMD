@@ -1137,20 +1137,54 @@
                                 <div class="flex items-center space-x-4">
                                     <!-- Owner -->
                                     <div v-if="noteOwner" class="flex items-center">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0 overflow-hidden"
-                                              :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
-                                            <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
-                                            <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                        </span>
+                                        <div class="relative group mr-1.5">
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
+                                                <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                            </span>
+                                            <!-- Tooltip -->
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600">
+                                                <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                                                <div class="flex items-center relative z-10">
+                                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                                         :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                         <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover">
+                                                         <span v-else class="text-xl text-white font-bold">{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ noteOwner.name || noteOwner.username || 'Guest' }}</div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400">@{{ noteOwner.username || 'guest' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
                                     </div>
                                     <!-- Last Editor -->
                                     <div v-if="lastEditor" class="flex items-center">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center mr-1.5 text-[10px] font-medium text-white shrink-0 overflow-hidden"
-                                              :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
-                                            <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
-                                            <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                        </span>
+                                        <div class="relative group mr-1.5">
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
+                                                <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                            </span>
+                                            <!-- Tooltip -->
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600">
+                                                <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                                                <div class="flex items-center relative z-10">
+                                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                                         :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                         <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover">
+                                                         <span v-else class="text-xl text-white font-bold">{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ lastEditor.name || lastEditor.username || 'Guest' }}</div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400">@{{ lastEditor.username || 'guest' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <span>{{ lastEditor.name || lastEditor.username || '?' }} 變更於 {{ relativeUpdatedTime }}</span>
                                     </div>
                                 </div>
