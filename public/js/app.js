@@ -302,6 +302,7 @@ const Login = {
     template: '#login-template',
     setup() {
         const router = VueRouter.useRouter();
+        const route = useRoute();
         const isRegister = ref(false);
         const username = ref('');
         const password = ref('');
@@ -320,7 +321,9 @@ const Login = {
                 } else {
                     await api.login(username.value, password.value);
                 }
-                window.location.href = '/';
+                // Redirect to original page if available, otherwise home
+                const redirectTo = route.query.redirect || '/';
+                window.location.href = redirectTo;
             } catch (e) {
                 error.value = e.message;
             }
@@ -488,12 +491,13 @@ const Layout = {
     setup() {
         const user = ref(null);
         const router = VueRouter.useRouter();
+        const route = useRoute();
 
         onMounted(async () => {
             try {
                 user.value = await api.getMe();
             } catch (e) {
-                router.push('/login');
+                router.push({ path: '/login', query: { redirect: route.fullPath } });
             }
         });
 
@@ -1801,7 +1805,9 @@ const Note = {
                 // Handle access errors
                 if (e.message.includes('Login required')) {
                     alert('需要登入才能存取此筆記');
-                    router.push('/login');
+                    // Use window.location to get the actual current URL
+                    const currentPath = window.location.pathname + window.location.search;
+                    router.push({ path: '/login', query: { redirect: currentPath } });
                     return;
                 } else if (e.message.includes('Access denied')) {
                     alert('您沒有權限存取此筆記');
@@ -1991,7 +1997,7 @@ const Note = {
                     console.error('Failed to load note', e);
                     if (e.message.includes('Login required')) {
                         alert('需要登入才能存取此筆記');
-                        router.push('/login');
+                        router.push({ path: '/login', query: { redirect: '/note/' + newNoteId } });
                     } else if (e.message.includes('Access denied')) {
                         alert('您沒有權限存取此筆記');
                         router.push('/');
@@ -2156,7 +2162,8 @@ router.beforeEach(async (to, from, next) => {
         await api.getMe();
         next();
     } catch (e) {
-        next('/login');
+        // Save the original path and redirect to login
+        next({ path: '/login', query: { redirect: to.fullPath } });
     }
 });
 

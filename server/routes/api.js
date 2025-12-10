@@ -163,6 +163,11 @@ router.get('/notes/:id', async (req, res) => {
         // Permission check
         if (effectivePermission === 'private') {
             if (!isOwner) {
+                // If not logged in, prompt to login (they might be the owner)
+                if (!userId) {
+                    return res.status(401).json({ error: 'Login required' });
+                }
+                // Logged in but not owner - access denied
                 return res.status(403).json({ error: 'Access denied' });
             }
         } else if (effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') {
