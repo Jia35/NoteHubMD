@@ -533,9 +533,15 @@ const Home = {
 
         const loadData = async () => {
             try {
-                notes.value = await api.getNotes();
-                books.value = await api.getBooks();
-                allNotesForTags.value = await api.getAllNotesForTags();
+                // Load all data in parallel for better performance
+                const [notesData, booksData, allNotesData] = await Promise.all([
+                    api.getNotes(),
+                    api.getBooks(),
+                    api.getAllNotesForTags()
+                ]);
+                notes.value = notesData;
+                books.value = booksData;
+                allNotesForTags.value = allNotesData;
             } catch (e) {
                 // Error handling handled by global auth check mostly
             }
