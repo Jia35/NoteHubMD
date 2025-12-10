@@ -807,26 +807,24 @@
 
     <script type="text/x-template" id="note-template">
         <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-            <!-- Collapsed Sidebar Strip (always visible) -->
-            <div class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30">
-                <!-- LOGO at top - clickable to expand -->
-                <button @click="showSidebar = true" 
-                        class="w-9 h-9 bg-blue-600 rounded flex items-center justify-center font-bold text-white hover:bg-blue-500 transition-colors cursor-pointer"
-                        title="展開選單">
+            <!-- Collapsed Sidebar Strip (always visible) - click anywhere to expand -->
+            <div @click="showSidebar = true" 
+                 class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-800 transition-colors"
+                 title="展開選單">
+                <!-- LOGO at top -->
+                <div class="w-9 h-9 bg-blue-600 rounded flex items-center justify-center font-bold text-white">
                     N
-                </button>
+                </div>
                 
                 <!-- Spacer -->
                 <div class="flex-1"></div>
                 
-                <!-- Avatar at bottom - clickable to expand -->
-                <button @click="showSidebar = true" 
-                        class="w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer overflow-hidden"
-                        :class="currentUser ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-500 hover:bg-gray-400'"
-                        title="展開選單">
+                <!-- Avatar at bottom -->
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white overflow-hidden"
+                     :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
                     <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
                     <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
-                </button>
+                </div>
             </div>
 
             <!-- Expanded Sidebar with Animation -->
