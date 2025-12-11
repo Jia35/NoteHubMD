@@ -828,7 +828,7 @@
                  class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-800 transition-colors"
                  title="展開選單">
                 <!-- LOGO at top -->
-                <div class="w-9 h-9 bg-blue-600 rounded flex items-center justify-center font-bold text-white">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white">
                     N
                 </div>
                 
@@ -836,7 +836,7 @@
                 <div class="flex-1"></div>
                 
                 <!-- Avatar at bottom -->
-                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white overflow-hidden"
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white overflow-hidden"
                      :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
                     <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
                     <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
@@ -1031,7 +1031,7 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-900 text-white p-3 flex items-center shadow-md z-10 shrink-0">
+                <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-2">
                         <router-link to="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1171,8 +1171,11 @@
                     
                     <!-- Preview with TOC -->
                     <div v-show="showPreview" class="h-full flex" :class="{'flex-1': true}">
-                        <!-- Preview Content with Info Bar -->
-                        <div class="h-full flex flex-col flex-1">
+                        <!-- Preview Content -->
+                        <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg"
+                            ref="previewContainer"
+                            @scroll="handlePreviewScroll"
+                            @click="handlePreviewClick">
                             <!-- Preview Info Bar -->
                             <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center text-xs text-gray-500 dark:text-gray-400 shrink-0">
                                 <div class="flex items-center space-x-4">
@@ -1228,24 +1231,16 @@
                                         </div>
                                         <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
                                     </div>
-                                    <!-- Updated Time -->
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-clock mr-1 text-gray-400"></i>
-                                        <span>更新於 {{ relativeUpdatedTime }}</span>
-                                    </div>
                                     <!-- Last Content Edited Time -->
                                     <div v-if="relativeLastContentEditedTime" class="flex items-center">
                                         <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
-                                        <span>內文編輯於 {{ relativeLastContentEditedTime }}</span>
+                                        <span>最後編輯於 {{ relativeLastContentEditedTime }}</span>
                                     </div>
                                 </div>
                             </div>
                             <!-- Preview Content -->
-                            <div class="flex-1 overflow-auto bg-white dark:bg-dark-bg markdown-body dark:text-gray-300"
-                                :class="{'flex justify-center': !showEditor}"
-                                ref="previewContainer"
-                                @scroll="handlePreviewScroll"
-                                @click="handlePreviewClick">
+                            <div class="markdown-body dark:text-gray-300"
+                                :class="{'flex justify-center': !showEditor}">
                                 <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
                             </div>
                         </div>
