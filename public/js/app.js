@@ -1011,7 +1011,6 @@ const Book = {
         const router = VueRouter.useRouter();
         const book = ref({});
         const newTag = ref('');
-        const showEditModal = ref(false);
         const editableDescription = ref('');
         const editableTags = ref([]);
         const editablePermission = ref('private');
@@ -1023,6 +1022,86 @@ const Book = {
         const isOwner = ref(false);
         const canEdit = ref(false);
         const canAddNote = ref(false);
+
+        // Info modal state
+        const showInfoModal = ref(false);
+
+        // User permissions state for info modal
+        const infoUserPermissions = ref([]);
+        const infoUserSearchQuery = ref('');
+        const infoUserSearchResults = ref([]);
+        const infoNewUserPermission = ref('edit');
+        const infoLoadingUserPermissions = ref(false);
+
+        const loadInfoUserPermissions = async () => {
+            if (!isOwner.value) return;
+            infoLoadingUserPermissions.value = true;
+            try {
+                infoUserPermissions.value = await api.getBookUserPermissions(book.value.id);
+            } catch (e) {
+                console.error('Failed to load user permissions', e);
+            } finally {
+                infoLoadingUserPermissions.value = false;
+            }
+        };
+
+        const infoSearchUsers = debounce(async () => {
+            if (infoUserSearchQuery.value.length < 2) {
+                infoUserSearchResults.value = [];
+                return;
+            }
+            try {
+                const results = await api.searchUsers(infoUserSearchQuery.value);
+                // Filter out owner and users already in permissions list
+                infoUserSearchResults.value = results.filter(u =>
+                    u.id !== book.value.owner?.id &&
+                    !infoUserPermissions.value.find(p => p.userId === u.id)
+                );
+            } catch (e) {
+                console.error('Failed to search users', e);
+            }
+        }, 300);
+
+        const addInfoUserPermission = async (user) => {
+            try {
+                await api.addBookUserPermission(book.value.id, user.id, infoNewUserPermission.value);
+                await loadInfoUserPermissions();
+                infoUserSearchQuery.value = '';
+                infoUserSearchResults.value = [];
+            } catch (e) {
+                alert('新增失敗：' + e.message);
+            }
+        };
+
+        const removeInfoUserPermission = async (userId) => {
+            try {
+                await api.removeBookUserPermission(book.value.id, userId);
+                infoUserPermissions.value = infoUserPermissions.value.filter(p => p.userId !== userId);
+            } catch (e) {
+                alert('移除失敗：' + e.message);
+            }
+        };
+
+        const updateInfoUserPermissionLevel = async (perm, newLevel) => {
+            try {
+                await api.addBookUserPermission(book.value.id, perm.userId, newLevel);
+                perm.permission = newLevel;
+            } catch (e) {
+                alert('更新失敗：' + e.message);
+            }
+        };
+
+        // Watch for info modal open to load user permissions
+        watch(showInfoModal, (val) => {
+            if (val) {
+                loadInfoUserPermissions();
+            } else {
+                // Clear state when closed
+                infoUserPermissions.value = [];
+                infoUserSearchQuery.value = '';
+                infoUserSearchResults.value = [];
+            }
+        });
 
         const permissionOptions = [
             { value: 'public-edit', label: '可編輯' },
@@ -1115,14 +1194,12 @@ const Book = {
             }
         };
 
-        // Watch for modal open to initialize editable values
-        watch(showEditModal, (newVal) => {
-            if (newVal) {
-                editableDescription.value = book.value.description || '';
-                editableTags.value = [...(book.value.tags || [])];
-                editablePermission.value = permission.value;
-            }
-        });
+        // Initialize editable values when opening info modal
+        const initInfoModal = () => {
+            editableDescription.value = book.value.description || '';
+            editableTags.value = [...(book.value.tags || [])];
+            editablePermission.value = permission.value;
+        };
 
         const addEditableTag = () => {
             const tag = newTag.value.trim();
@@ -1152,7 +1229,7 @@ const Book = {
                 });
                 book.value.description = editableDescription.value;
                 book.value.tags = [...editableTags.value];
-                showEditModal.value = false;
+                showInfoModal.value = false;
             } catch (e) { alert('儲存失敗'); }
         };
 
@@ -1166,12 +1243,17 @@ const Book = {
         });
 
         return {
-            book, createNote, showEditModal,
+            book, createNote,
             editableDescription, editableTags, newTag, editablePermission,
-            addEditableTag, removeEditableTag, saveBookChanges,
+            addEditableTag, removeEditableTag, saveBookChanges, initInfoModal,
             permission, isOwner, canEdit, canAddNote,
             permissionOptions, handlePermissionChange,
-            notesList
+            notesList,
+            // Info modal
+            showInfoModal,
+            infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
+            infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
+            removeInfoUserPermission, updateInfoUserPermissionLevel
         };
     }
 };
