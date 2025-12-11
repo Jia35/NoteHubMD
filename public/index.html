@@ -1219,8 +1219,10 @@
                             @scroll="handlePreviewScroll"
                             @click="handlePreviewClick">
                             <!-- Preview Info Bar -->
-                            <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                                <div class="flex items-center space-x-4">
+                            <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                :class="{'flex justify-center': !showEditor}">
+                                <div :class="{'max-w-[800px] w-full px-8': !showEditor, 'px-4': showEditor}">
+                                    <div class="flex items-center space-x-4">
                                     <!-- Owner -->
                                     <div v-if="noteOwner" class="flex items-center">
                                         <div class="relative group mr-1.5">
@@ -1277,6 +1279,7 @@
                                     <div v-if="relativeLastContentEditedTime" class="flex items-center">
                                         <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
                                         <span>最後編輯於 {{ relativeLastContentEditedTime }}</span>
+                                    </div>
                                     </div>
                                 </div>
                             </div>
