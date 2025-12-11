@@ -376,6 +376,20 @@
                 </div>
             </div>
 
+            <!-- Sort Controls -->
+            <div class="mb-6 flex items-center gap-4">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort"></i> 排序：</span>
+                <select v-model="sortBy" 
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+                <button @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'" 
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <i :class="sortOrder === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short'"></i>
+                    {{ sortOrder === 'desc' ? '降冪' : '升冪' }}
+                </button>
+            </div>
+
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
