@@ -752,12 +752,12 @@ const Home = {
 
         const getPermissionLabel = (permission) => {
             const labels = {
-                'private': '🔒 私人 (僅擁有者)',
-                'auth-view': '👁️ 登入可看',
-                'auth-edit': '✏️ 登入可編輯',
-                'public-view': '🌐 公開可看',
-                'public-edit': '📝 公開可編輯',
-                'inherit': '📚 繼承書本權限'
+                'public-edit': '可編輯',
+                'auth-edit': '可編輯 (需登入)',
+                'public-view': '唯讀',
+                'auth-view': '唯讀 (需登入)',
+                'private': '私人',
+                'inherit': '繼承書本'
             };
             return labels[permission] || permission;
         };
@@ -874,9 +874,9 @@ const Book = {
 
         const permissionOptions = [
             { value: 'public-edit', label: '可編輯' },
-            { value: 'auth-edit', label: '可編輯(需登入)' },
+            { value: 'auth-edit', label: '可編輯 (需登入)' },
             { value: 'public-view', label: '唯讀' },
-            { value: 'auth-view', label: '唯讀(需登入)' },
+            { value: 'auth-view', label: '唯讀 (需登入)' },
             { value: 'private', label: '私人' }
         ];
 
@@ -1229,9 +1229,9 @@ const Note = {
         const permissionOptions = computed(() => {
             const baseOptions = [
                 { value: 'public-edit', label: '可編輯' },
-                { value: 'auth-edit', label: '可編輯(需登入)' },
+                { value: 'auth-edit', label: '可編輯 (需登入)' },
                 { value: 'public-view', label: '唯讀' },
-                { value: 'auth-view', label: '唯讀(需登入)' },
+                { value: 'auth-view', label: '唯讀 (需登入)' },
                 { value: 'private', label: '私人' }
             ];
             if (bookId.value) {
