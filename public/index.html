@@ -1219,7 +1219,7 @@
                                 :class="{'flex justify-center': !showEditor}"
                                 ref="previewContainer"
                                 @scroll="handlePreviewScroll"
-                                @click="handleTaskListClick">
+                                @click="handlePreviewClick">
                                 <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
                             </div>
                         </div>
@@ -1247,6 +1247,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Image Lightbox Modal -->
+        <Transition name="fade">
+            <div v-if="lightboxImage" 
+                 class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 cursor-zoom-out"
+                 @click="closeLightbox">
+                <!-- Close button -->
+                <button @click="closeLightbox" 
+                        class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white text-2xl hover:bg-white hover:bg-opacity-20 rounded-full transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <!-- Image -->
+                <img :src="lightboxImage" 
+                     class="max-w-[90vw] max-h-[90vh] object-contain cursor-default shadow-2xl"
+                     @click.stop>
+            </div>
+        </Transition>
+    </div>
     </script>
 
     <script src="/js/app.js"></script>

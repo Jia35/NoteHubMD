@@ -1538,6 +1538,28 @@ const Note = {
             }
         };
 
+        // --- Lightbox for images ---
+        const lightboxImage = ref(null);
+
+        const handlePreviewClick = (event) => {
+            const target = event.target;
+
+            // Handle task list checkbox clicks
+            if (target.classList.contains('task-list-item-checkbox')) {
+                handleTaskListClick(event);
+                return;
+            }
+
+            // Handle image clicks for lightbox
+            if (target.tagName === 'IMG' && !target.closest('.mermaid')) {
+                lightboxImage.value = target.src;
+            }
+        };
+
+        const closeLightbox = () => {
+            lightboxImage.value = null;
+        };
+
         // --- Image Upload ---
         const uploadImage = async (file) => {
             const formData = new FormData();
@@ -2042,6 +2064,9 @@ const Note = {
             showOnlineUsersPopup,
             toggleOnlineUsersPopup,
             handleTaskListClick,
+            handlePreviewClick,
+            lightboxImage,
+            closeLightbox,
             showSidebar,
             showCreateBookModalLocal,
             newBookTitle,

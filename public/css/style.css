@@ -645,3 +645,24 @@ li.CodeMirror-hint-active {
     background-color: #3b82f6;
     color: #ffffff;
 }
+
+/* Fade Transition for Lightbox */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+/* Clickable images in preview (not mermaid diagrams) */
+.markdown-body img:not(.mermaid img) {
+    cursor: zoom-in;
+    transition: opacity 0.15s ease;
+}
+
+.markdown-body img:not(.mermaid img):hover {
+    opacity: 0.85;
+}
