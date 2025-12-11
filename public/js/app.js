@@ -1024,6 +1024,7 @@ const Note = {
         const noteOwner = ref(null);
         const lastEditor = ref(null);
         const updatedAt = ref(null);
+        const lastEditedAt = ref(null);
 
         // Format relative time (e.g., "5 分鐘前", "3 小時前", "2 天前")
         const formatRelativeTime = (dateString) => {
@@ -1043,6 +1044,7 @@ const Note = {
         };
 
         const relativeUpdatedTime = computed(() => formatRelativeTime(updatedAt.value));
+        const relativeLastContentEditedTime = computed(() => formatRelativeTime(lastEditedAt.value));
 
         // Sidebar state
         const showSidebar = ref(false);
@@ -1823,6 +1825,7 @@ const Note = {
                 noteOwner.value = note.owner || null;
                 lastEditor.value = note.lastEditor || null;
                 updatedAt.value = note.updatedAt || null;
+                lastEditedAt.value = note.lastEditedAt || null;
 
                 // If user can't edit and no specific mode was requested, default to 'view' mode
                 if (!canEdit.value && !('edit' in route.query) && !('both' in route.query) && !('view' in route.query)) {
@@ -2007,6 +2010,7 @@ const Note = {
                     noteOwner.value = note.owner || null;
                     lastEditor.value = note.lastEditor || null;
                     updatedAt.value = note.updatedAt || null;
+                    lastEditedAt.value = note.lastEditedAt || null;
 
                     // Update editor content
                     if (cmInstance) {
@@ -2086,6 +2090,7 @@ const Note = {
             noteOwner,
             lastEditor,
             relativeUpdatedTime,
+            relativeLastContentEditedTime,
             // Profile modal
             showUserProfileModal,
             editableName,

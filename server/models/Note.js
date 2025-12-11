@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
         tags: {
             type: DataTypes.JSON
         },
+        lastEditedAt: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
         lastEditorId: {
             type: DataTypes.INTEGER,
             allowNull: true

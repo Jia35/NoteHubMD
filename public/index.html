@@ -482,7 +482,9 @@
                             <div class="text-gray-500 dark:text-gray-400 mb-1">建立者：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.owner?.username || '(未知)' }}</span></div>
                             <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.createdAt).toLocaleString() }}</span></div>
                             <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.lastEditor?.username || infoModalItem.owner?.username || '(未知)' }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.lastEditedAt ? new Date(infoModalItem.lastEditedAt).toLocaleString() : '(無)' }}</span></div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(infoModalItem.updatedAt).toLocaleString() }}</span></div>
+                            <div v-if="infoModalType === 'note'" class="text-gray-500 dark:text-gray-400">字元數：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.content?.length || 0 }}</span></div>
                         </div>
 
                         <!-- Permission Editor (owner only can change) -->
@@ -1210,7 +1212,17 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <span>{{ lastEditor.name || lastEditor.username || '?' }} 變更於 {{ relativeUpdatedTime }}</span>
+                                        <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
+                                    </div>
+                                    <!-- Updated Time -->
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-clock mr-1 text-gray-400"></i>
+                                        <span>更新於 {{ relativeUpdatedTime }}</span>
+                                    </div>
+                                    <!-- Last Content Edited Time -->
+                                    <div v-if="relativeLastContentEditedTime" class="flex items-center">
+                                        <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
+                                        <span>內文編輯於 {{ relativeLastContentEditedTime }}</span>
                                     </div>
                                 </div>
                             </div>

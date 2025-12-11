@@ -231,6 +231,8 @@ router.put('/notes/:id', async (req, res) => {
         // Auto-parse tags from content if content is being updated
         if (updateData.content !== undefined) {
             updateData.tags = parseTags(updateData.content);
+            // Track when content was last edited
+            updateData.lastEditedAt = new Date();
         }
 
         // Set last editor
