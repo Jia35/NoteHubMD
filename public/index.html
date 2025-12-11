@@ -501,26 +501,6 @@
                             <div v-if="infoModalType === 'note'" class="text-gray-500 dark:text-gray-400">字元數：<span class="text-gray-700 dark:text-gray-300">{{ infoModalItem.content?.length || 0 }}</span></div>
                         </div>
 
-                        <!-- Permission Editor (owner only can change) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                <i class="fa-solid fa-lock mr-1"></i> 權限
-                            </label>
-                            <select v-if="infoModalItem.isOwner" 
-                                    v-model="editablePermission"
-                                    class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option v-if="infoModalType === 'note' && infoModalItem.bookId" value="inherit">📚 繼承書本權限</option>
-                                <option value="public-edit">可編輯</option>
-                                <option value="auth-edit">可編輯(需登入)</option>
-                                <option value="public-view">唯讀</option>
-                                <option value="auth-view">唯讀(需登入)</option>
-                                <option value="private">私人</option>
-                            </select>
-                            <div v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
-                                {{ getPermissionLabel(infoModalItem.permission) }}
-                            </div>
-                        </div>
-
                         <!-- Description Editor (for books only) -->
                         <div v-if="infoModalType === 'book'">
                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
@@ -562,6 +542,97 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Permission Editor (owner only can change) -->
+                    <div class="border-t dark:border-gray-600 pt-4 px-6 mt-4">
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                            <i class="fa-solid fa-lock mr-1"></i> 權限
+                        </label>
+                        <select v-if="infoModalItem.isOwner" 
+                                v-model="editablePermission"
+                                class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option v-if="infoModalType === 'note' && infoModalItem.bookId" value="inherit">繼承書本權限</option>
+                            <option value="public-edit">可編輯</option>
+                            <option value="auth-edit">可編輯(需登入)</option>
+                            <option value="public-view">唯讀</option>
+                            <option value="auth-view">唯讀(需登入)</option>
+                            <option value="private">私人</option>
+                        </select>
+                        <div v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                            {{ getPermissionLabel(infoModalItem.permission) }}
+                        </div>
+                    </div>
+
+                    <!-- User-specific Permissions (Owner only) -->
+                    <template v-if="infoModalItem.isOwner">
+                        <div class="px-6 mt-4">
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
+                            </label>
+                            
+                            <!-- Loading -->
+                            <div v-if="infoLoadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
+                                <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
+                            </div>
+                            
+                            <!-- Current user permissions list -->
+                            <div v-if="infoUserPermissions.length > 0" class="space-y-2 mb-3">
+                                <div v-for="perm in infoUserPermissions" :key="perm.userId" 
+                                     class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                                    <div class="flex items-center">
+                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                            <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
+                                            <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                        </span>
+                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <select v-model="perm.permission" @change="updateInfoUserPermissionLevel(perm, perm.permission)"
+                                                class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
+                                            <option value="view">可查看</option>
+                                            <option value="edit">可編輯</option>
+                                        </select>
+                                        <button @click="removeInfoUserPermission(perm.userId)" 
+                                                class="text-red-500 hover:text-red-700 text-xs" title="移除">
+                                            <i class="fa-solid fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Add user search -->
+                            <div class="relative">
+                                <div class="flex space-x-2">
+                                    <input v-model="infoUserSearchQuery" @input="infoSearchUsers" 
+                                           type="text" placeholder="搜尋使用者名稱..."
+                                           class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <select v-model="infoNewUserPermission" 
+                                            class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
+                                        <option value="view">可查看</option>
+                                        <option value="edit">可編輯</option>
+                                    </select>
+                                </div>
+                                <!-- Search results dropdown -->
+                                <div v-if="infoUserSearchResults.length > 0" 
+                                     class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                    <button v-for="user in infoUserSearchResults" :key="user.id" 
+                                            @click="addInfoUserPermission(user)"
+                                            class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                            <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
+                                            <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                        </span>
+                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
+                                        <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
+                            </p>
+                        </div>
+                    </template>
 
                     <!-- Modal Footer -->
                     <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
@@ -1073,6 +1144,77 @@
                                     </p>
                                 </template>
                             </div>
+                            
+                            <!-- User-specific Permissions (Owner only) -->
+                            <template v-if="isOwner">
+                                <div class="border-t dark:border-gray-600 pt-4 mt-4">
+                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                        <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
+                                    </label>
+                                    
+                                    <!-- Loading -->
+                                    <div v-if="loadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
+                                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
+                                    </div>
+                                    
+                                    <!-- Current user permissions list -->
+                                    <div v-if="userPermissions.length > 0" class="space-y-2 mb-3">
+                                        <div v-for="perm in userPermissions" :key="perm.userId" 
+                                             class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                                            <div class="flex items-center">
+                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                    <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
+                                                    <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                </span>
+                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <select v-model="perm.permission" @change="updateUserPermissionLevel(perm, perm.permission)"
+                                                        class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
+                                                    <option value="view">可查看</option>
+                                                    <option value="edit">可編輯</option>
+                                                </select>
+                                                <button @click="removeUserPermission(perm.userId)" 
+                                                        class="text-red-500 hover:text-red-700 text-xs" title="移除">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Add user search -->
+                                    <div class="relative">
+                                        <div class="flex space-x-2">
+                                            <input v-model="userSearchQuery" @input="searchUsers" 
+                                                   type="text" placeholder="搜尋使用者名稱..."
+                                                   class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <select v-model="newUserPermission" 
+                                                    class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
+                                                <option value="view">可查看</option>
+                                                <option value="edit">可編輯</option>
+                                            </select>
+                                        </div>
+                                        <!-- Search results dropdown -->
+                                        <div v-if="userSearchResults.length > 0" 
+                                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                            <button v-for="user in userSearchResults" :key="user.id" 
+                                                    @click="addUserPermission(user)"
+                                                    class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                    <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
+                                                    <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                </span>
+                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
+                                                <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
+                                    </p>
+                                </div>
+                            </template>
                         </div>
                         <div class="flex justify-end p-4 border-t dark:border-gray-700">
                             <button @click="showPermissionModal = false" 

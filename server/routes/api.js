@@ -109,6 +109,34 @@ function parseTags(content) {
     return tagMatches.map(t => t.replace(/`/g, '').trim()).filter(Boolean);
 }
 
+// --- Users ---
+
+// Search Users (for permission assignment)
+router.get('/users/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || q.length < 2) {
+            return res.json([]);
+        }
+
+        const { Op } = db.Sequelize;
+        const users = await db.User.findAll({
+            where: {
+                [Op.or]: [
+                    { username: { [Op.like]: `%${q}%` } },
+                    { name: { [Op.like]: `%${q}%` } }
+                ]
+            },
+            attributes: ['id', 'username', 'name', 'avatar'],
+            limit: 10
+        });
+
+        res.json(users);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- Notes ---
 
 // Create Note
@@ -160,14 +188,17 @@ router.get('/notes/:id', async (req, res) => {
         // Resolve effective permission (handle 'inherit' from book)
         const effectivePermission = await resolveNotePermission(note);
 
+        // Check user-specific permission override
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
         // Permission check
         if (effectivePermission === 'private') {
-            if (!isOwner) {
+            if (!isOwner && !userPermOverride) {
                 // If not logged in, prompt to login (they might be the owner)
                 if (!userId) {
                     return res.status(401).json({ error: 'Login required' });
                 }
-                // Logged in but not owner - access denied
+                // Logged in but not owner and no override - access denied
                 return res.status(403).json({ error: 'Access denied' });
             }
         } else if (effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') {
@@ -180,6 +211,8 @@ router.get('/notes/:id', async (req, res) => {
         // Determine if user can edit
         let canEdit = false;
         if (isOwner) {
+            canEdit = true;
+        } else if (userPermOverride === 'edit') {
             canEdit = true;
         } else if (effectivePermission === 'public-edit') {
             canEdit = true;
@@ -210,9 +243,14 @@ router.put('/notes/:id', async (req, res) => {
         // Resolve effective permission (handle 'inherit' from book)
         const effectivePermission = await resolveNotePermission(note);
 
+        // Check user-specific permission override
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
         // Permission check for editing
         let canEdit = false;
         if (isOwner) {
+            canEdit = true;
+        } else if (userPermOverride === 'edit') {
             canEdit = true;
         } else if (effectivePermission === 'public-edit') {
             canEdit = true;
@@ -256,6 +294,16 @@ router.put('/notes/:id', async (req, res) => {
 const VALID_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private'];
 const VALID_NOTE_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private', 'inherit'];
 const VALID_BOOK_PERMISSIONS = ['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private'];
+const VALID_USER_PERMISSIONS = ['view', 'edit'];
+
+// Helper function to get user-specific permission override
+async function getUserPermission(targetType, targetId, userId) {
+    if (!userId) return null;
+    const userPerm = await db.Permission.findOne({
+        where: { targetType, targetId, userId }
+    });
+    return userPerm ? userPerm.permission : null;
+}
 
 // Helper function to resolve effective permission for a Note
 // If permission is 'inherit' and note belongs to a book, use the book's permission
@@ -265,6 +313,15 @@ async function resolveNotePermission(note) {
         return book ? (book.permission || 'private') : 'private';
     }
     return note.permission || 'private';
+}
+
+// Helper: Check if user has specific permission via user override
+async function checkUserPermission(targetType, targetId, userId, requiredLevel) {
+    const userPerm = await getUserPermission(targetType, targetId, userId);
+    if (!userPerm) return false;
+    if (requiredLevel === 'view') return userPerm === 'view' || userPerm === 'edit';
+    if (requiredLevel === 'edit') return userPerm === 'edit';
+    return false;
 }
 
 // Update Note Permission (owner only)
@@ -296,6 +353,104 @@ router.put('/notes/:id/permission', async (req, res) => {
 
         await note.update({ permission });
         res.json({ success: true, permission });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get Note User Permissions (owner only)
+router.get('/notes/:id/user-permissions', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can view user permissions' });
+
+        const permissions = await db.Permission.findAll({
+            where: { targetType: 'note', targetId: note.id },
+            include: [{ model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar'] }]
+        });
+
+        res.json(permissions);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Add Note User Permission (owner only)
+router.post('/notes/:id/user-permissions', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can manage user permissions' });
+
+        const { targetUserId, permission } = req.body;
+        if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required' });
+        if (!VALID_USER_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission. Must be "view" or "edit"' });
+        }
+
+        // Cannot add permission for owner
+        if (targetUserId === note.ownerId) {
+            return res.status(400).json({ error: 'Cannot add permission for the owner' });
+        }
+
+        // Check if target user exists
+        const targetUser = await db.User.findByPk(targetUserId);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        // Upsert permission
+        const [perm, created] = await db.Permission.findOrCreate({
+            where: { targetType: 'note', targetId: note.id, userId: targetUserId },
+            defaults: { permission }
+        });
+
+        if (!created) {
+            await perm.update({ permission });
+        }
+
+        res.json({
+            success: true,
+            permission: perm.permission,
+            user: { id: targetUser.id, username: targetUser.username, name: targetUser.name, avatar: targetUser.avatar }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete Note User Permission (owner only)
+router.delete('/notes/:id/user-permissions/:targetUserId', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can manage user permissions' });
+
+        const deleted = await db.Permission.destroy({
+            where: {
+                targetType: 'note',
+                targetId: note.id,
+                userId: req.params.targetUserId
+            }
+        });
+
+        if (deleted === 0) return res.status(404).json({ error: 'Permission not found' });
+
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -400,9 +555,12 @@ router.get('/books/:id', async (req, res) => {
         const isOwner = book.ownerId && book.ownerId === userId;
         const permission = book.permission || 'private';
 
+        // Check user-specific permission override
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
         // Permission check
         if (permission === 'private') {
-            if (!isOwner) {
+            if (!isOwner && !userPermOverride) {
                 return res.status(403).json({ error: 'Access denied' });
             }
         } else if (permission === 'auth-view' || permission === 'auth-edit') {
@@ -416,6 +574,9 @@ router.get('/books/:id', async (req, res) => {
         let canEdit = false;
         let canAddNote = false;
         if (isOwner) {
+            canEdit = true;
+            canAddNote = true;
+        } else if (userPermOverride === 'edit') {
             canEdit = true;
             canAddNote = true;
         } else if (permission === 'public-edit') {
@@ -504,6 +665,104 @@ router.put('/books/:id/permission', async (req, res) => {
 
         await book.update({ permission });
         res.json({ success: true, permission });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get Book User Permissions (owner only)
+router.get('/books/:id/user-permissions', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can view user permissions' });
+
+        const permissions = await db.Permission.findAll({
+            where: { targetType: 'book', targetId: book.id },
+            include: [{ model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar'] }]
+        });
+
+        res.json(permissions);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Add Book User Permission (owner only)
+router.post('/books/:id/user-permissions', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can manage user permissions' });
+
+        const { targetUserId, permission } = req.body;
+        if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required' });
+        if (!VALID_USER_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission. Must be "view" or "edit"' });
+        }
+
+        // Cannot add permission for owner
+        if (targetUserId === book.ownerId) {
+            return res.status(400).json({ error: 'Cannot add permission for the owner' });
+        }
+
+        // Check if target user exists
+        const targetUser = await db.User.findByPk(targetUserId);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        // Upsert permission
+        const [perm, created] = await db.Permission.findOrCreate({
+            where: { targetType: 'book', targetId: book.id, userId: targetUserId },
+            defaults: { permission }
+        });
+
+        if (!created) {
+            await perm.update({ permission });
+        }
+
+        res.json({
+            success: true,
+            permission: perm.permission,
+            user: { id: targetUser.id, username: targetUser.username, name: targetUser.name, avatar: targetUser.avatar }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete Book User Permission (owner only)
+router.delete('/books/:id/user-permissions/:targetUserId', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        if (!isOwner) return res.status(403).json({ error: 'Only owner can manage user permissions' });
+
+        const deleted = await db.Permission.destroy({
+            where: {
+                targetType: 'book',
+                targetId: book.id,
+                userId: req.params.targetUserId
+            }
+        });
+
+        if (deleted === 0) return res.status(404).json({ error: 'Permission not found' });
+
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

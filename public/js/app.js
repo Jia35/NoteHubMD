@@ -256,6 +256,61 @@ const api = {
         }
         return res.json();
     },
+    // User search for permission assignment
+    async searchUsers(query) {
+        const res = await fetch('/api/users/search?q=' + encodeURIComponent(query));
+        return res.json();
+    },
+    // Note user permissions
+    async getNoteUserPermissions(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions');
+        if (!res.ok) throw new Error('Failed to load user permissions');
+        return res.json();
+    },
+    async addNoteUserPermission(noteId, targetUserId, permission) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId, permission })
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to add user permission');
+        }
+        return res.json();
+    },
+    async removeNoteUserPermission(noteId, targetUserId) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions/' + targetUserId, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove user permission');
+        return res.json();
+    },
+    // Book user permissions
+    async getBookUserPermissions(bookId) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions');
+        if (!res.ok) throw new Error('Failed to load user permissions');
+        return res.json();
+    },
+    async addBookUserPermission(bookId, targetUserId, permission) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId, permission })
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to add user permission');
+        }
+        return res.json();
+    },
+    async removeBookUserPermission(bookId, targetUserId) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions/' + targetUserId, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove user permission');
+        return res.json();
+    },
     // Trash operations - Notes
     async deleteNote(id) {
         const res = await fetch('/api/notes/' + id, { method: 'DELETE' });
@@ -828,6 +883,99 @@ const Home = {
             } catch (e) { alert('儲存失敗'); }
         };
 
+        // User permissions state for Home info modal
+        const infoUserPermissions = ref([]);
+        const infoUserSearchQuery = ref('');
+        const infoUserSearchResults = ref([]);
+        const infoNewUserPermission = ref('edit');
+        const infoLoadingUserPermissions = ref(false);
+
+        const loadInfoUserPermissions = async () => {
+            if (!infoModalItem.value?.isOwner) return;
+            infoLoadingUserPermissions.value = true;
+            try {
+                if (infoModalType.value === 'note') {
+                    infoUserPermissions.value = await api.getNoteUserPermissions(infoModalItem.value.id);
+                } else {
+                    infoUserPermissions.value = await api.getBookUserPermissions(infoModalItem.value.id);
+                }
+            } catch (e) {
+                console.error('Failed to load user permissions', e);
+            } finally {
+                infoLoadingUserPermissions.value = false;
+            }
+        };
+
+        const infoSearchUsers = debounce(async () => {
+            if (infoUserSearchQuery.value.length < 2) {
+                infoUserSearchResults.value = [];
+                return;
+            }
+            try {
+                const results = await api.searchUsers(infoUserSearchQuery.value);
+                // Filter out owner and users already in permissions list
+                infoUserSearchResults.value = results.filter(u =>
+                    u.id !== infoModalItem.value?.owner?.id &&
+                    !infoUserPermissions.value.find(p => p.userId === u.id)
+                );
+            } catch (e) {
+                console.error('Failed to search users', e);
+            }
+        }, 300);
+
+        const addInfoUserPermission = async (user) => {
+            try {
+                if (infoModalType.value === 'note') {
+                    await api.addNoteUserPermission(infoModalItem.value.id, user.id, infoNewUserPermission.value);
+                } else {
+                    await api.addBookUserPermission(infoModalItem.value.id, user.id, infoNewUserPermission.value);
+                }
+                await loadInfoUserPermissions();
+                infoUserSearchQuery.value = '';
+                infoUserSearchResults.value = [];
+            } catch (e) {
+                alert('新增失敗：' + e.message);
+            }
+        };
+
+        const removeInfoUserPermission = async (userId) => {
+            try {
+                if (infoModalType.value === 'note') {
+                    await api.removeNoteUserPermission(infoModalItem.value.id, userId);
+                } else {
+                    await api.removeBookUserPermission(infoModalItem.value.id, userId);
+                }
+                infoUserPermissions.value = infoUserPermissions.value.filter(p => p.userId !== userId);
+            } catch (e) {
+                alert('移除失敗：' + e.message);
+            }
+        };
+
+        const updateInfoUserPermissionLevel = async (perm, newLevel) => {
+            try {
+                if (infoModalType.value === 'note') {
+                    await api.addNoteUserPermission(infoModalItem.value.id, perm.userId, newLevel);
+                } else {
+                    await api.addBookUserPermission(infoModalItem.value.id, perm.userId, newLevel);
+                }
+                perm.permission = newLevel;
+            } catch (e) {
+                alert('更新失敗：' + e.message);
+            }
+        };
+
+        // Watch for info modal open to load user permissions
+        watch(showInfoModal, (val) => {
+            if (val) {
+                loadInfoUserPermissions();
+            } else {
+                // Clear state when closed
+                infoUserPermissions.value = [];
+                infoUserSearchQuery.value = '';
+                infoUserSearchResults.value = [];
+            }
+        });
+
         onMounted(() => {
             loadData();
             // Close menu when clicking outside
@@ -847,7 +995,11 @@ const Home = {
             showInfoModal, infoModalType, infoModalItem,
             editableDescription, editableTags, newTag, editablePermission,
             openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges, getPermissionLabel,
-            showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal
+            showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal,
+            // User permissions for info modal
+            infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
+            infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
+            removeInfoUserPermission, updateInfoUserPermissionLevel
         };
     }
 };
@@ -1119,6 +1271,76 @@ const Note = {
         const showPermissionModal = ref(false);
         const currentUser = ref(null);
         const theme = ref(localStorage.getItem('theme') || 'light');
+
+        // User permissions state
+        const userPermissions = ref([]);
+        const userSearchQuery = ref('');
+        const userSearchResults = ref([]);
+        const newUserPermission = ref('edit');
+        const loadingUserPermissions = ref(false);
+
+        const loadUserPermissions = async () => {
+            if (!isOwner.value) return;
+            loadingUserPermissions.value = true;
+            try {
+                userPermissions.value = await api.getNoteUserPermissions(noteId.value);
+            } catch (e) {
+                console.error('Failed to load user permissions', e);
+            } finally {
+                loadingUserPermissions.value = false;
+            }
+        };
+
+        const searchUsers = debounce(async () => {
+            if (userSearchQuery.value.length < 2) {
+                userSearchResults.value = [];
+                return;
+            }
+            try {
+                const results = await api.searchUsers(userSearchQuery.value);
+                // Filter out owner and users already in permissions list
+                userSearchResults.value = results.filter(u =>
+                    u.id !== noteOwner.value?.id &&
+                    !userPermissions.value.find(p => p.userId === u.id)
+                );
+            } catch (e) {
+                console.error('Failed to search users', e);
+            }
+        }, 300);
+
+        const addUserPermission = async (user) => {
+            try {
+                await api.addNoteUserPermission(noteId.value, user.id, newUserPermission.value);
+                await loadUserPermissions();
+                userSearchQuery.value = '';
+                userSearchResults.value = [];
+            } catch (e) {
+                alert('新增失敗：' + e.message);
+            }
+        };
+
+        const removeUserPermission = async (userId) => {
+            try {
+                await api.removeNoteUserPermission(noteId.value, userId);
+                userPermissions.value = userPermissions.value.filter(p => p.userId !== userId);
+            } catch (e) {
+                alert('移除失敗：' + e.message);
+            }
+        };
+
+        const updateUserPermissionLevel = async (perm, newLevel) => {
+            try {
+                await api.addNoteUserPermission(noteId.value, perm.userId, newLevel);
+                perm.permission = newLevel;
+            } catch (e) {
+                alert('更新失敗：' + e.message);
+            }
+        };
+
+        // Watch for permission modal open to load user permissions
+        watch(showPermissionModal, (val) => {
+            if (val) loadUserPermissions();
+        });
 
         // User Profile Modal for Note Page
         const showUserProfileModal = ref(false);
@@ -2098,6 +2320,15 @@ const Note = {
             permissionOptions,
             handlePermissionChange,
             showPermissionModal,
+            userPermissions,
+            userSearchQuery,
+            userSearchResults,
+            newUserPermission,
+            loadingUserPermissions,
+            searchUsers,
+            addUserPermission,
+            removeUserPermission,
+            updateUserPermissionLevel,
             onlineUsers,
             showOnlineUsersPopup,
             toggleOnlineUsersPopup,
