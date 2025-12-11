@@ -1031,6 +1031,57 @@
                     </div>
                 </div>
 
+                <!-- Permission Modal -->
+                <div v-if="showPermissionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showPermissionModal = false">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
+                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-white">
+                                <i class="fa-solid fa-lock mr-2"></i> 權限設定
+                            </h2>
+                            <button @click="showPermissionModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <!-- Permission Field -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">目前權限</label>
+                                <!-- Owner: Dropdown selector -->
+                                <template v-if="isOwner">
+                                    <select v-model="permission" @change="handlePermissionChange(permission)" 
+                                            class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
+                                            {{ opt.label }}
+                                        </option>
+                                    </select>
+                                    <p v-if="permission === 'inherit'" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        實際權限：{{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }}
+                                    </p>
+                                </template>
+                                <!-- Non-owner: Read-only display -->
+                                <template v-else>
+                                    <div class="flex items-center space-x-2 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                        <i class="fa-solid fa-shield-halved text-blue-500"></i>
+                                        <span v-if="permission === 'inherit'">
+                                            繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
+                                        </span>
+                                        <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        <i class="fa-solid fa-info-circle mr-1"></i>
+                                        只有擁有者可以變更權限設定。
+                                    </p>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="flex justify-end p-4 border-t dark:border-gray-700">
+                            <button @click="showPermissionModal = false" 
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                                關閉
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-2">
                         <router-link to="/" class="hover:text-blue-400 transition font-medium">
@@ -1120,28 +1171,19 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Owner: Dropdown selector -->
-                        <template v-if="isOwner">
-                            <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
-                            <select v-model="permission" @change="handlePermissionChange(permission)" 
-                                    class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
-                                <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                                    {{ opt.label }}
-                                </option>
-                            </select>
-                            <!-- Show effective permission when using inherit -->
-                            <span v-if="permission === 'inherit'" class="text-xs text-gray-500 ml-1">
-                                ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
-                            </span>
-                        </template>
-                        <!-- Non-owner: Show permission as badge -->
-                        <template v-else>
-                            <span class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
-                                <i class="fa-solid fa-lock text-xs"></i>
-                                <span v-if="permission === 'inherit'">繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})</span>
-                                <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
-                            </span>
-                        </template>
+                        <!-- Permission Button (Owner only) / Display (Non-owner) -->
+                        <button v-if="isOwner" @click="showPermissionModal = true" 
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                title="點擊設定權限">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span v-if="permission === 'inherit'">繼承書本</span>
+                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                        </button>
+                        <span v-else class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span v-if="permission === 'inherit'">繼承書本</span>
+                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                        </span>
                     </div>
                 </div>
                 

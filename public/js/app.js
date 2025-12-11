@@ -1116,6 +1116,7 @@ const Note = {
 
         // Settings modal state
         const showSettingsModal = ref(false);
+        const showPermissionModal = ref(false);
         const currentUser = ref(null);
         const theme = ref(localStorage.getItem('theme') || 'light');
 
@@ -2096,6 +2097,7 @@ const Note = {
             canEdit,
             permissionOptions,
             handlePermissionChange,
+            showPermissionModal,
             onlineUsers,
             showOnlineUsersPopup,
             toggleOnlineUsersPopup,
