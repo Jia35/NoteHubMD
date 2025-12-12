@@ -162,6 +162,27 @@
                 <router-link to="/trash" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
                     <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
                 </router-link>
+
+                <!-- Pinned Items -->
+                <template v-if="pinnedItems.length > 0">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
+                        <i class="fa-solid fa-thumbtack mr-2"></i> Pinned
+                    </div>
+                    <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
+                        <router-link :to="'/' + item.type + '/' + item.id" 
+                                     class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center justify-between">
+                            <div class="flex items-center min-w-0">
+                                <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-3 shrink-0"></i>
+                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                            </div>
+                            <button @click.prevent.stop="unpinItem(item.type, item.id)" 
+                                    class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
+                                    title="取消釘選">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </router-link>
+                    </div>
+                </template>
             </div>
 
             <!-- User & Settings -->
@@ -401,9 +422,12 @@
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
-                            <div v-if="openMenuId === 'book-' + book.id" class="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                            <div v-if="openMenuId === 'book-' + book.id" class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                                 <button @click.stop="openInfoModal('book', book)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
                                     <i class="fa-solid fa-circle-info mr-2"></i>資訊
+                                </button>
+                                <button @click.stop="togglePin('book', book.id)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fa-solid fa-thumbtack mr-2"></i>{{ isPinned('book', book.id) ? '取消釘選' : '釘選到側邊欄' }}
                                 </button>
                                 <button @click.stop="book.canDelete && deleteBook(book.id, $event)" 
                                         :class="book.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
@@ -443,9 +467,12 @@
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
-                            <div v-if="openMenuId === 'note-' + note.id" class="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                            <div v-if="openMenuId === 'note-' + note.id" class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                                 <button @click.stop="openInfoModal('note', note)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
                                     <i class="fa-solid fa-circle-info mr-2"></i>資訊
+                                </button>
+                                <button @click.stop="togglePin('note', note.id)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fa-solid fa-thumbtack mr-2"></i>{{ isPinned('note', note.id) ? '取消釘選' : '釘選到側邊欄' }}
                                 </button>
                                 <button @click.stop="note.canDelete && deleteNote(note.id, $event)" 
                                         :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"

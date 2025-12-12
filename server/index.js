@@ -61,7 +61,7 @@ function broadcastUsersInNote(noteId) {
 
 // Socket.io
 io.on('connection', (socket) => {
-    console.log('New client connected:', socket.id);
+    // console.log('New client connected:', socket.id);
 
     // Track which notes this socket has joined
     socket.noteRooms = new Set();
@@ -113,7 +113,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        // console.log('Client disconnected:', socket.id);
 
         // Remove user from all note rooms they were in
         for (const noteId of socket.noteRooms) {

@@ -348,6 +348,28 @@ const api = {
         const res = await fetch('/api/trash');
         if (!res.ok) throw new Error('Failed to get trash');
         return res.json();
+    },
+    // Pinned items
+    async getPinnedItems() {
+        const res = await fetch('/api/auth/pins');
+        if (!res.ok) throw new Error('Failed to get pinned items');
+        return res.json();
+    },
+    async addPin(type, id) {
+        const res = await fetch('/api/auth/pins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, id })
+        });
+        if (!res.ok) throw new Error('Failed to add pin');
+        return res.json();
+    },
+    async removePin(type, id) {
+        const res = await fetch('/api/auth/pins/' + type + '/' + id, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove pin');
+        return res.json();
     }
 };
 
@@ -402,6 +424,27 @@ const Sidebar = {
         const avatarFile = ref(null);
         const savingProfile = ref(false);
         const avatarRemoved = ref(false);
+
+        // Pinned items
+        const pinnedItems = ref([]);
+
+        const loadPinnedItems = async () => {
+            try {
+                const data = await api.getPinnedItems();
+                pinnedItems.value = data;
+            } catch (e) {
+                console.error('[Sidebar] Failed to load pinned items:', e);
+            }
+        };
+
+        const unpinItem = async (type, id) => {
+            try {
+                await api.removePin(type, id);
+                pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id));
+            } catch (e) {
+                alert('取消釘選失敗');
+            }
+        };
 
         const openUserProfileModal = () => {
             if (!props.user) return;
@@ -526,6 +569,13 @@ const Sidebar = {
 
         onMounted(() => {
             updateThemeClass(theme.value);
+            loadPinnedItems();
+            // Listen for pin updates from other components
+            window.addEventListener('pins-updated', loadPinnedItems);
+        });
+
+        onUnmounted(() => {
+            window.removeEventListener('pins-updated', loadPinnedItems);
         });
 
         return {
@@ -535,7 +585,9 @@ const Sidebar = {
             openCreateBookModal, createBook,
             // Profile modal
             showUserProfileModal, editableName, avatarPreview,
-            openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile
+            openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile,
+            // Pinned items
+            pinnedItems, unpinItem
         };
     }
 };
@@ -615,17 +667,53 @@ const Home = {
         const newBookTitle = ref('');
         const newBookDescription = ref('');
 
+        // Pinned items state
+        const pinnedItems = ref([]);
+
+        const loadPinnedItems = async () => {
+            try {
+                pinnedItems.value = await api.getPinnedItems();
+            } catch (e) {
+                console.error('Failed to load pinned items:', e);
+            }
+        };
+
+        const isPinned = (type, id) => {
+            return pinnedItems.value.some(p => p.type === type && p.id === id);
+        };
+
+        const togglePin = async (type, id) => {
+            try {
+                if (isPinned(type, id)) {
+                    await api.removePin(type, id);
+                    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id));
+                } else {
+                    await api.addPin(type, id);
+                    // Reload to get the title
+                    await loadPinnedItems();
+                }
+                openMenuId.value = null;
+                // Notify Sidebar to refresh its pinned items
+                window.dispatchEvent(new Event('pins-updated'));
+            } catch (e) {
+                console.error('togglePin error:', e);
+                alert('操作失敗: ' + e.message);
+            }
+        };
+
         const loadData = async () => {
             try {
                 // Load all data in parallel for better performance
-                const [notesData, booksData, allNotesData] = await Promise.all([
+                const [notesData, booksData, allNotesData, pinnedData] = await Promise.all([
                     api.getNotes(),
                     api.getBooks(),
-                    api.getAllNotesForTags()
+                    api.getAllNotesForTags(),
+                    api.getPinnedItems()
                 ]);
                 notes.value = notesData;
                 books.value = booksData;
                 allNotesForTags.value = allNotesData;
+                pinnedItems.value = pinnedData;
             } catch (e) {
                 // Error handling handled by global auth check mostly
             }
@@ -999,7 +1087,9 @@ const Home = {
             // User permissions for info modal
             infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
             infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
-            removeInfoUserPermission, updateInfoUserPermissionLevel
+            removeInfoUserPermission, updateInfoUserPermissionLevel,
+            // Pinned items
+            pinnedItems, isPinned, togglePin
         };
     }
 };
