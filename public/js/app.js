@@ -2158,6 +2158,31 @@ const Note = {
                 matchingHints = markdownHints.filter(h => h.trigger === '|');
             }
 
+            // Check for code block modifiers (e.g., ```javascript)
+            // Matches: ```lang or ```lang! or ```lang=
+            // Capture groups:
+            // 1: backticks
+            // 2: language
+            // 3: ! (optional)
+            // 4: = (optional)
+            const codeModMatch = lineStart.match(/^(`{3,})([a-zA-Z0-9_\-]+)(!?)(=?)$/);
+            if (codeModMatch) {
+                // Only trigger if we are at the end of the line (cursor matches line length) checking logic already gets lineStart as substring to cursor
+                // but lineStart IS what is before cursor.
+
+                startCh = cursor.ch;
+                const hasWrap = codeModMatch[3] === '!';
+                const hasLineNums = codeModMatch[4] === '=';
+
+                // Dynamic hints
+                if (!hasWrap && !hasLineNums) {
+                    matchingHints.push({ text: '!', displayText: '! (自動換行)' });
+                    matchingHints.push({ text: '=', displayText: '= (加上行號)' });
+                } else if (hasWrap && !hasLineNums) {
+                    matchingHints.push({ text: '=', displayText: '= (加上行號)' });
+                }
+            }
+
             if (matchingHints.length === 0) {
                 return null;
             }
@@ -2308,7 +2333,8 @@ const Note = {
                 // Markdown autocomplete hints
                 cmInstance.on('inputRead', (cm, change) => {
                     if (!canEdit.value) return;
-                    if (change.origin !== '+input') return;
+                    // Removed strict origin check to support IME and other input sources
+                    // if (change.origin !== '+input') return;
 
                     const cursor = cm.getCursor();
                     const line = cm.getLine(cursor.line);
@@ -2319,6 +2345,7 @@ const Note = {
                         /^#{1,6}$/,              // Headings (e.g., "###")
                         /^:{1,3}$/,               // Containers (e.g., ":::")
                         /^`{1,3}$/,               // Code blocks (e.g., "```")
+                        /^`{3,}[a-zA-Z0-9_\-]+(!?)(=?)$/, // Code block modifiers (e.g., "```javascript")
                         /^-$/,                    // Lists
                         /\[$/,                    // Links (anywhere on line)
                         /!$/,                     // Images (anywhere on line)
