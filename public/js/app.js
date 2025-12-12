@@ -1544,23 +1544,86 @@ const Note = {
             }
             return baseOptions;
         });
+        // Parse extended code block syntax: language + modifiers (!, =, =N)
+        // Examples: python!, javascript=, python!=30, =10
+        const parseCodeBlockInfo = (info) => {
+            const result = {
+                language: '',
+                wordWrap: false,
+                lineNumbers: false,
+                startLine: 1
+            };
+
+            if (!info) return result;
+
+            // Match pattern: [language][!][=][startLineNumber]
+            // Examples: python, python!, python=, python=10, python!=, python!=10, !=, =10, !
+            const match = info.match(/^([a-zA-Z0-9_+-]*)(!?)(=?)(\d*)$/);
+            if (match) {
+                result.language = match[1] || '';
+                result.wordWrap = match[2] === '!';
+                result.lineNumbers = match[3] === '=';
+                if (match[4]) {
+                    result.startLine = parseInt(match[4], 10);
+                    result.lineNumbers = true; // If start number specified, enable line numbers
+                }
+            } else {
+                // Fallback: treat as language only
+                result.language = info;
+            }
+
+            return result;
+        };
+
         const md = window.markdownit({
             html: true,
             breaks: true,
             linkify: true,
             highlight: function (str, lang) {
+                const parsed = parseCodeBlockInfo(lang);
+                const actualLang = parsed.language.toLowerCase();
+
                 // Handle mermaid code blocks specially
-                if (lang && lang.toLowerCase() === 'mermaid') {
+                if (actualLang === 'mermaid') {
                     return '<div class="mermaid">' + str + '</div>';
                 }
-                if (lang && hljs.getLanguage(lang)) {
+
+                // Build CSS classes
+                const classes = ['hljs'];
+                if (parsed.wordWrap) classes.push('code-wrap');
+                if (parsed.lineNumbers) classes.push('has-line-numbers');
+
+                let highlightedCode;
+                if (parsed.language && hljs.getLanguage(parsed.language)) {
                     try {
-                        return '<pre class="hljs"><code>' +
-                            hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-                            '</code></pre>';
-                    } catch (__) { }
+                        highlightedCode = hljs.highlight(str, { language: parsed.language, ignoreIllegals: true }).value;
+                    } catch (__) {
+                        highlightedCode = md.utils.escapeHtml(str);
+                    }
+                } else {
+                    highlightedCode = md.utils.escapeHtml(str);
                 }
-                return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+
+                // If line numbers are enabled, wrap with line number display
+                if (parsed.lineNumbers) {
+                    const lines = highlightedCode.split('\n');
+                    // Remove trailing empty line if present
+                    if (lines.length > 0 && lines[lines.length - 1] === '') {
+                        lines.pop();
+                    }
+
+                    const lineNumbersHtml = lines.map((_, i) =>
+                        `<span class="code-line-number">${parsed.startLine + i}</span>`
+                    ).join('');
+
+                    const codeHtml = lines.map(line =>
+                        `<span class="code-line">${line || ' '}</span>`
+                    ).join('');
+
+                    return `<pre class="${classes.join(' ')}"><code><div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div></code></pre>`;
+                }
+
+                return `<pre class="${classes.join(' ')}"><code>${highlightedCode}</code></pre>`;
             }
         });
 

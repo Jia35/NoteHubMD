@@ -693,3 +693,67 @@ li.CodeMirror-hint-active {
 .markdown-body img:not(.mermaid img):hover {
     opacity: 0.85;
 }
+
+/* Code Block Word Wrap */
+.hljs.code-wrap,
+.hljs.code-wrap code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+/* Code Block Line Numbers */
+.markdown-body pre.hljs.has-line-numbers {
+    padding: 0;
+}
+
+.hljs.has-line-numbers code {
+    display: flex;
+    padding: 0;
+}
+
+.hljs.has-line-numbers .code-line-numbers {
+    flex-shrink: 0;
+    padding: 16px 12px;
+    text-align: right;
+    user-select: none;
+    color: #6e7681;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line-number {
+    display: block;
+    min-width: 1.5em;
+}
+
+.hljs.has-line-numbers .code-content {
+    flex: 1;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line {
+    display: block;
+}
+
+/* Word wrap with line numbers */
+.hljs.has-line-numbers.code-wrap .code-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-x: visible;
+}
+
+/* Dark mode line numbers */
+.dark .hljs.has-line-numbers .code-line-numbers {
+    color: #6e7681;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-right-color: rgba(255, 255, 255, 0.1);
+}
