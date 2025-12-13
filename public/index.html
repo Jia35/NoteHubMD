@@ -662,6 +662,34 @@
                                         筆記標籤需在筆記內容中使用 <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">###### tags: `標籤名稱`</code> 語法進行編輯。
                                     </p>
                                 </div>
+
+                                <!-- Book Info (for notes in a book) -->
+                                <div v-if="infoModalType === 'note' && infoModalItem.book" class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                    <div class="text-gray-500 dark:text-gray-400 mb-1">
+                                        <i class="fa-solid fa-book mr-1"></i>所屬書本：
+                                        <router-link :to="'/book/' + infoModalItem.book.id" class="text-blue-500 hover:underline" @click="showInfoModal = false">
+                                            {{ infoModalItem.book.title }}
+                                        </router-link>
+                                    </div>
+                                </div>
+
+                                <!-- Comments Toggle (for notes, Owner only) -->
+                                <div v-if="infoModalType === 'note' && infoModalItem.isOwner" class="border-t dark:border-gray-700 pt-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" v-model="infoCommentsEnabled" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ infoCommentsEnabled ? '開啟' : '關閉' }}</span>
+                                        </label>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        關閉後，此筆記將不顯示留言區域，現有留言也會被隱藏。
+                                    </p>
+                                </div>
                             </div>
 
                             <!-- Permission Tab Content -->

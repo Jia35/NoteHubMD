@@ -699,6 +699,7 @@ const Home = {
         const editableDescription = ref('');
         const editableTags = ref([]);
         const newTag = ref('');
+        const infoCommentsEnabled = ref(true);
 
         // Create Book modal state
         const showCreateBookModal = ref(false);
@@ -949,6 +950,7 @@ const Home = {
             editableDescription.value = item.description || '';
             editableTags.value = [...(item.tags || [])];
             editablePermission.value = item.permission || 'private';
+            infoCommentsEnabled.value = !item.commentsDisabled;
             infoModalTab.value = tab;
             showInfoModal.value = true;
             openMenuId.value = null;
@@ -993,12 +995,14 @@ const Home = {
                         books.value[bookIndex].permission = editablePermission.value;
                     }
                 } else {
+                    updateData.commentsDisabled = !infoCommentsEnabled.value;
                     await api.updateNote(infoModalItem.value.id, updateData);
                     // Update local note data
                     const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
                     if (noteIndex !== -1) {
                         notes.value[noteIndex].tags = [...editableTags.value];
                         notes.value[noteIndex].permission = editablePermission.value;
+                        notes.value[noteIndex].commentsDisabled = !infoCommentsEnabled.value;
                     }
                     // Also update in allNotesForTags
                     const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === infoModalItem.value.id);
@@ -1120,7 +1124,7 @@ const Home = {
             sortBy, sortOrder, sortOptions,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem, infoModalTab,
-            editableDescription, editableTags, newTag, editablePermission,
+            editableDescription, editableTags, newTag, editablePermission, infoCommentsEnabled,
             openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges, getPermissionLabel,
             showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal,
             // User permissions for info modal
