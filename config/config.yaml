@@ -1,0 +1,21 @@
+# NoteHubMD Configuration
+
+app:
+  version: "1.0.0"
+  basePath: "/"
+
+server:
+  port: 3001
+
+session:
+  # Sensitive: loaded from environment variable
+  secret: "${SESSION_SECRET}"
+
+database:
+  dialect: sqlite
+  storage: "./database/database.sqlite"
+  logging: false
+
+defaults:
+  notePermission: "private"   # private, auth-view, auth-edit, public-view, public-edit
+  bookPermission: "private"

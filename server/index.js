@@ -1,3 +1,4 @@
+const config = require('./config');
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -10,7 +11,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const PORT = process.env.PORT || 3001;
+const PORT = config.server.port;
 
 // Middleware
 app.use(bodyParser.json());
@@ -18,7 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/_uploads', express.static(path.join(__dirname, '../_uploads')));
 app.use(session({
-    secret: 'notehubmd-secret',
+    secret: config.session.secret,
     resave: false,
     saveUninitialized: false
 }));

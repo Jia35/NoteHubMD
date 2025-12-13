@@ -1,3 +1,5 @@
+const config = require('../config');
+
 module.exports = (sequelize, DataTypes) => {
     const Note = sequelize.define('Note', {
         id: {
@@ -14,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         permission: {
             type: DataTypes.STRING,
-            defaultValue: 'private'
+            defaultValue: config.defaults.notePermission
         },
         tags: {
             type: DataTypes.JSON
