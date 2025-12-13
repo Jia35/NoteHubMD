@@ -1409,6 +1409,7 @@ const Note = {
 
         // Note Info Modal
         const showNoteInfoModal = ref(false);
+        const noteInfoModalTab = ref('info'); // 'info' or 'permission'
         const noteCommentsEnabled = ref(true); // Default to enabled (inverse of commentsDisabled)
 
         // Editor statistics
@@ -2987,6 +2988,7 @@ const Note = {
             handleCommentBlur,
             // Note Info Modal
             showNoteInfoModal,
+            noteInfoModalTab,
             noteCommentsEnabled,
             saveNoteSettings
         };

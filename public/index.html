@@ -1366,186 +1366,188 @@
                     </div>
                 </div>
 
-                <!-- Permission Modal -->
-                <div v-if="showPermissionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showPermissionModal = false">
-                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
-                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                            <h2 class="text-lg font-bold text-gray-800 dark:text-white">
-                                <i class="fa-solid fa-lock mr-2"></i> 權限設定
-                            </h2>
-                            <button @click="showPermissionModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                <i class="fa-solid fa-xmark text-xl"></i>
-                            </button>
-                        </div>
-                        <div class="p-4">
-                            <!-- Permission Field -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">目前權限</label>
-                                <!-- Owner: Dropdown selector -->
-                                <template v-if="isOwner">
-                                    <select v-model="permission" @change="handlePermissionChange(permission)" 
-                                            class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                                            {{ opt.label }}
-                                        </option>
-                                    </select>
-                                    <p v-if="permission === 'inherit'" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        實際權限：{{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }}
-                                    </p>
-                                </template>
-                                <!-- Non-owner: Read-only display -->
-                                <template v-else>
-                                    <div class="flex items-center space-x-2 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
-                                        <i class="fa-solid fa-shield-halved text-blue-500"></i>
-                                        <span v-if="permission === 'inherit'">
-                                            繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
-                                        </span>
-                                        <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        <i class="fa-solid fa-info-circle mr-1"></i>
-                                        只有擁有者可以變更權限設定。
-                                    </p>
-                                </template>
-                            </div>
-                            
-                            <!-- User-specific Permissions (Owner only) -->
-                            <template v-if="isOwner">
-                                <div class="border-t dark:border-gray-600 pt-4 mt-4">
-                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                        <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
-                                    </label>
-                                    
-                                    <!-- Loading -->
-                                    <div v-if="loadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
-                                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
-                                    </div>
-                                    
-                                    <!-- Current user permissions list -->
-                                    <div v-if="userPermissions.length > 0" class="space-y-2 mb-3">
-                                        <div v-for="perm in userPermissions" :key="perm.userId" 
-                                             class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
-                                            <div class="flex items-center">
-                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
-                                                    <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
-                                                    <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                                </span>
-                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <select v-model="perm.permission" @change="updateUserPermissionLevel(perm, perm.permission)"
-                                                        class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
-                                                    <option value="view">可查看</option>
-                                                    <option value="edit">可編輯</option>
-                                                </select>
-                                                <button @click="removeUserPermission(perm.userId)" 
-                                                        class="text-red-500 hover:text-red-700 text-xs" title="移除">
-                                                    <i class="fa-solid fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Add user search -->
-                                    <div class="relative">
-                                        <div class="flex space-x-2">
-                                            <input v-model="userSearchQuery" @input="searchUsers" 
-                                                   type="text" placeholder="搜尋使用者名稱..."
-                                                   class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <select v-model="newUserPermission" 
-                                                    class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
-                                                <option value="view">可查看</option>
-                                                <option value="edit">可編輯</option>
-                                            </select>
-                                        </div>
-                                        <!-- Search results dropdown -->
-                                        <div v-if="userSearchResults.length > 0" 
-                                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
-                                            <button v-for="user in userSearchResults" :key="user.id" 
-                                                    @click="addUserPermission(user)"
-                                                    class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
-                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
-                                                    <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
-                                                    <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                                </span>
-                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
-                                                <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
-                                    </p>
-                                </div>
-                            </template>
-                        </div>
-                        <div class="flex justify-end p-4 border-t dark:border-gray-700">
-                            <button @click="showPermissionModal = false" 
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition">
-                                關閉
-                            </button>
-                        </div>
-                </div>
-                </div>
-
-                <!-- Note Info Modal -->
+                <!-- Note Info Modal (with tabs) -->
                 <div v-if="showNoteInfoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showNoteInfoModal = false">
-                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 h-[70vh] overflow-hidden flex flex-col">
                         <!-- Modal Header -->
-                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
                             <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-                                <i class="fa-solid fa-note-sticky mr-2"></i>筆記資訊
+                                <i class="fa-solid fa-note-sticky mr-2"></i>筆記設定
                             </h2>
                             <button @click="showNoteInfoModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                 <i class="fa-solid fa-xmark text-xl"></i>
                             </button>
                         </div>
                         
-                        <!-- Modal Body -->
-                        <div class="p-4 space-y-4">
-                            <!-- Note Info -->
-                            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ noteId }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ title || 'Untitled' }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">擁有者：<span class="text-gray-700 dark:text-gray-300">{{ noteOwner?.username || '(未知)' }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ lastEditor?.username || noteOwner?.username || '(未知)' }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ relativeLastContentEditedTime || '(無)' }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ charCount }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400">行數：<span class="text-gray-700 dark:text-gray-300">{{ lineCount }}</span></div>
+                        <!-- Modal Body with Tabs -->
+                        <div class="flex flex-1 overflow-hidden">
+                            <!-- Left Sidebar Tabs -->
+                            <div class="w-40 border-r dark:border-gray-700 shrink-0">
+                                <button @click="noteInfoModalTab = 'info'" 
+                                        :class="noteInfoModalTab === 'info' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                        class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
+                                    <i class="fa-solid fa-info-circle mr-2"></i>筆記資訊
+                                </button>
+                                <button @click="noteInfoModalTab = 'permission'" 
+                                        :class="noteInfoModalTab === 'permission' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                        class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
+                                    <i class="fa-solid fa-lock mr-2"></i>權限設定
+                                </button>
                             </div>
 
-                            <!-- Book Info (if in a book) -->
-                            <div v-if="book" class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">
-                                    <i class="fa-solid fa-book mr-1"></i>所屬書本：
-                                    <router-link :to="'/book/' + book.id" class="text-blue-500 hover:underline" @click="showNoteInfoModal = false">
-                                        {{ book.title }}
-                                    </router-link>
-                                </div>
-                            </div>
-
-                            <!-- Comments Toggle (Owner only) -->
-                            <div v-if="isOwner" class="border-t dark:border-gray-700 pt-4">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
+                            <!-- Right Content Area -->
+                            <div class="flex-1 overflow-y-auto">
+                                <!-- Info Tab Content -->
+                                <div v-show="noteInfoModalTab === 'info'" class="p-4 space-y-4">
+                                    <!-- Note Info -->
+                                    <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ noteId }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ title || 'Untitled' }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">擁有者：<span class="text-gray-700 dark:text-gray-300">{{ noteOwner?.username || '(未知)' }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ lastEditor?.username || noteOwner?.username || '(未知)' }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ relativeLastContentEditedTime || '(無)' }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ charCount }}</span></div>
+                                        <div class="text-gray-500 dark:text-gray-400">行數：<span class="text-gray-700 dark:text-gray-300">{{ lineCount }}</span></div>
                                     </div>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" v-model="noteCommentsEnabled" class="sr-only peer">
-                                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ noteCommentsEnabled ? '開啟' : '關閉' }}</span>
-                                    </label>
+
+                                    <!-- Book Info (if in a book) -->
+                                    <div v-if="book" class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                        <div class="text-gray-500 dark:text-gray-400 mb-1">
+                                            <i class="fa-solid fa-book mr-1"></i>所屬書本：
+                                            <router-link :to="'/book/' + book.id" class="text-blue-500 hover:underline" @click="showNoteInfoModal = false">
+                                                {{ book.title }}
+                                            </router-link>
+                                        </div>
+                                    </div>
+
+                                    <!-- Comments Toggle (Owner only) -->
+                                    <div v-if="isOwner" class="border-t dark:border-gray-700 pt-4">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center">
+                                                <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
+                                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" v-model="noteCommentsEnabled" class="sr-only peer">
+                                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ noteCommentsEnabled ? '開啟' : '關閉' }}</span>
+                                            </label>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                            關閉後，此筆記將不顯示留言區域，現有留言也會被隱藏。
+                                        </p>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    關閉後，此筆記將不顯示留言區域，現有留言也會被隱藏。
-                                </p>
+
+                                <!-- Permission Tab Content -->
+                                <div v-show="noteInfoModalTab === 'permission'" class="p-4">
+                                    <!-- Permission Field -->
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">目前權限</label>
+                                        <!-- Owner: Dropdown selector -->
+                                        <template v-if="isOwner">
+                                            <select v-model="permission" @change="handlePermissionChange(permission)" 
+                                                    class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
+                                                    {{ opt.label }}
+                                                </option>
+                                            </select>
+                                            <p v-if="permission === 'inherit'" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                實際權限：{{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }}
+                                            </p>
+                                        </template>
+                                        <!-- Non-owner: Read-only display -->
+                                        <template v-else>
+                                            <div class="flex items-center space-x-2 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded">
+                                                <i class="fa-solid fa-shield-halved text-blue-500"></i>
+                                                <span v-if="permission === 'inherit'">
+                                                    繼承書本 ({{ permissionOptions.find(o => o.value === effectivePermission)?.label || effectivePermission }})
+                                                </span>
+                                                <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                <i class="fa-solid fa-info-circle mr-1"></i>
+                                                只有擁有者可以變更權限設定。
+                                            </p>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- User-specific Permissions (Owner only) -->
+                                    <template v-if="isOwner">
+                                        <div class="border-t dark:border-gray-600 pt-4">
+                                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                                <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
+                                            </label>
+                                            
+                                            <!-- Loading -->
+                                            <div v-if="loadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
+                                                <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
+                                            </div>
+                                            
+                                            <!-- Current user permissions list -->
+                                            <div v-if="userPermissions.length > 0" class="space-y-2 mb-3">
+                                                <div v-for="perm in userPermissions" :key="perm.userId" 
+                                                     class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                                                    <div class="flex items-center">
+                                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                            <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
+                                                            <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                        </span>
+                                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <select v-model="perm.permission" @change="updateUserPermissionLevel(perm, perm.permission)"
+                                                                class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
+                                                            <option value="view">可查看</option>
+                                                            <option value="edit">可編輯</option>
+                                                        </select>
+                                                        <button @click="removeUserPermission(perm.userId)" 
+                                                                class="text-red-500 hover:text-red-700 text-xs" title="移除">
+                                                            <i class="fa-solid fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Add user search -->
+                                            <div class="relative">
+                                                <div class="flex space-x-2">
+                                                    <input v-model="userSearchQuery" @input="searchUsers" 
+                                                           type="text" placeholder="搜尋使用者名稱..."
+                                                           class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                    <select v-model="newUserPermission" 
+                                                            class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
+                                                        <option value="view">可查看</option>
+                                                        <option value="edit">可編輯</option>
+                                                    </select>
+                                                </div>
+                                                <!-- Search results dropdown -->
+                                                <div v-if="userSearchResults.length > 0" 
+                                                     class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                                    <button v-for="user in userSearchResults" :key="user.id" 
+                                                            @click="addUserPermission(user)"
+                                                            class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                            <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
+                                                            <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                        </span>
+                                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
+                                                        <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
+                                            </p>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Modal Footer -->
-                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700 shrink-0">
                             <button @click="showNoteInfoModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                                 {{ isOwner ? '取消' : '關閉' }}
                             </button>
@@ -1645,7 +1647,7 @@
                             </div>
                         </div>
                         <!-- Permission Button (Owner only) / Display (Non-owner) -->
-                        <button v-if="isOwner" @click="showPermissionModal = true" 
+                        <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
                                 class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
                                 title="點擊設定權限">
                             <i class="fa-solid fa-lock text-xs"></i>
@@ -1658,11 +1660,11 @@
                             <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
                         </span>
                         <!-- Note Info Button -->
-                        <button @click="showNoteInfoModal = true" 
+                        <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
                                 class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
-                                title="筆記資訊">
-                            <i class="fa-solid fa-info-circle text-xs"></i>
-                            <span>筆記資訊</span>
+                                title="筆記設定">
+                            <i class="fa-solid fa-cog text-xs"></i>
+                            <span>筆記設定</span>
                         </button>
                     </div>
                 </div>
