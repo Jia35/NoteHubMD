@@ -1631,6 +1631,31 @@ const Note = {
             }
         };
 
+        // Render basic markdown for comments (bold, italic, code, links)
+        const renderCommentMarkdown = (text) => {
+            if (!text) return '';
+            let html = text
+                // Escape HTML first
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                // Code blocks (```)
+                .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs my-1 overflow-x-auto"><code>$1</code></pre>')
+                // Inline code (`)
+                .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">$1</code>')
+                // Bold (**)
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                // Italic (*)
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                // Strikethrough (~~)
+                .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+                // Links [text](url)
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-blue-500 hover:underline">$1</a>')
+                // Newlines
+                .replace(/\n/g, '<br>');
+            return html;
+        };
+
 
         const createNewNote = async () => {
             try {
@@ -2540,6 +2565,18 @@ const Note = {
             // Global Ctrl+S handler
             window.addEventListener('keydown', handleGlobalSave);
 
+            // Close comment menu on outside click
+            document.addEventListener('click', (e) => {
+                if (openMenuId.value !== null) {
+                    // Check if click is inside a comment menu button or the menu itself
+                    const isMenuButton = e.target.closest('[data-comment-menu]');
+                    const isMenu = e.target.closest('.comment-menu-dropdown');
+                    if (!isMenuButton && !isMenu) {
+                        openMenuId.value = null;
+                    }
+                }
+            });
+
             // Load app version
             loadAppVersion();
 
@@ -2884,7 +2921,8 @@ const Note = {
             saveEditComment,
             startReply,
             cancelReply,
-            submitReply
+            submitReply,
+            renderCommentMarkdown
         };
     }
 };

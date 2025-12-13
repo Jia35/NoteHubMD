@@ -1655,10 +1655,10 @@
                                                     placeholder="寫下你的留言..."
                                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                                     rows="3"></textarea>
-                                                <div class="flex justify-end mt-2">
+                                                <div class="flex justify-end mt-1">
                                                     <button @click="submitComment" 
                                                         :disabled="!newComment.trim() || submittingComment"
-                                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                        class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
                                                         <i v-if="submittingComment" class="fa-solid fa-spinner fa-spin mr-1"></i>
                                                         送出留言
                                                     </button>
@@ -1701,11 +1701,11 @@
                                                             </div>
                                                             <!-- Dropdown Menu -->
                                                             <div v-if="canEditComment(comment) || canDeleteComment(comment)" class="relative">
-                                                                <button @click="toggleCommentMenu(comment.id)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1">
+                                                                <button @click="toggleCommentMenu(comment.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1">
                                                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                                                 </button>
                                                                 <div v-if="openMenuId === comment.id" 
-                                                                    class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
+                                                                    class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
                                                                     <button v-if="canEditComment(comment)" @click="startEditComment(comment)" 
                                                                         class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
                                                                         <i class="fa-solid fa-pen mr-2"></i>編輯
@@ -1731,7 +1731,7 @@
                                                         </div>
                                                         <!-- Display Mode -->
                                                         <template v-else>
-                                                            <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">{{ comment.content }}</p>
+                                                            <p class="text-gray-700 dark:text-gray-300 text-sm" v-html="renderCommentMarkdown(comment.content)"></p>
                                                             <!-- Reply Button -->
                                                             <button v-if="currentUser && commentsEnabled" @click="startReply(comment)" 
                                                                 class="mt-2 text-xs text-gray-400 hover:text-blue-500 transition">
@@ -1771,11 +1771,11 @@
                                                                 </div>
                                                                 <!-- Reply Dropdown Menu -->
                                                                 <div v-if="canEditComment(reply) || canDeleteComment(reply)" class="relative">
-                                                                    <button @click="toggleCommentMenu(reply.id)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 text-xs">
+                                                                    <button @click="toggleCommentMenu(reply.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 text-xs">
                                                                         <i class="fa-solid fa-ellipsis-vertical"></i>
                                                                     </button>
                                                                     <div v-if="openMenuId === reply.id" 
-                                                                        class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
+                                                                        class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
                                                                         <button v-if="canEditComment(reply)" @click="startEditComment(reply)" 
                                                                             class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
                                                                             <i class="fa-solid fa-pen mr-2"></i>編輯
@@ -1799,7 +1799,7 @@
                                                                         class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50">儲存</button>
                                                                 </div>
                                                             </div>
-                                                            <p v-else class="text-gray-600 dark:text-gray-400 text-xs whitespace-pre-wrap">{{ reply.content }}</p>
+                                                            <p v-else class="text-gray-600 dark:text-gray-400 text-xs" v-html="renderCommentMarkdown(reply.content)"></p>
                                                         </div>
                                                     </div>
                                                 </div>
