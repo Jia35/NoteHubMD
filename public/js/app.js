@@ -428,12 +428,25 @@ const Sidebar = {
         // Pinned items
         const pinnedItems = ref([]);
 
+        // App version
+        const appVersion = ref('');
+
         const loadPinnedItems = async () => {
             try {
                 const data = await api.getPinnedItems();
                 pinnedItems.value = data;
             } catch (e) {
                 console.error('[Sidebar] Failed to load pinned items:', e);
+            }
+        };
+
+        const loadAppVersion = async () => {
+            try {
+                const response = await fetch('/api/version');
+                const data = await response.json();
+                appVersion.value = data.version || '';
+            } catch (e) {
+                console.error('[Sidebar] Failed to load version:', e);
             }
         };
 
@@ -570,6 +583,7 @@ const Sidebar = {
         onMounted(() => {
             updateThemeClass(theme.value);
             loadPinnedItems();
+            loadAppVersion();
             // Listen for pin updates from other components
             window.addEventListener('pins-updated', loadPinnedItems);
         });
@@ -587,7 +601,9 @@ const Sidebar = {
             showUserProfileModal, editableName, avatarPreview,
             openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile,
             // Pinned items
-            pinnedItems, unpinItem
+            pinnedItems, unpinItem,
+            // App version
+            appVersion
         };
     }
 };

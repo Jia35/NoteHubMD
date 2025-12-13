@@ -4,7 +4,13 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const db = require('../models');
+const config = require('../config');
 const { generateId } = require('../utils/idGenerator');
+
+// --- App Info ---
+router.get('/version', (req, res) => {
+    res.json({ version: config.app.version });
+});
 
 // --- Image Upload ---
 
