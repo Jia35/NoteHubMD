@@ -280,6 +280,14 @@
                         </div>
                     </div>
 
+                    <!-- Admin Dashboard Link (only for admin/super-admin) -->
+                    <div v-if="user && (user.role === 'super-admin' || user.role === 'admin')" class="mb-4">
+                        <router-link to="/admin" @click="showSettings = false" 
+                                     class="flex items-center w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
+                            <i class="fa-solid fa-user-shield mr-2"></i> 管理後台
+                        </router-link>
+                    </div>
+
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                         <button @click="logout" class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
                     </div>
@@ -744,6 +752,94 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="admin-template">
+        <div class="p-8 container mx-auto overflow-y-auto h-full">
+            <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
+                <router-link to="/" class="hover:text-blue-500">Home</router-link>
+                <span class="mx-2">/</span>
+                <span>管理後台</span>
+            </div>
+
+            <h1 class="text-3xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
+                <i class="fa-solid fa-user-shield mr-3"></i> 管理後台
+            </h1>
+
+            <div v-if="loading" class="text-gray-500 dark:text-gray-400">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i> 載入中...
+            </div>
+
+            <div v-else-if="!isAdmin" class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded">
+                <i class="fa-solid fa-ban mr-2"></i> 您沒有權限進入此頁面
+            </div>
+
+            <div v-else>
+                <h2 class="text-xl font-bold mb-4 text-gray-700 dark:text-gray-300">
+                    <i class="fa-solid fa-users mr-2"></i> 使用者列表
+                </h2>
+
+                <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">使用者</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">身分</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">加入時間</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">上次活動</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">書/筆記</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ user.id }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 shrink-0 overflow-hidden bg-blue-600 text-white text-sm">
+                                            <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
+                                            <span v-else>{{ user.username?.charAt(0).toUpperCase() }}</span>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ user.name || user.username }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">@{{ user.username }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <select v-if="canChangeRole(user)"
+                                            v-model="user.role" 
+                                            @change="updateRole(user)"
+                                            class="text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-200">
+                                        <option value="super-admin" :disabled="currentUserRole !== 'super-admin'">super-admin</option>
+                                        <option value="admin">admin</option>
+                                        <option value="user">user</option>
+                                    </select>
+                                    <span v-else class="text-sm px-2 py-1 rounded" 
+                                          :class="{
+                                              'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300': user.role === 'super-admin',
+                                              'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': user.role === 'admin',
+                                              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': user.role === 'user'
+                                          }">
+                                        {{ user.role }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                    {{ formatDateTime(user.createdAt) }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                    {{ user.lastActiveAt ? formatRelativeTime(user.lastActiveAt) : '從未' }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                    <span class="mr-2"><i class="fa-solid fa-book mr-1"></i>{{ user.bookCount }}</span>
+                                    <span><i class="fa-solid fa-note-sticky mr-1"></i>{{ user.noteCount }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

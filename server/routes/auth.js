@@ -16,14 +16,20 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Username already exists' });
         }
 
+        // First user becomes super-admin
+        const userCount = await db.User.count();
+        const role = userCount === 0 ? 'super-admin' : 'user';
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await db.User.create({
             username,
-            password: hashedPassword
+            password: hashedPassword,
+            role,
+            lastActiveAt: new Date()
         });
 
         req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username });
+        res.json({ id: user.id, username: user.username, role: user.role });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -39,8 +45,11 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Update last active time
+        await user.update({ lastActiveAt: new Date() });
+
         req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username });
+        res.json({ id: user.id, username: user.username, role: user.role });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -59,12 +68,14 @@ router.get('/me', async (req, res) => {
     }
     try {
         const user = await db.User.findByPk(req.session.userId, {
-            attributes: ['id', 'username', 'name', 'avatar', 'pinnedItems']
+            attributes: ['id', 'username', 'name', 'avatar', 'pinnedItems', 'role']
         });
         if (!user) {
             req.session.destroy();
             return res.status(401).json({ error: 'User not found' });
         }
+        // Update last active time
+        await user.update({ lastActiveAt: new Date() });
         res.json(user);
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -15,6 +15,17 @@ module.exports = (sequelize, DataTypes) => {
         avatar: {
             type: DataTypes.STRING
         },
+        role: {
+            type: DataTypes.STRING,
+            defaultValue: 'user',
+            validate: {
+                isIn: [['super-admin', 'admin', 'user']]
+            }
+        },
+        lastActiveAt: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
         pinnedItems: {
             type: DataTypes.TEXT,
             defaultValue: '[]',

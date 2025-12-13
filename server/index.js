@@ -26,6 +26,7 @@ app.use(session({
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
 // Serve index.html for all non-api routes (SPA support)

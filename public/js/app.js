@@ -2687,6 +2687,113 @@ const Trash = {
     }
 };
 
+const Admin = {
+    template: '#admin-template',
+    setup() {
+        const users = ref([]);
+        const loading = ref(true);
+        const currentUserRole = ref(null);
+        const isAdmin = ref(false);
+
+        const formatDateTime = (dateStr) => {
+            if (!dateStr) return '—';
+            const date = new Date(dateStr);
+            return date.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+
+        const formatRelativeTime = (dateStr) => {
+            if (!dateStr) return '—';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return '剛剛';
+            if (diffMins < 60) return `${diffMins} 分鐘前`;
+            if (diffHours < 24) return `${diffHours} 小時前`;
+            if (diffDays < 7) return `${diffDays} 天前`;
+            return formatDateTime(dateStr);
+        };
+
+        const canChangeRole = (user) => {
+            // Cannot change own role
+            if (user.id === currentUserCache?.id) return false;
+            // Super-admin can change anyone
+            if (currentUserRole.value === 'super-admin') return true;
+            // Admin can change non-super-admin users
+            if (currentUserRole.value === 'admin' && user.role !== 'super-admin') return true;
+            return false;
+        };
+
+        const updateRole = async (user) => {
+            try {
+                const response = await fetch(`/api/admin/users/${user.id}/role`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: user.role })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+            } catch (e) {
+                alert('更新失敗：' + e.message);
+                // Reload to restore original state
+                loadUsers();
+            }
+        };
+
+        const loadUsers = async () => {
+            loading.value = true;
+            try {
+                // Check current user role
+                const me = await api.getMe();
+                currentUserCache = me;
+                currentUserRole.value = me?.role;
+                isAdmin.value = me?.role === 'super-admin' || me?.role === 'admin';
+
+                if (!isAdmin.value) {
+                    loading.value = false;
+                    return;
+                }
+
+                // Fetch users
+                const response = await fetch('/api/admin/users');
+                if (!response.ok) {
+                    throw new Error('Failed to load users');
+                }
+                users.value = await response.json();
+            } catch (e) {
+                console.error('Failed to load admin data', e);
+                isAdmin.value = false;
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        onMounted(loadUsers);
+
+        return {
+            users,
+            loading,
+            isAdmin,
+            currentUserRole,
+            formatDateTime,
+            formatRelativeTime,
+            canChangeRole,
+            updateRole
+        };
+    }
+};
+
 const routes = [
     { path: '/login', component: Login },
     {
@@ -2696,6 +2803,7 @@ const routes = [
             { path: '', component: Home },
             { path: 'book/:id', component: Book },
             { path: 'trash', component: Trash },
+            { path: 'admin', component: Admin },
         ]
     },
     { path: '/note/:id', component: Note }, // Note view takes full screen
