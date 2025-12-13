@@ -1407,6 +1407,10 @@ const Note = {
         const bookId = ref(null); // Track if note belongs to a book
         const book = ref(null); // Store book info if note is in a book
 
+        // Note Info Modal
+        const showNoteInfoModal = ref(false);
+        const noteCommentsEnabled = ref(true); // Default to enabled (inverse of commentsDisabled)
+
         // Editor statistics
         const charCount = computed(() => content.value.length);
         const lineCount = computed(() => content.value.split('\n').length);
@@ -1698,6 +1702,17 @@ const Note = {
             return html;
         };
 
+        // Save note settings (commentsDisabled toggle)
+        const saveNoteSettings = async () => {
+            try {
+                await api.updateNote(noteId.value, {
+                    commentsDisabled: !noteCommentsEnabled.value
+                });
+                showNoteInfoModal.value = false;
+            } catch (e) {
+                globalModal.showAlert('儲存失敗：' + e.message);
+            }
+        };
 
         const createNewNote = async () => {
             try {
@@ -2650,6 +2665,7 @@ const Note = {
                 lastEditor.value = note.lastEditor || null;
                 updatedAt.value = note.updatedAt || null;
                 lastEditedAt.value = note.lastEditedAt || null;
+                noteCommentsEnabled.value = !note.commentsDisabled; // Invert: true means enabled
 
                 // If user can't edit and no specific mode was requested, default to 'view' mode
                 if (!canEdit.value && !('edit' in route.query) && !('both' in route.query) && !('view' in route.query)) {
@@ -2968,7 +2984,11 @@ const Note = {
             commentTextarea,
             commentPreviewMode,
             autoGrowCommentTextarea,
-            handleCommentBlur
+            handleCommentBlur,
+            // Note Info Modal
+            showNoteInfoModal,
+            noteCommentsEnabled,
+            saveNoteSettings
         };
     }
 };

@@ -270,7 +270,12 @@ router.put('/notes/:id', async (req, res) => {
 
         // Prevent permission from being updated via this endpoint
         // Use PUT /notes/:id/permission instead
-        const { permission: _, ...updateData } = req.body;
+        const { permission: _, commentsDisabled: requestedCommentsDisabled, ...updateData } = req.body;
+
+        // Only owner can update commentsDisabled
+        if (isOwner && requestedCommentsDisabled !== undefined) {
+            updateData.commentsDisabled = requestedCommentsDisabled;
+        }
 
         // Auto-parse tags from content if content is being updated
         if (updateData.content !== undefined) {
@@ -1122,6 +1127,11 @@ router.post('/notes/:id/comments', async (req, res) => {
         const note = await db.Note.findByPk(req.params.id);
         if (!note) {
             return res.status(404).json({ error: 'Note not found' });
+        }
+
+        // Check if comments are disabled for this note
+        if (note.commentsDisabled) {
+            return res.status(403).json({ error: 'Comments are disabled for this note' });
         }
 
         // If replying, check parent comment exists

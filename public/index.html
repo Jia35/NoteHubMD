@@ -1486,6 +1486,73 @@
                                 關閉
                             </button>
                         </div>
+                </div>
+                </div>
+
+                <!-- Note Info Modal -->
+                <div v-if="showNoteInfoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showNoteInfoModal = false">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                        <!-- Modal Header -->
+                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                                <i class="fa-solid fa-note-sticky mr-2"></i>筆記資訊
+                            </h2>
+                            <button @click="showNoteInfoModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Modal Body -->
+                        <div class="p-4 space-y-4">
+                            <!-- Note Info -->
+                            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ noteId }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ title || 'Untitled' }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">擁有者：<span class="text-gray-700 dark:text-gray-300">{{ noteOwner?.username || '(未知)' }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ lastEditor?.username || noteOwner?.username || '(未知)' }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ relativeLastContentEditedTime || '(無)' }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ charCount }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400">行數：<span class="text-gray-700 dark:text-gray-300">{{ lineCount }}</span></div>
+                            </div>
+
+                            <!-- Book Info (if in a book) -->
+                            <div v-if="book" class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">
+                                    <i class="fa-solid fa-book mr-1"></i>所屬書本：
+                                    <router-link :to="'/book/' + book.id" class="text-blue-500 hover:underline" @click="showNoteInfoModal = false">
+                                        {{ book.title }}
+                                    </router-link>
+                                </div>
+                            </div>
+
+                            <!-- Comments Toggle (Owner only) -->
+                            <div v-if="isOwner" class="border-t dark:border-gray-700 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" v-model="noteCommentsEnabled" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ noteCommentsEnabled ? '開啟' : '關閉' }}</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    關閉後，此筆記將不顯示留言區域，現有留言也會被隱藏。
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Modal Footer -->
+                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                            <button @click="showNoteInfoModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                {{ isOwner ? '取消' : '關閉' }}
+                            </button>
+                            <button v-if="isOwner" @click="saveNoteSettings" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                <i class="fa-solid fa-save mr-1"></i>儲存
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
@@ -1590,6 +1657,13 @@
                             <span v-if="permission === 'inherit'">繼承書本</span>
                             <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
                         </span>
+                        <!-- Note Info Button -->
+                        <button @click="showNoteInfoModal = true" 
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                title="筆記資訊">
+                            <i class="fa-solid fa-info-circle text-xs"></i>
+                            <span>筆記資訊</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -1695,8 +1769,8 @@
                                 <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
                             </div>
 
-                            <!-- Comments Section -->
-                            <div v-if="mode === 'view' || mode === 'both'" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                            <!-- Comments Section (hidden when commentsDisabled) -->
+                            <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                                 :class="{'flex justify-center': !showEditor}">
                                 <div :class="{'max-w-[800px] w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}">
                                     <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
