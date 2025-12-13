@@ -1,4 +1,4 @@
-const { createApp, ref, onMounted, onUnmounted, computed, watch, nextTick } = Vue;
+const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick, getCurrentInstance } = Vue;
 const { createRouter, createWebHistory, useRoute } = VueRouter;
 
 const socket = io();
@@ -14,6 +14,27 @@ async function getCurrentUser() {
         return null;
     }
 }
+
+// Global Modal State (will be linked to app root after mount)
+let appInstance = null;
+
+const globalModal = {
+    showAlert: (message, options = {}) => {
+        if (appInstance) {
+            return appInstance.showAlert(message, options);
+        }
+        // Fallback to native alert
+        globalModal.showAlert(message);
+        return Promise.resolve(true);
+    },
+    showConfirm: (message, options = {}) => {
+        if (appInstance) {
+            return appInstance.showConfirm(message, options);
+        }
+        // Fallback to native confirm
+        return Promise.resolve(confirm(message));
+    }
+};
 
 // Utils
 function debounce(func, wait) {
@@ -455,7 +476,7 @@ const Sidebar = {
                 await api.removePin(type, id);
                 pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id));
             } catch (e) {
-                alert('取消釘選失敗');
+                globalModal.showAlert('取消釘選失敗');
             }
         };
 
@@ -485,7 +506,7 @@ const Sidebar = {
                 };
                 reader.readAsDataURL(compressedFile);
             } catch (e) {
-                alert('圖片處理失敗：' + e.message);
+                globalModal.showAlert('圖片處理失敗：' + e.message);
             }
         };
 
@@ -521,7 +542,7 @@ const Sidebar = {
                 avatarRemoved.value = false;
                 showUserProfileModal.value = false;
             } catch (e) {
-                alert('儲存失敗：' + e.message);
+                globalModal.showAlert('儲存失敗：' + e.message);
             } finally {
                 savingProfile.value = false;
             }
@@ -551,7 +572,7 @@ const Sidebar = {
             try {
                 const note = await api.createNote();
                 window.location.href = '/note/' + note.id;
-            } catch (e) { alert('Error creating note'); }
+            } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
         // Create Book Modal state and functions
@@ -567,7 +588,7 @@ const Sidebar = {
 
         const createBook = async () => {
             if (!newBookTitle.value.trim()) {
-                alert('請輸入書本標題');
+                globalModal.showAlert('請輸入書本標題');
                 return;
             }
             try {
@@ -577,7 +598,7 @@ const Sidebar = {
                 });
                 showCreateBookModal.value = false;
                 window.location.href = '/book/' + book.id;
-            } catch (e) { alert('Error creating book'); }
+            } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
         onMounted(() => {
@@ -713,7 +734,7 @@ const Home = {
                 window.dispatchEvent(new Event('pins-updated'));
             } catch (e) {
                 console.error('togglePin error:', e);
-                alert('操作失敗: ' + e.message);
+                globalModal.showAlert('操作失敗: ' + e.message);
             }
         };
 
@@ -853,7 +874,7 @@ const Home = {
             try {
                 const note = await api.createNote();
                 router.push('/note/' + note.id);
-            } catch (e) { alert('Error creating note'); }
+            } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
         const openCreateBookModal = () => {
@@ -864,7 +885,7 @@ const Home = {
 
         const createBook = async () => {
             if (!newBookTitle.value.trim()) {
-                alert('請輸入書本標題');
+                globalModal.showAlert('請輸入書本標題');
                 return;
             }
             try {
@@ -874,25 +895,25 @@ const Home = {
                 });
                 showCreateBookModal.value = false;
                 router.push('/book/' + book.id);
-            } catch (e) { alert('Error creating book'); }
+            } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
         const deleteNote = async (id, event) => {
             event.stopPropagation();
-            if (!confirm('確定要刪除此筆記？（可從垃圾桶還原）')) return;
+            if (!await globalModal.showConfirm('確定要刪除此筆記？（可從垃圾桶還原）')) return;
             try {
                 await api.deleteNote(id);
                 notes.value = notes.value.filter(n => n.id !== id);
-            } catch (e) { alert('刪除失敗'); }
+            } catch (e) { globalModal.showAlert('刪除失敗'); }
         };
 
         const deleteBook = async (id, event) => {
             event.stopPropagation();
-            if (!confirm('確定要刪除此書本？（可從垃圾桶還原）')) return;
+            if (!await globalModal.showConfirm('確定要刪除此書本？（可從垃圾桶還原）')) return;
             try {
                 await api.deleteBook(id);
                 books.value = books.value.filter(b => b.id !== id);
-            } catch (e) { alert('刪除失敗'); }
+            } catch (e) { globalModal.showAlert('刪除失敗'); }
         };
 
         // Menu functions
@@ -984,7 +1005,7 @@ const Home = {
                     }
                 }
                 showInfoModal.value = false;
-            } catch (e) { alert('儲存失敗'); }
+            } catch (e) { globalModal.showAlert('儲存失敗'); }
         };
 
         // User permissions state for Home info modal
@@ -1038,7 +1059,7 @@ const Home = {
                 infoUserSearchQuery.value = '';
                 infoUserSearchResults.value = [];
             } catch (e) {
-                alert('新增失敗：' + e.message);
+                globalModal.showAlert('新增失敗：' + e.message);
             }
         };
 
@@ -1051,7 +1072,7 @@ const Home = {
                 }
                 infoUserPermissions.value = infoUserPermissions.value.filter(p => p.userId !== userId);
             } catch (e) {
-                alert('移除失敗：' + e.message);
+                globalModal.showAlert('移除失敗：' + e.message);
             }
         };
 
@@ -1064,7 +1085,7 @@ const Home = {
                 }
                 perm.permission = newLevel;
             } catch (e) {
-                alert('更新失敗：' + e.message);
+                globalModal.showAlert('更新失敗：' + e.message);
             }
         };
 
@@ -1175,7 +1196,7 @@ const Book = {
                 infoUserSearchQuery.value = '';
                 infoUserSearchResults.value = [];
             } catch (e) {
-                alert('新增失敗：' + e.message);
+                globalModal.showAlert('新增失敗：' + e.message);
             }
         };
 
@@ -1184,7 +1205,7 @@ const Book = {
                 await api.removeBookUserPermission(book.value.id, userId);
                 infoUserPermissions.value = infoUserPermissions.value.filter(p => p.userId !== userId);
             } catch (e) {
-                alert('移除失敗：' + e.message);
+                globalModal.showAlert('移除失敗：' + e.message);
             }
         };
 
@@ -1193,7 +1214,7 @@ const Book = {
                 await api.addBookUserPermission(book.value.id, perm.userId, newLevel);
                 perm.permission = newLevel;
             } catch (e) {
-                alert('更新失敗：' + e.message);
+                globalModal.showAlert('更新失敗：' + e.message);
             }
         };
 
@@ -1240,7 +1261,7 @@ const Book = {
                         await api.reorderBookNotes(book.value.id, noteIds);
                     } catch (e) {
                         console.error('Failed to reorder notes', e);
-                        alert('排序失敗');
+                        globalModal.showAlert('排序失敗');
                         // Reload to restore original order
                         loadBook();
                     }
@@ -1264,15 +1285,15 @@ const Book = {
                 console.error('Failed to load book', e);
                 // Handle access errors
                 if (e.message.includes('Login required')) {
-                    alert('需要登入才能存取此書本');
+                    globalModal.showAlert('需要登入才能存取此書本');
                     router.push('/login');
                     return;
                 } else if (e.message.includes('Access denied')) {
-                    alert('您沒有權限存取此書本');
+                    globalModal.showAlert('您沒有權限存取此書本');
                     router.push('/');
                     return;
                 }
-                alert('Book not found');
+                globalModal.showAlert('Book not found');
                 router.push('/');
             }
         };
@@ -1283,9 +1304,9 @@ const Book = {
                 router.push('/note/' + note.id);
             } catch (e) {
                 if (e.message.includes('Cannot add notes')) {
-                    alert('您沒有權限在此書本新增筆記');
+                    globalModal.showAlert('您沒有權限在此書本新增筆記');
                 } else {
-                    alert('Error creating note');
+                    globalModal.showAlert('Error creating note');
                 }
             }
         };
@@ -1296,7 +1317,7 @@ const Book = {
                 permission.value = newPermission;
             } catch (e) {
                 console.error('Failed to update permission', e);
-                alert('無法更新權限：' + e.message);
+                globalModal.showAlert('無法更新權限：' + e.message);
             }
         };
 
@@ -1336,7 +1357,7 @@ const Book = {
                 book.value.description = editableDescription.value;
                 book.value.tags = [...editableTags.value];
                 showInfoModal.value = false;
-            } catch (e) { alert('儲存失敗'); }
+            } catch (e) { globalModal.showAlert('儲存失敗'); }
         };
 
         onMounted(loadBook);
@@ -1501,14 +1522,14 @@ const Note = {
                 comments.value.unshift(comment);
                 newComment.value = '';
             } catch (e) {
-                alert('留言失敗：' + e.message);
+                globalModal.showAlert('留言失敗：' + e.message);
             } finally {
                 submittingComment.value = false;
             }
         };
 
         const deleteComment = async (commentId) => {
-            if (!confirm('確定要刪除這則留言嗎？')) return;
+            if (!await globalModal.showConfirm('確定要刪除這則留言嗎？')) return;
             try {
                 const response = await fetch(`/api/comments/${commentId}`, {
                     method: 'DELETE'
@@ -1519,7 +1540,7 @@ const Note = {
                 }
                 comments.value = comments.value.filter(c => c.id !== commentId);
             } catch (e) {
-                alert('刪除失敗：' + e.message);
+                globalModal.showAlert('刪除失敗：' + e.message);
             }
         };
 
@@ -1604,7 +1625,7 @@ const Note = {
                 }
                 cancelEditComment();
             } catch (e) {
-                alert('編輯失敗：' + e.message);
+                globalModal.showAlert('編輯失敗：' + e.message);
             }
         };
 
@@ -1638,7 +1659,7 @@ const Note = {
                 comments.value.unshift(reply);
                 cancelReply();
             } catch (e) {
-                alert('回覆失敗：' + e.message);
+                globalModal.showAlert('回覆失敗：' + e.message);
             }
         };
 
@@ -1680,7 +1701,7 @@ const Note = {
                 const note = await api.createNote();
                 router.push('/note/' + note.id);
                 showSidebar.value = false;
-            } catch (e) { alert('Error creating note'); }
+            } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
         const openCreateBookModal = () => {
@@ -1692,7 +1713,7 @@ const Note = {
 
         const createBookFromNote = async () => {
             if (!newBookTitle.value.trim()) {
-                alert('請輸入書本標題');
+                globalModal.showAlert('請輸入書本標題');
                 return;
             }
             try {
@@ -1702,7 +1723,7 @@ const Note = {
                 });
                 showCreateBookModalLocal.value = false;
                 router.push('/book/' + book.id);
-            } catch (e) { alert('Error creating book'); }
+            } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
         // Settings modal state
@@ -1754,7 +1775,7 @@ const Note = {
                 userSearchQuery.value = '';
                 userSearchResults.value = [];
             } catch (e) {
-                alert('新增失敗：' + e.message);
+                globalModal.showAlert('新增失敗：' + e.message);
             }
         };
 
@@ -1763,7 +1784,7 @@ const Note = {
                 await api.removeNoteUserPermission(noteId.value, userId);
                 userPermissions.value = userPermissions.value.filter(p => p.userId !== userId);
             } catch (e) {
-                alert('移除失敗：' + e.message);
+                globalModal.showAlert('移除失敗：' + e.message);
             }
         };
 
@@ -1772,7 +1793,7 @@ const Note = {
                 await api.addNoteUserPermission(noteId.value, perm.userId, newLevel);
                 perm.permission = newLevel;
             } catch (e) {
-                alert('更新失敗：' + e.message);
+                globalModal.showAlert('更新失敗：' + e.message);
             }
         };
 
@@ -1815,7 +1836,7 @@ const Note = {
                 };
                 reader.readAsDataURL(compressedFile);
             } catch (e) {
-                alert('圖片處理失敗：' + e.message);
+                globalModal.showAlert('圖片處理失敗：' + e.message);
             }
         };
 
@@ -1851,7 +1872,7 @@ const Note = {
                 avatarRemoved.value = false;
                 showUserProfileModal.value = false;
             } catch (e) {
-                alert('儲存失敗：' + e.message);
+                globalModal.showAlert('儲存失敗：' + e.message);
             } finally {
                 savingProfile.value = false;
             }
@@ -2239,7 +2260,7 @@ const Note = {
                 permission.value = newPermission;
             } catch (e) {
                 console.error('Failed to update permission', e);
-                alert('無法更新權限：' + e.message);
+                globalModal.showAlert('無法更新權限：' + e.message);
             }
         };
 
@@ -2356,7 +2377,7 @@ const Note = {
                     cm.replaceRange(markdown + '\n', cursor);
                 } catch (error) {
                     console.error('Upload failed:', error);
-                    alert('圖片上傳失敗：' + error.message);
+                    globalModal.showAlert('圖片上傳失敗：' + error.message);
                 }
             }
         };
@@ -2378,7 +2399,7 @@ const Note = {
                         cm.replaceRange(markdown, cursor);
                     } catch (error) {
                         console.error('Upload failed:', error);
-                        alert('圖片上傳失敗：' + error.message);
+                        globalModal.showAlert('圖片上傳失敗：' + error.message);
                     }
                     return; // Only handle first image
                 }
@@ -2636,13 +2657,13 @@ const Note = {
                 console.error('Failed to load note', e);
                 // Handle access errors
                 if (e.message.includes('Login required')) {
-                    alert('需要登入才能存取此筆記');
+                    globalModal.showAlert('需要登入才能存取此筆記');
                     // Use window.location to get the actual current URL
                     const currentPath = window.location.pathname + window.location.search;
                     router.push({ path: '/login', query: { redirect: currentPath } });
                     return;
                 } else if (e.message.includes('Access denied')) {
-                    alert('您沒有權限存取此筆記');
+                    globalModal.showAlert('您沒有權限存取此筆記');
                     router.push('/');
                     return;
                 }
@@ -2831,10 +2852,10 @@ const Note = {
                 } catch (e) {
                     console.error('Failed to load note', e);
                     if (e.message.includes('Login required')) {
-                        alert('需要登入才能存取此筆記');
+                        globalModal.showAlert('需要登入才能存取此筆記');
                         router.push({ path: '/login', query: { redirect: '/note/' + newNoteId } });
                     } else if (e.message.includes('Access denied')) {
-                        alert('您沒有權限存取此筆記');
+                        globalModal.showAlert('您沒有權限存取此筆記');
                         router.push('/');
                     }
                 }
@@ -2973,30 +2994,30 @@ const Trash = {
             try {
                 await api.restoreNote(id);
                 notes.value = notes.value.filter(n => n.id !== id);
-            } catch (e) { alert('還原失敗'); }
+            } catch (e) { globalModal.showAlert('還原失敗'); }
         };
 
         const forceDeleteNote = async (id) => {
-            if (!confirm('確定要永久刪除此筆記？此操作無法復原！')) return;
+            if (!await globalModal.showConfirm('確定要永久刪除此筆記？此操作無法復原！', { type: 'error' })) return;
             try {
                 await api.forceDeleteNote(id);
                 notes.value = notes.value.filter(n => n.id !== id);
-            } catch (e) { alert('刪除失敗'); }
+            } catch (e) { globalModal.showAlert('刪除失敗'); }
         };
 
         const restoreBook = async (id) => {
             try {
                 await api.restoreBook(id);
                 books.value = books.value.filter(b => b.id !== id);
-            } catch (e) { alert('還原失敗'); }
+            } catch (e) { globalModal.showAlert('還原失敗'); }
         };
 
         const forceDeleteBook = async (id) => {
-            if (!confirm('確定要永久刪除此書本？此操作無法復原！')) return;
+            if (!await globalModal.showConfirm('確定要永久刪除此書本？此操作無法復原！', { type: 'error' })) return;
             try {
                 await api.forceDeleteBook(id);
                 books.value = books.value.filter(b => b.id !== id);
-            } catch (e) { alert('刪除失敗'); }
+            } catch (e) { globalModal.showAlert('刪除失敗'); }
         };
 
         onMounted(loadTrash);
@@ -3063,7 +3084,7 @@ const Admin = {
                     throw new Error(error.error);
                 }
             } catch (e) {
-                alert('更新失敗：' + e.message);
+                globalModal.showAlert('更新失敗：' + e.message);
                 // Reload to restore original state
                 loadUsers();
             }
@@ -3158,6 +3179,56 @@ router.beforeEach(async (to, from, next) => {
 
 const app = createApp({
     setup() {
+        // Modal state
+        const modal = reactive({
+            show: false,
+            type: 'alert', // alert, confirm, info, success, warning, error
+            title: '',
+            message: '',
+            confirmText: '確定',
+            cancelText: '取消',
+            resolve: null
+        });
+
+        const showModal = (options) => {
+            return new Promise((resolve) => {
+                modal.show = true;
+                modal.type = options.type || 'alert';
+                modal.title = options.title || '';
+                modal.message = options.message || '';
+                modal.confirmText = options.confirmText || '確定';
+                modal.cancelText = options.cancelText || '取消';
+                modal.resolve = resolve;
+            });
+        };
+
+        const showAlert = (message, options = {}) => {
+            return showModal({
+                type: options.type || 'alert',
+                title: options.title || '',
+                message,
+                confirmText: options.confirmText || '確定'
+            });
+        };
+
+        const showConfirm = (message, options = {}) => {
+            return showModal({
+                type: 'confirm',
+                title: options.title || '確認',
+                message,
+                confirmText: options.confirmText || '確定',
+                cancelText: options.cancelText || '取消'
+            });
+        };
+
+        const closeModal = (result = true) => {
+            modal.show = false;
+            if (modal.resolve) {
+                modal.resolve(result);
+                modal.resolve = null;
+            }
+        };
+
         onMounted(() => {
             const theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
             if (theme === 'dark') {
@@ -3165,8 +3236,17 @@ const app = createApp({
             } else {
                 document.documentElement.classList.remove('dark');
             }
+            // Link global modal helper
+            appInstance = { showAlert, showConfirm };
         });
-        return {};
+
+        return {
+            modal,
+            showModal,
+            showAlert,
+            showConfirm,
+            closeModal
+        };
     }
 });
 

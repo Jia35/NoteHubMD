@@ -757,3 +757,15 @@ li.CodeMirror-hint-active {
     background-color: rgba(255, 255, 255, 0.05);
     border-right-color: rgba(255, 255, 255, 0.1);
 }
+
+/* Modal Scale Transition */
+.modal-scale-enter-active,
+.modal-scale-leave-active {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.modal-scale-enter-from,
+.modal-scale-leave-to {
+    transform: scale(0.9);
+    opacity: 0;
+}
