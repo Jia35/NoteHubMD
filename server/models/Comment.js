@@ -16,6 +16,11 @@ module.exports = (sequelize, DataTypes) => {
         content: {
             type: DataTypes.TEXT,
             allowNull: false
+        },
+        parentId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null
         }
     });
     return Comment;

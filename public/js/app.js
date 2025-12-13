@@ -1512,6 +1512,11 @@ const Note = {
             return isAuthor || isAdmin;
         };
 
+        const canEditComment = (comment) => {
+            if (!currentUser.value) return false;
+            return comment.userId === currentUser.value.id;
+        };
+
         const formatCommentTime = (dateStr) => {
             if (!dateStr) return '';
             const date = new Date(dateStr);
@@ -1526,6 +1531,104 @@ const Note = {
             if (diffHours < 24) return `${diffHours} 小時前`;
             if (diffDays < 7) return `${diffDays} 天前`;
             return date.toLocaleDateString('zh-TW');
+        };
+
+        // Menu and edit state
+        const openMenuId = ref(null);
+        const editingCommentId = ref(null);
+        const editCommentContent = ref('');
+        const replyingToId = ref(null);
+        const replyContent = ref('');
+
+        // Computed: top level comments (no parentId)
+        const topLevelComments = computed(() => {
+            return comments.value.filter(c => !c.parentId);
+        });
+
+        // Get replies for a comment
+        const getReplies = (commentId) => {
+            return comments.value.filter(c => c.parentId === commentId);
+        };
+
+        // Toggle menu
+        const toggleCommentMenu = (commentId) => {
+            openMenuId.value = openMenuId.value === commentId ? null : commentId;
+        };
+
+        // Edit functions
+        const startEditComment = (comment) => {
+            editingCommentId.value = comment.id;
+            editCommentContent.value = comment.content;
+            openMenuId.value = null;
+        };
+
+        const cancelEditComment = () => {
+            editingCommentId.value = null;
+            editCommentContent.value = '';
+        };
+
+        const saveEditComment = async (commentId) => {
+            if (!editCommentContent.value.trim()) return;
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: editCommentContent.value.trim() })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                const updated = await response.json();
+                const idx = comments.value.findIndex(c => c.id === commentId);
+                if (idx !== -1) {
+                    comments.value[idx] = updated;
+                }
+                cancelEditComment();
+            } catch (e) {
+                alert('編輯失敗：' + e.message);
+            }
+        };
+
+        // Reply functions
+        const startReply = (comment) => {
+            replyingToId.value = comment.id;
+            replyContent.value = '';
+        };
+
+        const cancelReply = () => {
+            replyingToId.value = null;
+            replyContent.value = '';
+        };
+
+        const submitReply = async (parentId) => {
+            if (!replyContent.value.trim()) return;
+            try {
+                const response = await fetch(`/api/notes/${noteId.value}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: replyContent.value.trim(),
+                        parentId: parentId
+                    })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                const reply = await response.json();
+                comments.value.unshift(reply);
+                cancelReply();
+            } catch (e) {
+                alert('回覆失敗：' + e.message);
+            }
+        };
+
+        // Close menu when clicking outside
+        const closeCommentMenu = (e) => {
+            if (openMenuId.value !== null) {
+                openMenuId.value = null;
+            }
         };
 
 
@@ -2765,7 +2868,23 @@ const Note = {
             submitComment,
             deleteComment,
             canDeleteComment,
-            formatCommentTime
+            canEditComment,
+            formatCommentTime,
+            // Edit/Reply/Menu
+            openMenuId,
+            editingCommentId,
+            editCommentContent,
+            replyingToId,
+            replyContent,
+            topLevelComments,
+            getReplies,
+            toggleCommentMenu,
+            startEditComment,
+            cancelEditComment,
+            saveEditComment,
+            startReply,
+            cancelReply,
+            submitReply
         };
     }
 };

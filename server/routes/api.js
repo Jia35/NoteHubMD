@@ -1113,7 +1113,7 @@ router.post('/notes/:id/comments', async (req, res) => {
             return res.status(403).json({ error: 'Comments feature is disabled' });
         }
 
-        const { content } = req.body;
+        const { content, parentId } = req.body;
         if (!content || !content.trim()) {
             return res.status(400).json({ error: 'Content is required' });
         }
@@ -1124,11 +1124,58 @@ router.post('/notes/:id/comments', async (req, res) => {
             return res.status(404).json({ error: 'Note not found' });
         }
 
+        // If replying, check parent comment exists
+        if (parentId) {
+            const parentComment = await db.Comment.findByPk(parentId);
+            if (!parentComment || parentComment.noteId !== req.params.id) {
+                return res.status(400).json({ error: 'Invalid parent comment' });
+            }
+        }
+
         const comment = await db.Comment.create({
             noteId: req.params.id,
             userId: req.session.userId,
-            content: content.trim()
+            content: content.trim(),
+            parentId: parentId || null
         });
+
+        // Fetch with user info
+        const commentWithUser = await db.Comment.findByPk(comment.id, {
+            include: [
+                { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] }
+            ]
+        });
+
+        res.json(commentWithUser);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Edit a comment (author only)
+router.put('/comments/:id', async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const comment = await db.Comment.findByPk(req.params.id);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Only author can edit
+        if (comment.userId !== req.session.userId) {
+            return res.status(403).json({ error: 'Only the author can edit this comment' });
+        }
+
+        const { content } = req.body;
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+
+        await comment.update({ content: content.trim() });
 
         // Fetch with user info
         const commentWithUser = await db.Comment.findByPk(comment.id, {
