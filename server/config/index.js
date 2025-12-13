@@ -93,8 +93,8 @@ function interpolateEnvVars(obj) {
     return obj;
 }
 
-// Path to YAML config file
-const configPath = path.join(__dirname, '../../config/config.yaml');
+// Path to YAML config file (at project root, same as .env)
+const configPath = path.join(__dirname, '../../config.yaml');
 
 // Load YAML config if exists, otherwise use empty object
 let yamlConfig = {};
