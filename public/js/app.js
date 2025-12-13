@@ -1550,7 +1550,8 @@ const Note = {
             if (!currentUser.value) return false;
             const isAuthor = comment.userId === currentUser.value.id;
             const isAdmin = currentUser.value.role === 'super-admin' || currentUser.value.role === 'admin';
-            return isAuthor || isAdmin;
+            const isNoteOwner = noteOwner.value && noteOwner.value.id === currentUser.value.id;
+            return isAuthor || isAdmin || isNoteOwner;
         };
 
         const canEditComment = (comment) => {

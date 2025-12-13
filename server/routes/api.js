@@ -1203,16 +1203,20 @@ router.delete('/comments/:id', async (req, res) => {
             return res.status(404).json({ error: 'Comment not found' });
         }
 
-        // Check permission: author, super-admin, or admin
+        // Check permission: author, super-admin, admin, or note owner
         const currentUser = await db.User.findByPk(req.session.userId);
         if (!currentUser) {
             return res.status(401).json({ error: 'User not found' });
         }
 
+        // Check if current user is the note owner
+        const note = await db.Note.findByPk(comment.noteId);
+        const isNoteOwner = note && note.ownerId && note.ownerId === currentUser.id;
+
         const isAuthor = comment.userId === currentUser.id;
         const isAdmin = currentUser.role === 'super-admin' || currentUser.role === 'admin';
 
-        if (!isAuthor && !isAdmin) {
+        if (!isAuthor && !isAdmin && !isNoteOwner) {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
