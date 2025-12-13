@@ -1075,4 +1075,105 @@ router.get('/trash', async (req, res) => {
     }
 });
 
+// --- Comments ---
+
+// Get feature config (public)
+router.get('/config/features', (req, res) => {
+    res.json({
+        comments: config.features?.comments !== false
+    });
+});
+
+// Get comments for a note
+router.get('/notes/:id/comments', async (req, res) => {
+    try {
+        const comments = await db.Comment.findAll({
+            where: { noteId: req.params.id },
+            include: [
+                { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(comments);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Add a comment (requires login + feature enabled)
+router.post('/notes/:id/comments', async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        // Check if comments feature is enabled
+        if (config.features?.comments === false) {
+            return res.status(403).json({ error: 'Comments feature is disabled' });
+        }
+
+        const { content } = req.body;
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+
+        // Check if note exists
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+
+        const comment = await db.Comment.create({
+            noteId: req.params.id,
+            userId: req.session.userId,
+            content: content.trim()
+        });
+
+        // Fetch with user info
+        const commentWithUser = await db.Comment.findByPk(comment.id, {
+            include: [
+                { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] }
+            ]
+        });
+
+        res.json(commentWithUser);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete a comment (author, super-admin, or admin)
+router.delete('/comments/:id', async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const comment = await db.Comment.findByPk(req.params.id);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Check permission: author, super-admin, or admin
+        const currentUser = await db.User.findByPk(req.session.userId);
+        if (!currentUser) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        const isAuthor = comment.userId === currentUser.id;
+        const isAdmin = currentUser.role === 'super-admin' || currentUser.role === 'admin';
+
+        if (!isAuthor && !isAdmin) {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+
+        await comment.destroy();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

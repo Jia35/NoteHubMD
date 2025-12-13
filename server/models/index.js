@@ -16,6 +16,7 @@ db.User = require('./User')(sequelize, Sequelize);
 db.Book = require('./Book')(sequelize, Sequelize);
 db.Note = require('./Note')(sequelize, Sequelize);
 db.Permission = require('./Permission')(sequelize, Sequelize);
+db.Comment = require('./Comment')(sequelize, Sequelize);
 
 // Associations
 db.User.hasMany(db.Book, { foreignKey: 'ownerId' });
@@ -39,4 +40,11 @@ db.Note.belongsTo(db.User, { foreignKey: 'deletedById', as: 'deletedBy' });
 db.Permission.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 db.User.hasMany(db.Permission, { foreignKey: 'userId' });
 
+// Comment associations
+db.Note.hasMany(db.Comment, { foreignKey: 'noteId' });
+db.Comment.belongsTo(db.Note, { foreignKey: 'noteId' });
+db.User.hasMany(db.Comment, { foreignKey: 'userId' });
+db.Comment.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = db;
+

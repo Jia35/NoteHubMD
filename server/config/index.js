@@ -41,6 +41,9 @@ const defaults = {
     defaults: {
         notePermission: 'private',
         bookPermission: 'private'
+    },
+    features: {
+        comments: true
     }
 };
 

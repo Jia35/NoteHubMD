@@ -1436,6 +1436,99 @@ const Note = {
             }
         };
 
+        // --- Comments ---
+        const comments = ref([]);
+        const newComment = ref('');
+        const commentsEnabled = ref(true);
+        const submittingComment = ref(false);
+
+        const loadComments = async () => {
+            try {
+                const response = await fetch(`/api/notes/${noteId.value}/comments`);
+                if (response.ok) {
+                    comments.value = await response.json();
+                }
+            } catch (e) {
+                console.error('[Note] Failed to load comments:', e);
+            }
+        };
+
+        const loadFeaturesConfig = async () => {
+            try {
+                const response = await fetch('/api/config/features');
+                if (response.ok) {
+                    const data = await response.json();
+                    commentsEnabled.value = data.comments !== false;
+                }
+            } catch (e) {
+                console.error('[Note] Failed to load features config:', e);
+            }
+        };
+
+        const submitComment = async () => {
+            if (!newComment.value.trim() || submittingComment.value) return;
+
+            submittingComment.value = true;
+            try {
+                const response = await fetch(`/api/notes/${noteId.value}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: newComment.value.trim() })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                const comment = await response.json();
+                comments.value.unshift(comment);
+                newComment.value = '';
+            } catch (e) {
+                alert('留言失敗：' + e.message);
+            } finally {
+                submittingComment.value = false;
+            }
+        };
+
+        const deleteComment = async (commentId) => {
+            if (!confirm('確定要刪除這則留言嗎？')) return;
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                comments.value = comments.value.filter(c => c.id !== commentId);
+            } catch (e) {
+                alert('刪除失敗：' + e.message);
+            }
+        };
+
+        const canDeleteComment = (comment) => {
+            if (!currentUser.value) return false;
+            const isAuthor = comment.userId === currentUser.value.id;
+            const isAdmin = currentUser.value.role === 'super-admin' || currentUser.value.role === 'admin';
+            return isAuthor || isAdmin;
+        };
+
+        const formatCommentTime = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return '剛剛';
+            if (diffMins < 60) return `${diffMins} 分鐘前`;
+            if (diffHours < 24) return `${diffHours} 小時前`;
+            if (diffDays < 7) return `${diffDays} 天前`;
+            return date.toLocaleDateString('zh-TW');
+        };
+
+
         const createNewNote = async () => {
             try {
                 const note = await api.createNote();
@@ -2347,6 +2440,10 @@ const Note = {
             // Load app version
             loadAppVersion();
 
+            // Load comments and features config
+            loadComments();
+            loadFeaturesConfig();
+
             // Initialize Mermaid
             if (window.mermaid) {
                 const isDark = document.documentElement.classList.contains('dark');
@@ -2659,7 +2756,16 @@ const Note = {
             saveProfile,
             savingProfile,
             // App version
-            appVersion
+            appVersion,
+            // Comments
+            comments,
+            newComment,
+            commentsEnabled,
+            submittingComment,
+            submitComment,
+            deleteComment,
+            canDeleteComment,
+            formatCommentTime
         };
     }
 };

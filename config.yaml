@@ -19,3 +19,6 @@ database:
 defaults:
   notePermission: "private"   # private, auth-view, auth-edit, public-view, public-edit
   bookPermission: "private"
+
+features:
+  comments: true  # 是否開放留言功能
