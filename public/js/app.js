@@ -1464,6 +1464,7 @@ const Note = {
         const submittingComment = ref(false);
         const commentTextareaFocused = ref(false);
         const commentTextarea = ref(null);
+        const commentPreviewMode = ref(false);
 
         const autoGrowCommentTextarea = () => {
             const textarea = commentTextarea.value;
@@ -1521,6 +1522,7 @@ const Note = {
                 const comment = await response.json();
                 comments.value.unshift(comment);
                 newComment.value = '';
+                commentPreviewMode.value = false;
             } catch (e) {
                 globalModal.showAlert('留言失敗：' + e.message);
             } finally {
@@ -2963,6 +2965,7 @@ const Note = {
             renderCommentMarkdown,
             commentTextareaFocused,
             commentTextarea,
+            commentPreviewMode,
             autoGrowCommentTextarea,
             handleCommentBlur
         };

@@ -1711,7 +1711,8 @@
                                                 <span v-else>{{ currentUser.username?.charAt(0).toUpperCase() || '?' }}</span>
                                             </div>
                                             <div class="flex-1">
-                                                <textarea v-model="newComment" 
+                                                <!-- Textarea for editing -->
+                                                <textarea v-show="!commentPreviewMode" v-model="newComment" 
                                                     placeholder="寫下你的留言..."
                                                     ref="commentTextarea"
                                                     @focus="commentTextareaFocused = true"
@@ -1720,13 +1721,29 @@
                                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
                                                     :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
                                                     :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
-                                                <div class="flex justify-end mt-1">
-                                                    <button @click="submitComment" 
-                                                        :disabled="!newComment.trim() || submittingComment"
-                                                        class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
-                                                        <i v-if="submittingComment" class="fa-solid fa-spinner fa-spin mr-1"></i>
-                                                        送出留言
-                                                    </button>
+                                                <!-- Preview area -->
+                                                <div v-if="commentPreviewMode && newComment.trim()" 
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[76px] max-h-[192px] overflow-auto"
+                                                    v-html="renderCommentMarkdown(newComment)"></div>
+                                                <div v-if="commentPreviewMode && !newComment.trim()" 
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 min-h-[76px] italic">
+                                                    沒有內容可預覽
+                                                </div>
+                                                <div class="flex justify-between items-center mt-1">
+                                                    <div class="text-xs text-gray-400"><span v-show="commentTextareaFocused">支援 Markdown 語法</span></div>
+                                                    <div class="flex gap-2">
+                                                        <button @click="commentPreviewMode = !commentPreviewMode"
+                                                            :class="commentPreviewMode ? 'bg-gray-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                                            class="px-3 py-1.5 text-sm rounded-lg hover:opacity-80 transition">
+                                                            <i class="fa-solid fa-eye mr-1"></i>{{ commentPreviewMode ? '編輯' : '預覽' }}
+                                                        </button>
+                                                        <button @click="submitComment" 
+                                                            :disabled="!newComment.trim() || submittingComment"
+                                                            class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                            <i v-if="submittingComment" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                                                            送出留言
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
