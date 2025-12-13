@@ -39,16 +39,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/eclipse.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/material.min.css">
     <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/material-darker.min.css">
-    <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/material-palenight.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/monokai.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/nord.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/panda-syntax.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/rubyblue.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/solarized.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/xq-light.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/xq-dark.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror-one-dark-theme@1.1.1/one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/xml/xml.min.js"></script>
@@ -476,9 +474,9 @@
                     <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
                 <button @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'" 
-                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                        :title="sortOrder === 'desc' ? '降冪' : '升冪'">
                     <i :class="sortOrder === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short'"></i>
-                    {{ sortOrder === 'desc' ? '降冪' : '升冪' }}
                 </button>
             </div>
 
@@ -1686,7 +1684,7 @@
                                     <!-- Last Content Edited Time -->
                                     <div v-if="relativeLastContentEditedTime" class="flex items-center">
                                         <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
-                                        <span>最後編輯於 {{ relativeLastContentEditedTime }}</span>
+                                        <span>編輯於 {{ relativeLastContentEditedTime }}</span>
                                     </div>
                                     </div>
                                 </div>

@@ -2065,11 +2065,10 @@ const Note = {
             { label: '[深色] Colorforth', value: 'colorforth' },
             { label: '[深色] Dracula', value: 'dracula' },
             { label: '[深色] Duotone Dark', value: 'duotone-dark' },
-            { label: '[深色] Material Darker', value: 'material-darker' },
             { label: '[深色] Material Palenight', value: 'material-palenight' },
             { label: '[深色] Material', value: 'material' },
             { label: '[深色] Nord', value: 'nord' },
-            { label: '[深色] Panda Syntax', value: 'panda-syntax' },
+            { label: '[深色] One Dark', value: 'one-dark' },
             { label: '[深色] Rubyblue', value: 'rubyblue' },
             { label: '[深色] XQ Dark', value: 'xq-dark' },
 
