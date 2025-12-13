@@ -1653,8 +1653,13 @@
                                             <div class="flex-1">
                                                 <textarea v-model="newComment" 
                                                     placeholder="寫下你的留言..."
-                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                                    rows="3"></textarea>
+                                                    ref="commentTextarea"
+                                                    @focus="commentTextareaFocused = true"
+                                                    @blur="handleCommentBlur"
+                                                    @input="autoGrowCommentTextarea"
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
+                                                    :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
+                                                    :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
                                                 <div class="flex justify-end mt-1">
                                                     <button @click="submitComment" 
                                                         :disabled="!newComment.trim() || submittingComment"

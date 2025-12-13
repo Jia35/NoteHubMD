@@ -1441,6 +1441,24 @@ const Note = {
         const newComment = ref('');
         const commentsEnabled = ref(true);
         const submittingComment = ref(false);
+        const commentTextareaFocused = ref(false);
+        const commentTextarea = ref(null);
+
+        const autoGrowCommentTextarea = () => {
+            const textarea = commentTextarea.value;
+            if (!textarea) return;
+            // Reset height to auto to get the correct scrollHeight
+            textarea.style.height = 'auto';
+            // Set height to scrollHeight, but max 192px (8 lines approx)
+            const maxHeight = 192;
+            textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+        };
+
+        const handleCommentBlur = () => {
+            if (!newComment.value.trim()) {
+                commentTextareaFocused.value = false;
+            }
+        };
 
         const loadComments = async () => {
             try {
@@ -2922,7 +2940,11 @@ const Note = {
             startReply,
             cancelReply,
             submitReply,
-            renderCommentMarkdown
+            renderCommentMarkdown,
+            commentTextareaFocused,
+            commentTextarea,
+            autoGrowCommentTextarea,
+            handleCommentBlur
         };
     }
 };
