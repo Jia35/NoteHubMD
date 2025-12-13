@@ -396,6 +396,57 @@ const api = {
 
 // --- Components ---
 
+// Shared Info Modal Component
+const InfoModal = {
+    template: '#info-modal-template',
+    props: {
+        show: Boolean,
+        type: String, // 'book' or 'note'
+        item: Object,
+        tab: { type: String, default: 'info' },
+        editableDescription: String,
+        editableTags: Array,
+        newTagInput: String,
+        editablePermission: String,
+        commentsEnabled: Boolean,
+        userPermissions: Array,
+        loadingUserPermissions: Boolean,
+        userSearchQuery: String,
+        userSearchResults: Array,
+        newUserPermission: { type: String, default: 'view' }
+    },
+    emits: [
+        'close', 'save', 'update:tab', 'update:description', 'update:permission',
+        'update:commentsEnabled', 'update:newTag', 'update:newUserPermission',
+        'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
+        'remove-user-permission', 'update-user-permission'
+    ],
+    setup(props) {
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '(無)';
+            return new Date(dateStr).toLocaleString();
+        };
+
+        const getPermissionLabel = (permission) => {
+            const labels = {
+                'public-edit': '可編輯',
+                'auth-edit': '可編輯 (需登入)',
+                'public-view': '唯讀',
+                'auth-view': '唯讀 (需登入)',
+                'private': '私人',
+                'inherit': '繼承書本'
+            };
+            return labels[permission] || permission;
+        };
+
+        return {
+            formatDate,
+            getPermissionLabel
+        };
+    }
+};
+
+
 const Login = {
     template: '#login-template',
     setup() {
@@ -2886,6 +2937,22 @@ const Note = {
                 }
             }
         });
+        
+        const noteInfoItem = computed(() => ({
+            id: noteId.value,
+            title: title.value || 'Untitled',
+            owner: noteOwner.value,
+            lastEditor: lastEditor.value,
+            relativeLastEditedTime: relativeLastContentEditedTime.value,
+            charCount: charCount.value,
+            lineCount: lineCount.value,
+            book: book.value,
+            bookId: bookId.value,
+            permission: permission.value,
+            effectivePermission: effectivePermission.value,
+            isOwner: isOwner.value,
+            canEdit: canEdit.value
+        }));
 
         return {
             noteId,
@@ -2996,7 +3063,8 @@ const Note = {
             showNoteInfoModal,
             noteInfoModalTab,
             noteCommentsEnabled,
-            saveNoteSettings
+            saveNoteSettings,
+            noteInfoItem
         };
     }
 };
@@ -3282,5 +3350,6 @@ const app = createApp({
 });
 
 app.component('Sidebar', Sidebar);
+app.component('InfoModal', InfoModal);
 app.use(router);
 app.mount('#app');
