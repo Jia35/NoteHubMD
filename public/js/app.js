@@ -695,6 +695,7 @@ const Home = {
         const showInfoModal = ref(false);
         const infoModalType = ref(''); // 'book' or 'note'
         const infoModalItem = ref({});
+        const infoModalTab = ref('info'); // 'info' or 'permission'
         const editableDescription = ref('');
         const editableTags = ref([]);
         const newTag = ref('');
@@ -942,12 +943,13 @@ const Home = {
             return labels[permission] || permission;
         };
 
-        const openInfoModal = (type, item) => {
+        const openInfoModal = (type, item, tab = 'info') => {
             infoModalType.value = type;
             infoModalItem.value = { ...item };
             editableDescription.value = item.description || '';
             editableTags.value = [...(item.tags || [])];
             editablePermission.value = item.permission || 'private';
+            infoModalTab.value = tab;
             showInfoModal.value = true;
             openMenuId.value = null;
         };
@@ -1117,7 +1119,7 @@ const Home = {
             searchQuery, includeContent, notesViewMode,
             sortBy, sortOrder, sortOptions,
             openMenuId, toggleMenu, closeMenu,
-            showInfoModal, infoModalType, infoModalItem,
+            showInfoModal, infoModalType, infoModalItem, infoModalTab,
             editableDescription, editableTags, newTag, editablePermission,
             openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges, getPermissionLabel,
             showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal,
