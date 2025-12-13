@@ -1424,6 +1424,18 @@ const Note = {
         const newBookTitle = ref('');
         const newBookDescription = ref('');
 
+        // App version
+        const appVersion = ref('');
+        const loadAppVersion = async () => {
+            try {
+                const response = await fetch('/api/version');
+                const data = await response.json();
+                appVersion.value = data.version || '';
+            } catch (e) {
+                console.error('[Note] Failed to load version:', e);
+            }
+        };
+
         const createNewNote = async () => {
             try {
                 const note = await api.createNote();
@@ -2332,6 +2344,9 @@ const Note = {
             // Global Ctrl+S handler
             window.addEventListener('keydown', handleGlobalSave);
 
+            // Load app version
+            loadAppVersion();
+
             // Initialize Mermaid
             if (window.mermaid) {
                 const isDark = document.documentElement.classList.contains('dark');
@@ -2642,7 +2657,9 @@ const Note = {
             handleAvatarChange,
             removeAvatar,
             saveProfile,
-            savingProfile
+            savingProfile,
+            // App version
+            appVersion
         };
     }
 };
