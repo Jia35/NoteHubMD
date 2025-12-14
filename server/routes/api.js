@@ -156,16 +156,36 @@ router.post('/notes', async (req, res) => {
     if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
+
+    // Validate permission if provided (standalone note cannot use 'inherit')
+    const { permission, isPublic } = req.body || {};
+    if (permission !== undefined) {
+        // Standalone notes cannot use 'inherit' - that's only for notes in books
+        if (!VALID_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({
+                error: `Invalid permission. Must be one of: ${VALID_PERMISSIONS.join(', ')}`
+            });
+        }
+    }
+    if (isPublic !== undefined && typeof isPublic !== 'boolean') {
+        return res.status(400).json({ error: 'isPublic must be a boolean' });
+    }
+
     let id = generateId();
     let retry = 0;
     while (retry < 5) {
         try {
-            const note = await db.Note.create({
+            const noteData = {
                 id: id,
                 title: (req.body && req.body.title) || 'Untitled Note',
                 content: (req.body && req.body.content) || '',
                 ownerId: req.session.userId || null
-            });
+            };
+            // Add optional fields if provided
+            if (permission !== undefined) noteData.permission = permission;
+            if (isPublic !== undefined) noteData.isPublic = isPublic;
+
+            const note = await db.Note.create(noteData);
             return res.json(note);
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
@@ -544,16 +564,35 @@ router.post('/books', async (req, res) => {
     if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
+
+    // Validate permission if provided
+    const { permission, isPublic } = req.body || {};
+    if (permission !== undefined) {
+        if (!VALID_BOOK_PERMISSIONS.includes(permission)) {
+            return res.status(400).json({
+                error: `Invalid permission. Must be one of: ${VALID_BOOK_PERMISSIONS.join(', ')}`
+            });
+        }
+    }
+    if (isPublic !== undefined && typeof isPublic !== 'boolean') {
+        return res.status(400).json({ error: 'isPublic must be a boolean' });
+    }
+
     let id = generateId();
     let retry = 0;
     while (retry < 5) {
         try {
-            const book = await db.Book.create({
+            const bookData = {
                 id: id,
                 title: (req.body && req.body.title) || 'Untitled Book',
                 description: (req.body && req.body.description) || '',
                 ownerId: req.session.userId || null
-            });
+            };
+            // Add optional fields if provided
+            if (permission !== undefined) bookData.permission = permission;
+            if (isPublic !== undefined) bookData.isPublic = isPublic;
+
+            const book = await db.Book.create(bookData);
             return res.json(book);
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
