@@ -962,6 +962,12 @@ const Home = {
         const handleViewModeChanged = () => {
             notesViewMode.value = localStorage.getItem('NoteHubMD-viewMode') || 'my';
         };
+
+        const notesDisplayMode = ref(localStorage.getItem('NoteHubMD-notesDisplayMode') || 'grid');
+        const setNotesDisplayMode = (mode) => {
+            notesDisplayMode.value = mode;
+            localStorage.setItem('NoteHubMD-notesDisplayMode', mode);
+        };
         const sortBy = ref('updatedAt'); // 'updatedAt', 'lastEditedAt', 'createdAt', 'title'
         const sortOrder = ref('desc'); // 'desc' or 'asc'
 
@@ -1439,7 +1445,7 @@ const Home = {
         return {
             notes, books, createNote, createBook, deleteNote, deleteBook,
             allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
-            searchQuery, includeContent, notesViewMode,
+            searchQuery, includeContent, notesViewMode, notesDisplayMode, setNotesDisplayMode,
             sortBy, sortOrder, sortOptions,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem, infoModalTab,
@@ -3401,6 +3407,12 @@ const Uncategorized = {
             viewMode.value = localStorage.getItem('NoteHubMD-viewMode') || 'my';
         };
 
+        const displayMode = ref(localStorage.getItem('NoteHubMD-notesDisplayMode') || 'grid');
+        const setDisplayMode = (mode) => {
+            displayMode.value = mode;
+            localStorage.setItem('NoteHubMD-notesDisplayMode', mode);
+        };
+
         // Sort state
         const sortBy = ref('updatedAt'); // 'updatedAt', 'lastEditedAt', 'createdAt', 'title'
         const sortOrder = ref('desc'); // 'desc' or 'asc'
@@ -3478,7 +3490,7 @@ const Uncategorized = {
             window.removeEventListener('viewmode-changed', handleViewModeChanged);
         });
 
-        return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions };
+        return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode };
     }
 };
 
