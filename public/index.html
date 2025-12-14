@@ -780,7 +780,7 @@
                                             <p class="text-xs text-gray-400 mt-1 ml-7">
                                                 <i class="fa-solid fa-book mr-1"></i>
                                                 <span v-if="note.book">{{note.book.title}}</span>
-                                                <span v-else><i>未分類</i><span>
+                                                <span v-else><i>未分類</i></span>
                                             </p>
                                         </div>
                                         <span class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap" title="上次編輯">
@@ -1244,172 +1244,22 @@
             </div>
 
 
-            <!-- Book Info Modal -->
-            <div v-if="showInfoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showInfoModal = false">
-                <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                    <!-- Modal Header -->
-                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">
-                            <i class="fa-solid fa-book mr-2 text-green-600"></i>書本資訊
-                        </h3>
-                        <button @click="showInfoModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-
-                    <!-- Modal Body -->
-                    <div class="p-6 space-y-4">
-                        <!-- Basic Info -->
-                        <div class="space-y-2 text-sm">
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ book.id }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ book.title }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立者：<span class="text-gray-700 dark:text-gray-300">{{ book.owner?.username || '(未知)' }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(book.createdAt).toLocaleString() }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ new Date(book.updatedAt).toLocaleString() }}</span></div>
-                            <div class="text-gray-500 dark:text-gray-400">筆記數量：<span class="text-gray-700 dark:text-gray-300">{{ book.Notes?.length || 0 }}</span></div>
-                        </div>
-
-                        <!-- Description -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                <i class="fa-solid fa-align-left mr-1"></i> 描述
-                            </label>
-                            <textarea v-if="canEdit"
-                                      v-model="editableDescription"
-                                      rows="3"
-                                      placeholder="輸入描述..."
-                                      class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-                            <p v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">{{ book.description || '無描述' }}</p>
-                        </div>
-
-                        <!-- Tags -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                <i class="fa-solid fa-tags mr-1"></i> 標籤
-                            </label>
-                            <div class="flex flex-wrap gap-2 mb-2">
-                                <span v-for="tag in editableTags" :key="tag" class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 flex items-center">
-                                    {{ tag }}
-                                    <button v-if="canEdit" @click="removeEditableTag(tag)" class="ml-2 text-green-500 hover:text-red-500">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </span>
-                                <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
-                            </div>
-                            <div v-if="canEdit" class="flex gap-2">
-                                <input v-model="newTag" 
-                                       @keyup.enter="addEditableTag"
-                                       type="text" 
-                                       placeholder="輸入新標籤..." 
-                                       class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <button @click="addEditableTag" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Permission Editor -->
-                    <div class="border-t dark:border-gray-600 pt-4 px-6 mt-4">
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                            <i class="fa-solid fa-lock mr-1"></i> 權限
-                        </label>
-                        <select v-if="isOwner"
-                                v-model="editablePermission"
-                                class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                                {{ opt.label }}
-                            </option>
-                        </select>
-                        <div v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
-                            {{ permissionOptions.find(o => o.value === permission)?.label || permission }}
-                        </div>
-                    </div>
-
-                    <!-- User-specific Permissions (Owner only) -->
-                    <template v-if="isOwner">
-                        <div class="px-6 mt-4">
-                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
-                            </label>
-                            
-                            <!-- Loading -->
-                            <div v-if="infoLoadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
-                                <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
-                            </div>
-                            
-                            <!-- Current user permissions list -->
-                            <div v-if="infoUserPermissions.length > 0" class="space-y-2 mb-3">
-                                <div v-for="perm in infoUserPermissions" :key="perm.userId" 
-                                     class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
-                                    <div class="flex items-center">
-                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
-                                            <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
-                                            <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                        </span>
-                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
-                                    </div>
-                                    <div class="flex items-center space-x-2">
-                                        <select v-model="perm.permission" @change="updateInfoUserPermissionLevel(perm, perm.permission)"
-                                                class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
-                                            <option value="view">可查看</option>
-                                            <option value="edit">可編輯</option>
-                                        </select>
-                                        <button @click="removeInfoUserPermission(perm.userId)" 
-                                                class="text-red-500 hover:text-red-700 text-xs" title="移除">
-                                            <i class="fa-solid fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Add user search -->
-                            <div class="relative">
-                                <div class="flex space-x-2">
-                                    <input v-model="infoUserSearchQuery" @input="infoSearchUsers" 
-                                           type="text" placeholder="搜尋使用者名稱..."
-                                           class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <select v-model="infoNewUserPermission" 
-                                            class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
-                                        <option value="view">可查看</option>
-                                        <option value="edit">可編輯</option>
-                                    </select>
-                                </div>
-                                <!-- Search results dropdown -->
-                                <div v-if="infoUserSearchResults.length > 0" 
-                                     class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
-                                    <button v-for="user in infoUserSearchResults" :key="user.id" 
-                                            @click="addInfoUserPermission(user)"
-                                            class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
-                                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
-                                            <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
-                                            <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
-                                        </span>
-                                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
-                                        <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
-                            </p>
-                        </div>
-                    </template>
-
-                    <!-- Modal Footer -->
-                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700 mt-4">
-                        <button @click="showInfoModal = false" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                            {{ canEdit ? '取消' : '關閉' }}
-                        </button>
-                        <button v-if="canEdit" @click="saveBookChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                            <i class="fa-solid fa-save mr-1"></i> 儲存
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Book Info Modal (shared component) -->
+            <InfoModal :show="showInfoModal" type="book" :item="bookInfoItem" :tab="infoModalTab"
+                :editable-description="editableDescription" :editable-tags="editableTags" :new-tag-input="newTag"
+                :editable-permission="editablePermission" :user-permissions="infoUserPermissions"
+                :loading-user-permissions="infoLoadingUserPermissions" :user-search-query="infoUserSearchQuery"
+                :user-search-results="infoUserSearchResults" :new-user-permission="infoNewUserPermission"
+                @close="showInfoModal = false" @save="saveBookChanges" @update:tab="infoModalTab = $event"
+                @update:description="editableDescription = $event" @update:permission="editablePermission = $event"
+                @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
+                @add-tag="addEditableTag" @remove-tag="removeEditableTag"
+                @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }"
+                @add-user-permission="addInfoUserPermission" @remove-user-permission="removeInfoUserPermission"
+                @update-user-permission="updateInfoUserPermissionLevel" />
         </div>
     </script>
+
 
     <script type="text/x-template" id="note-template">
         <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">

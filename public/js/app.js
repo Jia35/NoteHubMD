@@ -1340,6 +1340,7 @@ const Book = {
 
         // Info modal state
         const showInfoModal = ref(false);
+        const infoModalTab = ref('info');
 
         // User permissions state for info modal
         const infoUserPermissions = ref([]);
@@ -1557,6 +1558,19 @@ const Book = {
             }
         });
 
+        // Computed book info item for InfoModal
+        const bookInfoItem = computed(() => ({
+            id: book.value.id,
+            title: book.value.title,
+            owner: book.value.owner,
+            lastUpdater: book.value.lastUpdater,
+            createdAt: book.value.createdAt,
+            updatedAt: book.value.updatedAt,
+            permission: permission.value,
+            isOwner: isOwner.value,
+            canEdit: canEdit.value
+        }));
+
         return {
             book, createNote,
             editableDescription, editableTags, newTag, editablePermission,
@@ -1565,7 +1579,7 @@ const Book = {
             permissionOptions, handlePermissionChange,
             notesList,
             // Info modal
-            showInfoModal,
+            showInfoModal, infoModalTab, bookInfoItem,
             infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
             infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
             removeInfoUserPermission, updateInfoUserPermissionLevel
