@@ -1175,31 +1175,26 @@
                     <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
                 </h1>
                 <div class="flex items-center gap-3">
-                    <!-- Permission Display/Selector -->
-                    <div class="flex items-center space-x-2">
-                        <!-- Owner: Dropdown selector -->
-                        <template v-if="isOwner">
-                            <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
-                            <select v-model="permission" @change="handlePermissionChange(permission)" 
-                                    class="bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
-                                <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                                    {{ opt.label }}
-                                </option>
-                            </select>
-                        </template>
-                        <!-- Non-owner: Show permission as badge -->
-                        <template v-else>
-                            <span class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-600 dark:text-gray-400">
-                                <i class="fa-solid fa-lock text-xs"></i>
-                                <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
-                            </span>
-                        </template>
-                    </div>
-                    <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                    <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
                         <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
                     </button>
-                    <button @click="showInfoModal = true; initInfoModal()" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                        <i class="fa-solid fa-info-circle"></i> 書本資訊
+                    <!-- Permission Button (Owner only) / Display (Non-owner) -->
+                    <button v-if="isOwner" @click="infoModalTab = 'permission'; showInfoModal = true; initInfoModal()" 
+                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                            title="點擊設定權限">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                        <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                    </button>
+                    <span v-else class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                        <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                    </span>
+                    <!-- Book Info Button -->
+                    <button @click="infoModalTab = 'info'; showInfoModal = true; initInfoModal()" 
+                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                            title="書本設定">
+                        <i class="fa-solid fa-cog text-xs"></i>
+                        <span>書本設定</span>
                     </button>
                 </div>
             </div>
@@ -1259,7 +1254,6 @@
                 @update-user-permission="updateInfoUserPermissionLevel" />
         </div>
     </script>
-
 
     <script type="text/x-template" id="note-template">
         <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
