@@ -218,7 +218,7 @@
                                 <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
                                 <!-- Note: 最後編輯者, 最後編輯時間, 最後更新者, 最後更新時間 -->
                                 <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
-                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditedAt ? formatDate(item.lastEditedAt) : (item.relativeLastEditedTime || '(無)') }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.lastEditedAt) }}</span></div>
                                 <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastUpdater?.username || item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
                                 <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
                                 <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ item.charCount ?? item.content?.length ?? 0 }}</span></div>

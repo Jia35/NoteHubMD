@@ -424,7 +424,7 @@ const InfoModal = {
     setup(props) {
         const formatDate = (dateStr) => {
             if (!dateStr) return '(無)';
-            return new Date(dateStr).toLocaleString();
+            return dayjs(dateStr).format('YYYY/MM/DD HH:mm');
         };
 
         const getPermissionLabel = (permission) => {
@@ -1609,6 +1609,7 @@ const Note = {
         // Note metadata for preview info bar
         const noteOwner = ref(null);
         const lastEditor = ref(null);
+        const lastUpdater = ref(null);
         const updatedAt = ref(null);
         const lastEditedAt = ref(null);
 
@@ -2863,6 +2864,7 @@ const Note = {
                 book.value = note.Book || null;
                 noteOwner.value = note.owner || null;
                 lastEditor.value = note.lastEditor || null;
+                lastUpdater.value = note.lastUpdater || null;
                 updatedAt.value = note.updatedAt || null;
                 lastEditedAt.value = note.lastEditedAt || null;
                 noteCommentsEnabled.value = !note.commentsDisabled; // Invert: true means enabled
@@ -3051,6 +3053,7 @@ const Note = {
                     book.value = note.Book || null;
                     noteOwner.value = note.owner || null;
                     lastEditor.value = note.lastEditor || null;
+                    lastUpdater.value = note.lastUpdater || null;
                     updatedAt.value = note.updatedAt || null;
                     lastEditedAt.value = note.lastEditedAt || null;
 
@@ -3085,7 +3088,9 @@ const Note = {
             title: title.value || 'Untitled',
             owner: noteOwner.value,
             lastEditor: lastEditor.value,
-            relativeLastEditedTime: relativeLastContentEditedTime.value,
+            lastUpdater: lastUpdater.value,
+            lastEditedAt: lastEditedAt.value,
+            updatedAt: updatedAt.value,
             charCount: charCount.value,
             lineCount: lineCount.value,
             book: book.value,
