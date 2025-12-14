@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true
         },
+        lastUpdaterId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
         deletedById: {
             type: DataTypes.INTEGER,
             allowNull: true

@@ -29,8 +29,11 @@ db.Book.hasMany(db.Note, { foreignKey: 'bookId' });
 db.Note.belongsTo(db.Book, { foreignKey: 'bookId' });
 
 // LastEditor associations
-db.Book.belongsTo(db.User, { foreignKey: 'lastEditorId', as: 'lastEditor' });
+db.Book.belongsTo(db.User, { foreignKey: 'lastUpdaterId', as: 'lastUpdater' });
 db.Note.belongsTo(db.User, { foreignKey: 'lastEditorId', as: 'lastEditor' });
+
+// LastUpdater association (for Notes - tracks any modification)
+db.Note.belongsTo(db.User, { foreignKey: 'lastUpdaterId', as: 'lastUpdater' });
 
 // DeletedBy associations
 db.Book.belongsTo(db.User, { foreignKey: 'deletedById', as: 'deletedBy' });

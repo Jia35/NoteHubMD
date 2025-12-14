@@ -183,7 +183,8 @@ router.get('/notes/:id', async (req, res) => {
                     ]
                 },
                 { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
-                { model: db.User, as: 'lastEditor', attributes: ['id', 'username', 'name', 'avatar'] }
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username', 'name', 'avatar'] },
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username', 'name', 'avatar'] }
             ]
         });
         if (!note) return res.status(404).json({ error: 'Note not found' });
@@ -284,9 +285,10 @@ router.put('/notes/:id', async (req, res) => {
             updateData.lastEditedAt = new Date();
         }
 
-        // Set last editor
+        // Set last editor (content changes) and last updater (any changes)
         if (userId) {
             updateData.lastEditorId = userId;
+            updateData.lastUpdaterId = userId;
         }
 
         await note.update(updateData);
@@ -362,7 +364,7 @@ router.put('/notes/:id/permission', async (req, res) => {
             return res.status(400).json({ error: 'Invalid permission value' });
         }
 
-        await note.update({ permission });
+        await note.update({ permission, lastUpdaterId: userId });
         res.json({ success: true, permission });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -482,7 +484,8 @@ router.get('/notes', async (req, res) => {
             limit: req.query.includeBookNotes === 'true' ? 100 : 20,
             include: [
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] },
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
             ]
         });
 
@@ -556,7 +559,7 @@ router.get('/books/:id', async (req, res) => {
             include: [
                 { model: db.Note, attributes: ['id', 'title', 'updatedAt', 'permission', 'order'] },
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
             ],
             order: [[db.Note, 'order', 'ASC']]
         });
@@ -637,9 +640,9 @@ router.put('/books/:id', async (req, res) => {
         // Use PUT /books/:id/permission instead
         const { permission: _, ...updateData } = req.body;
 
-        // Set last editor
+        // Set last updater
         if (userId) {
-            updateData.lastEditorId = userId;
+            updateData.lastUpdaterId = userId;
         }
 
         await book.update(updateData);
@@ -891,7 +894,7 @@ router.get('/books', async (req, res) => {
             limit: 20,
             include: [
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
             ]
         });
 

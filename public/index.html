@@ -213,10 +213,15 @@
                                 <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ item.title || 'Untitled' }}</span></div>
                                 <div class="text-gray-500 dark:text-gray-400 mb-1">{{ type === 'book' ? '建立者' : '擁有者' }}：<span class="text-gray-700 dark:text-gray-300">{{ item.owner?.username || '(未知)' }}</span></div>
                                 <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.createdAt) }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditedAt ? formatDate(item.lastEditedAt) : (item.relativeLastEditedTime || '(無)') }}</span></div>
+                                <!-- Book: 最後更新者, 最後更新時間 -->
+                                <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastUpdater?.username || item.owner?.username || '(未知)' }}</span></div>
                                 <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ item.charCount ?? item.content?.length ?? 0 }}</span></div>
+                                <!-- Note: 最後編輯者, 最後編輯時間, 最後更新者, 最後更新時間 -->
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditedAt ? formatDate(item.lastEditedAt) : (item.relativeLastEditedTime || '(無)') }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastUpdater?.username || item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ item.charCount ?? item.content?.length ?? 0 }}</span></div>
                                 <div v-if="type === 'note' && item.lineCount !== undefined" class="text-gray-500 dark:text-gray-400">行數：<span class="text-gray-700 dark:text-gray-300">{{ item.lineCount }}</span></div>
                             </div>
 
@@ -870,7 +875,7 @@
                         </div>
                         <div class="mb-2">
                             <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ dayjs(book.updatedAt).format('YYYY/MM/DD HH:mm') }}</p>
-                            <p v-if="book.lastEditor || book.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ book.lastEditor?.username || book.owner?.username }}</p>
+                            <p v-if="book.lastUpdater || book.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ book.lastUpdater?.username || book.owner?.username }}</p>
                             <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ book.description || '' }}</p>
                         </div>
                         <!-- Tags -->

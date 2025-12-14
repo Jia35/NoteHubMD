@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         tags: {
             type: DataTypes.JSON
         },
-        lastEditorId: {
+        lastUpdaterId: {
             type: DataTypes.INTEGER,
             allowNull: true
         },
