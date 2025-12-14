@@ -1638,6 +1638,16 @@ const Note = {
         const newBookTitle = ref('');
         const newBookDescription = ref('');
 
+        // Sidebar Books list
+        const sidebarBooks = ref([]);
+        const loadSidebarBooks = async () => {
+            try {
+                sidebarBooks.value = await api.getBooks();
+            } catch (e) {
+                console.error('[Note] Failed to load books:', e);
+            }
+        };
+
         // App version
         const appVersion = ref('');
         const loadAppVersion = async () => {
@@ -2824,6 +2834,7 @@ const Note = {
 
             // Load app version
             loadAppVersion();
+            loadSidebarBooks();
 
             // Load comments and features config
             loadComments();
@@ -3135,6 +3146,7 @@ const Note = {
             createNewNote,
             openCreateBookModal,
             createBookFromNote,
+            sidebarBooks,
             showSettingsModal,
             currentUser,
             theme,
