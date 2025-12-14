@@ -918,9 +918,9 @@
 
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無書本)</div>
-                    <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
+                <div class="flex overflow-x-auto gap-6 pb-4">
+                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic shrink-0 px-4 py-8">(無書本)</div>
+                    <div v-for="book in filteredBooks" :key="book.id" class="w-64 shrink-0 group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
                             <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
@@ -956,6 +956,13 @@
                             <span v-for="tag in book.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
                                 {{ tag }}
                             </span>
+                        </div>
+                    </div>
+                    <!-- More Books Button -->
+                    <div class="w-40 shrink-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border border-gray-200 dark:border-gray-700" @click="$router.push('/books')">
+                        <div class="text-center text-gray-500 dark:text-gray-400">
+                            <i class="fa-solid fa-arrow-right text-2xl mb-2"></i>
+                            <p>更多書本</p>
                         </div>
                     </div>
                 </div>

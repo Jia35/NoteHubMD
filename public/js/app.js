@@ -1173,7 +1173,7 @@ const Home = {
             }
 
             // Apply sorting
-            return sortItems(result).slice(0, 20);
+            return sortItems(result).slice(0, 10);
         });
 
         const selectTag = (tag) => {
