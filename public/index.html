@@ -471,14 +471,14 @@
             <div class="px-3 pt-3 pb-1">
                 <div class="flex bg-gray-700 rounded-lg p-1">
                     <button @click="setGlobalViewMode('my')" 
-                            class="flex-1 px-2 py-1 text-xs rounded-md transition"
+                            class="flex-1 px-2 py-1 text-sm rounded-md transition"
                             :class="globalViewMode === 'my' 
                                 ? 'bg-gray-600 text-blue-400 font-medium' 
                                 : 'text-gray-400 hover:text-white'">
                         <i class="fa-solid fa-user mr-1"></i>我的項目
                     </button>
                     <button @click="setGlobalViewMode('all')" 
-                            class="flex-1 px-2 py-1 text-xs rounded-md transition"
+                            class="flex-1 px-2 py-1 text-sm rounded-md transition"
                             :class="globalViewMode === 'all' 
                                 ? 'bg-gray-600 text-blue-400 font-medium' 
                                 : 'text-gray-400 hover:text-white'">

@@ -3384,6 +3384,13 @@ const Uncategorized = {
         const notes = ref([]);
         const loading = ref(true);
 
+        // View mode sync with sidebar
+        const viewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my');
+
+        const handleViewModeChanged = () => {
+            viewMode.value = localStorage.getItem('NoteHubMD-viewMode') || 'my';
+        };
+
         // Sort state
         const sortBy = ref('updatedAt'); // 'updatedAt', 'lastEditedAt', 'createdAt', 'title'
         const sortOrder = ref('desc'); // 'desc' or 'asc'
@@ -3415,8 +3422,19 @@ const Uncategorized = {
             });
         };
 
-        // Computed sorted notes
-        const sortedNotes = computed(() => sortItems(notes.value));
+        // Filtered notes based on view mode
+        const filteredNotes = computed(() => {
+            let result = notes.value;
+            if (viewMode.value === 'my') {
+                result = result.filter(note => note.isOwner);
+            } else {
+                result = result.filter(note => note.isPublic);
+            }
+            return result;
+        });
+
+        // Computed sorted notes (applies to filtered notes)
+        const sortedNotes = computed(() => sortItems(filteredNotes.value));
 
         const loadNotes = async () => {
             loading.value = true;
@@ -3441,7 +3459,14 @@ const Uncategorized = {
             }
         };
 
-        onMounted(loadNotes);
+        onMounted(() => {
+            loadNotes();
+            window.addEventListener('viewmode-changed', handleViewModeChanged);
+        });
+
+        onUnmounted(() => {
+            window.removeEventListener('viewmode-changed', handleViewModeChanged);
+        });
 
         return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions };
     }
