@@ -3269,6 +3269,40 @@ const Uncategorized = {
         const notes = ref([]);
         const loading = ref(true);
 
+        // Sort state
+        const sortBy = ref('updatedAt'); // 'updatedAt', 'lastEditedAt', 'createdAt', 'title'
+        const sortOrder = ref('desc'); // 'desc' or 'asc'
+
+        // Sort options for UI
+        const sortOptions = [
+            { value: 'updatedAt', label: '更新時間' },
+            { value: 'lastEditedAt', label: '內文編輯時間' },
+            { value: 'createdAt', label: '建立時間' },
+            { value: 'title', label: '標題' }
+        ];
+
+        // Sort helper function
+        const sortItems = (items) => {
+            return [...items].sort((a, b) => {
+                let valA, valB;
+
+                if (sortBy.value === 'title') {
+                    valA = (a.title || '').toLowerCase();
+                    valB = (b.title || '').toLowerCase();
+                    const cmp = valA.localeCompare(valB, 'zh-TW');
+                    return sortOrder.value === 'asc' ? cmp : -cmp;
+                } else {
+                    // Date fields
+                    valA = a[sortBy.value] ? new Date(a[sortBy.value]).getTime() : 0;
+                    valB = b[sortBy.value] ? new Date(b[sortBy.value]).getTime() : 0;
+                    return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+        };
+
+        // Computed sorted notes
+        const sortedNotes = computed(() => sortItems(notes.value));
+
         const loadNotes = async () => {
             loading.value = true;
             try {
@@ -3294,7 +3328,7 @@ const Uncategorized = {
 
         onMounted(loadNotes);
 
-        return { notes, loading, deleteNote, dayjs };
+        return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions };
     }
 };
 

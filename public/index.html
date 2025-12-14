@@ -823,9 +823,13 @@
     </script>
 
     <script type="text/x-template" id="home-template">
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
+            <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+                <span>Home</span>
+            </div>
+            
             <!-- View Mode Tabs and Sort Controls -->
-            <div class="mb-6 flex flex-wrap gap-4 items-center">
+            <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
                 <!-- View Mode Tabs -->
                 <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
                     <button @click="notesViewMode = 'my'" 
@@ -845,7 +849,7 @@
                 </div>
 
                 <!-- Sort Controls -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 ml-auto">
                     <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
                     <select v-model="sortBy" 
                             class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -861,7 +865,7 @@
 
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredBooks.length == 0" class="text-gray-400 italic">(無書本)</div>
                     <div v-for="book in filteredBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
@@ -906,7 +910,7 @@
 
             <div>
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Notes</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無筆記)</div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <!-- Dropdown Menu Button -->
@@ -966,16 +970,31 @@
     </script>
 
     <script type="text/x-template" id="uncategorized-template">
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
-            <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
+            <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
                 <router-link to="/" class="hover:text-blue-500">Home</router-link>
                 <span class="mx-2">/</span>
                 <span>未分類筆記</span>
             </div>
 
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-                <i class="fa-solid fa-inbox mr-2"></i>未分類筆記
-            </h1>
+            <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                    <i class="fa-solid fa-inbox mr-2"></i>未分類筆記
+                </h1>
+                <!-- Sort Controls -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+                    <select v-model="sortBy" 
+                            class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                    </select>
+                    <button @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'" 
+                            class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            :title="sortOrder === 'desc' ? '降冪' : '升冪'">
+                        <i :class="sortOrder === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short'"></i>
+                    </button>
+                </div>
+            </div>
 
             <div v-if="loading" class="text-center text-gray-500 py-8">
                 <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
@@ -987,7 +1006,7 @@
             </div>
 
             <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div v-for="note in notes" :key="note.id"
+                <div v-for="note in sortedNotes" :key="note.id"
                      class="bg-white dark:bg-dark-surface rounded-lg shadow p-4 hover:shadow-lg transition relative group">
                     <router-link :to="'/note/' + note.id" class="block">
                         <div class="flex items-center mb-2">
@@ -1018,7 +1037,7 @@
     </script>
 
     <script type="text/x-template" id="trash-template">
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
             <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
                 <router-link to="/" class="hover:text-blue-500">Home</router-link>
                 <span class="mx-2">/</span>
@@ -1092,7 +1111,7 @@
     </script>
 
     <script type="text/x-template" id="admin-template">
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
             <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
                 <router-link to="/" class="hover:text-blue-500">Home</router-link>
                 <span class="mx-2">/</span>
@@ -1180,7 +1199,7 @@
     </script>
 
     <script type="text/x-template" id="book-template">
-        <div class="p-8 container mx-auto overflow-y-auto h-full">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
             <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
                 <router-link to="/" class="hover:text-blue-500">Home</router-link>
                 <span class="mx-2">/</span>
@@ -1217,7 +1236,7 @@
             </div>
 
             <!-- Read-only Info Display -->
-            <div class="mb-6 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div class="mb-4 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
                 <!-- Tags (read-only) -->
                 <div class="flex items-center mb-3">
                     <i class="fa-solid fa-tags text-gray-400 mr-2"></i>
