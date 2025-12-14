@@ -534,21 +534,29 @@
                 </template>
 
                 <!-- Books Section -->
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
-                    Books
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center justify-between">
+                    <span>Books</span>
+                    <router-link to="/books" class="text-gray-400 hover:text-white transition" title="全部書本">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </router-link>
                 </div>
                 <router-link to="/uncategorized" 
                              class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
                     <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox text-gray-400"></i></span>
                     <span class="truncate">未分類筆記</span>
                 </router-link>
-                <div v-for="book in filteredSidebarBooks" :key="book.id">
+                <div v-for="book in limitedSidebarBooks" :key="book.id">
                     <router-link :to="'/book/' + book.id" 
                                  class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
                         <span class="truncate">{{ book.title }}</span>
                     </router-link>
                 </div>
+                <router-link v-if="hasMoreBooks" to="/books" 
+                             class="block px-2 py-1 mt-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition flex items-center text-sm">
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-ellipsis"></i></span>
+                    <span class="truncate">更多書本...</span>
+                </router-link>
             </div>
 
             <!-- User & Settings -->
@@ -1011,6 +1019,84 @@
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }" @add-user-permission="addInfoUserPermission"
                 @remove-user-permission="removeInfoUserPermission" @update-user-permission="updateInfoUserPermissionLevel" />
+        </div>
+    </script>
+
+    <script type="text/x-template" id="allbooks-template">
+        <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
+            <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+                <router-link to="/" class="hover:text-blue-500">Home</router-link>
+                <span class="mx-2">/</span>
+                <span>Books</span>
+            </div>
+
+            <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                    <i class="fa-solid fa-book mr-2"></i>全部書本
+                </h1>
+                
+                <!-- Sort Controls -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+                    <select v-model="sortBy" 
+                            class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                    </select>
+                    <button @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'" 
+                            class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            :title="sortOrder === 'desc' ? '降冪' : '升冪'">
+                        <i :class="sortOrder === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short'"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="loading" class="text-center text-gray-500 py-8">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
+            </div>
+
+            <div v-else-if="sortedBooks.length === 0" class="text-center text-gray-400 py-8">
+                <i class="fa-solid fa-book-open text-4xl mb-4 block"></i>
+                <p>沒有書本</p>
+            </div>
+
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div v-for="book in sortedBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
+                    <!-- Dropdown Menu Button -->
+                    <div class="absolute top-2 right-2">
+                        <button @click.stop="toggleMenu(book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div v-if="openMenuId === book.id" class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                            <button @click.stop="togglePin(book.id)" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                                <i class="fa-solid fa-thumbtack mr-2"></i>{{ isPinned(book.id) ? '取消釘選' : '釘選至側邊欄' }}
+                            </button>
+                             <button @click.stop="book.canDelete && deleteBook(book.id)" 
+                                    :class="book.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+                                    class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
+                                    :disabled="!book.canDelete">
+                                <i class="fa-solid fa-trash mr-2"></i>刪除
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-1">
+                        <span class="w-6 mr-2 text-center shrink-0 text-lg"><i class="fa-solid fa-book text-green-500"></i></span>
+                        <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ book.title }}</h3>
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ dayjs(book.updatedAt).format('YYYY/MM/DD HH:mm') }}</p>
+                        <p v-if="book.lastUpdater || book.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ book.lastUpdater?.username || book.owner?.username }}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ book.description || '' }}</p>
+                    </div>
+                    <!-- Tags -->
+                    <div v-if="book.tags && book.tags.length > 0" class="flex flex-wrap gap-1">
+                        <span v-for="tag in book.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                            {{ tag }}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </script>
 

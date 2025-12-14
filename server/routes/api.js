@@ -950,7 +950,7 @@ router.get('/books', async (req, res) => {
         const userId = req.session.userId || null;
         const books = await db.Book.findAll({
             order: [['updatedAt', 'DESC']],
-            limit: 20,
+            limit: 1000,
             include: [
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
                 { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }

@@ -680,6 +680,16 @@ const Sidebar = {
             }
         });
 
+        // Limited sidebar books for display (max 20)
+        const limitedSidebarBooks = computed(() => {
+            return filteredSidebarBooks.value.slice(0, 20);
+        });
+
+        // Check if there are more books beyond the limit
+        const hasMoreBooks = computed(() => {
+            return filteredSidebarBooks.value.length > 20;
+        });
+
         // Search Modal state and functions
         const showSearchModal = ref(false);
         const searchQuery = ref('');
@@ -907,7 +917,7 @@ const Sidebar = {
             searchInput, openSearchModal, allTags, selectedTag, toggleTag,
             searchOwnerFilter, searchDateRange, searchDateStart, searchDateEnd,
             // Sidebar books
-            sidebarBooks, filteredSidebarBooks,
+            sidebarBooks, filteredSidebarBooks, limitedSidebarBooks, hasMoreBooks,
             // Global View Mode
             globalViewMode, setGlobalViewMode,
             // Utilities
@@ -1163,7 +1173,7 @@ const Home = {
             }
 
             // Apply sorting
-            return sortItems(result);
+            return sortItems(result).slice(0, 20);
         });
 
         const selectTag = (tag) => {
@@ -3472,6 +3482,151 @@ const Uncategorized = {
     }
 };
 
+// All Books Component - shows all books
+const AllBooks = {
+    template: '#allbooks-template',
+    setup() {
+        const router = VueRouter.useRouter();
+        const books = ref([]);
+        const loading = ref(true);
+
+        // View mode sync with sidebar
+        const viewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my');
+
+        const handleViewModeChanged = () => {
+            viewMode.value = localStorage.getItem('NoteHubMD-viewMode') || 'my';
+        };
+
+        // Sort state
+        const sortBy = ref('updatedAt'); // 'updatedAt', 'createdAt', 'title'
+        const sortOrder = ref('desc'); // 'desc' or 'asc'
+
+        // Sort options for UI
+        const sortOptions = [
+            { value: 'updatedAt', label: '更新時間' },
+            { value: 'createdAt', label: '建立時間' },
+            { value: 'title', label: '標題' }
+        ];
+
+        // Sort helper function
+        const sortItems = (items) => {
+            return [...items].sort((a, b) => {
+                let valA, valB;
+
+                if (sortBy.value === 'title') {
+                    valA = (a.title || '').toLowerCase();
+                    valB = (b.title || '').toLowerCase();
+                    const cmp = valA.localeCompare(valB, 'zh-TW');
+                    return sortOrder.value === 'asc' ? cmp : -cmp;
+                } else {
+                    // Date fields
+                    valA = a[sortBy.value] ? new Date(a[sortBy.value]).getTime() : 0;
+                    valB = b[sortBy.value] ? new Date(b[sortBy.value]).getTime() : 0;
+                    return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+        };
+
+        // Filtered books based on view mode
+        const filteredBooks = computed(() => {
+            let result = books.value;
+            if (viewMode.value === 'my') {
+                result = result.filter(book => book.isOwner);
+            } else {
+                result = result.filter(book => book.isPublic);
+            }
+            return result;
+        });
+
+        // Computed sorted books
+        const sortedBooks = computed(() => sortItems(filteredBooks.value));
+
+        // Menu state
+        const openMenuId = ref(null);
+
+        const toggleMenu = (id) => {
+            openMenuId.value = openMenuId.value === id ? null : id;
+        };
+
+        const closeMenu = () => {
+            openMenuId.value = null;
+        };
+
+        // Pinned items state
+        const pinnedItems = ref([]);
+
+        const loadPinnedItems = async () => {
+            try {
+                pinnedItems.value = await api.getPinnedItems();
+            } catch (e) {
+                console.error('Failed to load pinned items:', e);
+            }
+        };
+
+        const isPinned = (id) => {
+            return pinnedItems.value.some(p => p.type === 'book' && p.id === id);
+        };
+
+        const togglePin = async (id) => {
+            try {
+                if (isPinned(id)) {
+                    await api.removePin('book', id);
+                    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === 'book' && p.id === id));
+                } else {
+                    await api.addPin('book', id);
+                    await loadPinnedItems();
+                }
+                openMenuId.value = null;
+                window.dispatchEvent(new Event('pins-updated'));
+            } catch (e) {
+                globalModal.showAlert('操作失敗: ' + e.message);
+            }
+        };
+
+        const loadBooks = async () => {
+            loading.value = true;
+            try {
+                books.value = await api.getBooks();
+                await loadPinnedItems();
+            } catch (e) {
+                console.error('[AllBooks] Failed to load books:', e);
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const deleteBook = async (bookId) => {
+            const confirmed = await globalModal.showConfirm('確定要將此書本移至垃圾桶？');
+            if (!confirmed) return;
+            try {
+                await api.deleteBook(bookId);
+                books.value = books.value.filter(b => b.id !== bookId);
+                window.dispatchEvent(new Event('books-updated'));
+            } catch (e) {
+                globalModal.showAlert('刪除失敗');
+            }
+        };
+
+        onMounted(() => {
+            loadBooks();
+            window.addEventListener('viewmode-changed', handleViewModeChanged);
+            document.addEventListener('click', closeMenu);
+        });
+
+        onUnmounted(() => {
+            window.removeEventListener('viewmode-changed', handleViewModeChanged);
+            document.removeEventListener('click', closeMenu);
+        });
+
+        return {
+            books, sortedBooks, loading,
+            dayjs, sortBy, sortOrder, sortOptions,
+            openMenuId, toggleMenu,
+            isPinned, togglePin, deleteBook
+        };
+    }
+};
+
 const Trash = {
     template: '#trash-template',
     setup() {
@@ -3643,6 +3798,7 @@ const routes = [
         children: [
             { path: '', component: Home },
             { path: 'book/:id', component: Book },
+            { path: 'books', component: AllBooks },
             { path: 'uncategorized', component: Uncategorized },
             { path: 'trash', component: Trash },
             { path: 'admin', component: Admin },
