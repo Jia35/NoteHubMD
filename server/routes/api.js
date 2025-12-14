@@ -48,6 +48,9 @@ const upload = multer({
 
 // Image upload endpoint
 router.post('/upload/image', upload.single('image'), (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Login required' });
+    }
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
     }
@@ -119,6 +122,9 @@ function parseTags(content) {
 
 // Search Users (for permission assignment)
 router.get('/users/search', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Login required' });
+    }
     try {
         const { q } = req.query;
         if (!q || q.length < 2) {
@@ -147,6 +153,9 @@ router.get('/users/search', async (req, res) => {
 
 // Create Note
 router.post('/notes', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Login required' });
+    }
     let id = generateId();
     let retry = 0;
     while (retry < 5) {
@@ -532,6 +541,9 @@ router.get('/notes', async (req, res) => {
 
 // Create Book
 router.post('/books', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Login required' });
+    }
     let id = generateId();
     let retry = 0;
     while (retry < 5) {
@@ -981,8 +993,14 @@ router.delete('/books/:id', async (req, res) => {
 // Restore Book
 router.post('/books/:id/restore', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
         const book = await db.Book.findByPk(req.params.id, { paranoid: false });
         if (!book) return res.status(404).json({ error: 'Book not found' });
+        if (book.ownerId !== req.session.userId) {
+            return res.status(403).json({ error: 'Only owner can restore' });
+        }
         await book.restore();
         res.json({ success: true });
     } catch (e) {
@@ -993,8 +1011,14 @@ router.post('/books/:id/restore', async (req, res) => {
 // Force Delete Book
 router.delete('/books/:id/force', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
         const book = await db.Book.findByPk(req.params.id, { paranoid: false });
         if (!book) return res.status(404).json({ error: 'Book not found' });
+        if (book.ownerId !== req.session.userId) {
+            return res.status(403).json({ error: 'Only owner can force delete' });
+        }
         await book.destroy({ force: true });
         res.json({ success: true });
     } catch (e) {
@@ -1045,8 +1069,14 @@ router.delete('/notes/:id', async (req, res) => {
 // Restore Note
 router.post('/notes/:id/restore', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
         const note = await db.Note.findByPk(req.params.id, { paranoid: false });
         if (!note) return res.status(404).json({ error: 'Note not found' });
+        if (note.ownerId !== req.session.userId) {
+            return res.status(403).json({ error: 'Only owner can restore' });
+        }
         await note.restore();
         res.json({ success: true });
     } catch (e) {
@@ -1057,8 +1087,14 @@ router.post('/notes/:id/restore', async (req, res) => {
 // Force Delete Note
 router.delete('/notes/:id/force', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
         const note = await db.Note.findByPk(req.params.id, { paranoid: false });
         if (!note) return res.status(404).json({ error: 'Note not found' });
+        if (note.ownerId !== req.session.userId) {
+            return res.status(403).json({ error: 'Only owner can force delete' });
+        }
         await note.destroy({ force: true });
         res.json({ success: true });
     } catch (e) {
@@ -1069,6 +1105,9 @@ router.delete('/notes/:id/force', async (req, res) => {
 // Get Trash
 router.get('/trash', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
         const notes = await db.Note.findAll({
             where: { deletedAt: { [db.Sequelize.Op.ne]: null } },
             paranoid: false,
