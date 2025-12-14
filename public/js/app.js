@@ -740,7 +740,8 @@ const Sidebar = {
                     const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
                     return itemDate >= yearAgo;
                 case 'custom':
-                    // Custom date range
+                    // Custom date range - if no dates set, treat as no filter
+                    if (!searchDateStart.value && !searchDateEnd.value) return true;
                     if (searchDateStart.value) {
                         const startDate = new Date(searchDateStart.value);
                         startDate.setHours(0, 0, 0, 0);
@@ -769,7 +770,10 @@ const Sidebar = {
         const performSearch = debounce(() => {
             const query = searchQuery.value.trim().toLowerCase();
             const tag = selectedTag.value;
-            const hasFilters = searchOwnerFilter.value !== 'all' || searchDateRange.value !== 'all';
+            // Custom date range with no dates set is treated as no date filter
+            const hasDateFilter = searchDateRange.value !== 'all' &&
+                !(searchDateRange.value === 'custom' && !searchDateStart.value && !searchDateEnd.value);
+            const hasFilters = searchOwnerFilter.value !== 'all' || hasDateFilter;
 
             if (!query && !tag && !hasFilters) {
                 searchResults.value = { books: [], notes: [] };
