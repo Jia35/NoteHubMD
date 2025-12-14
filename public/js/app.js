@@ -671,6 +671,10 @@ const Sidebar = {
         const searchInput = ref(null);
         const allTags = ref([]);
         const selectedTag = ref('');
+        const searchOwnerFilter = ref('all'); // 'all', 'my', 'public'
+        const searchDateRange = ref('all'); // 'all', 'today', 'week', 'month', 'year', 'custom'
+        const searchDateStart = ref(''); // Custom date range start (YYYY-MM-DD)
+        const searchDateEnd = ref(''); // Custom date range end (YYYY-MM-DD)
 
         // Cache for notes and books data
         let cachedNotes = [];
@@ -699,6 +703,10 @@ const Sidebar = {
             showSearchModal.value = true;
             searchQuery.value = '';
             selectedTag.value = '';
+            searchOwnerFilter.value = 'all';
+            searchDateRange.value = 'all';
+            searchDateStart.value = '';
+            searchDateEnd.value = '';
             searchResults.value = { books: [], notes: [] };
             await loadTagsAndData();
             // Focus input after modal opens
@@ -712,20 +720,70 @@ const Sidebar = {
             performSearch();
         };
 
+        // Helper: check if item is within date range
+        const isWithinDateRange = (item) => {
+            if (searchDateRange.value === 'all') return true;
+            const itemDate = new Date(item.updatedAt || item.createdAt);
+            const now = new Date();
+
+            switch (searchDateRange.value) {
+                case 'today':
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    return itemDate >= todayStart;
+                case 'week':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return itemDate >= weekAgo;
+                case 'month':
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    return itemDate >= monthAgo;
+                case 'year':
+                    const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    return itemDate >= yearAgo;
+                case 'custom':
+                    // Custom date range
+                    if (searchDateStart.value) {
+                        const startDate = new Date(searchDateStart.value);
+                        startDate.setHours(0, 0, 0, 0);
+                        if (itemDate < startDate) return false;
+                    }
+                    if (searchDateEnd.value) {
+                        const endDate = new Date(searchDateEnd.value);
+                        endDate.setHours(23, 59, 59, 999);
+                        if (itemDate > endDate) return false;
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        };
+
+        // Helper: check if item matches owner filter
+        const matchesOwnerFilter = (item) => {
+            if (searchOwnerFilter.value === 'all') return true;
+            if (searchOwnerFilter.value === 'my') return item.isOwner === true;
+            if (searchOwnerFilter.value === 'public') return item.isPublic === true;
+            return true;
+        };
+
         // Debounced search function
         const performSearch = debounce(() => {
             const query = searchQuery.value.trim().toLowerCase();
             const tag = selectedTag.value;
+            const hasFilters = searchOwnerFilter.value !== 'all' || searchDateRange.value !== 'all';
 
-            if (!query && !tag) {
+            if (!query && !tag && !hasFilters) {
                 searchResults.value = { books: [], notes: [] };
                 return;
             }
 
             searchLoading.value = true;
             try {
-                // Filter based on search query and tag
+                // Filter based on search query, tag, owner, and date range
                 const matchingNotes = cachedNotes.filter(note => {
+                    // Owner filter
+                    if (!matchesOwnerFilter(note)) return false;
+                    // Date range filter
+                    if (!isWithinDateRange(note)) return false;
                     // Tag filter
                     if (tag && (!note.tags || !note.tags.includes(tag))) return false;
                     // Text search
@@ -740,6 +798,10 @@ const Sidebar = {
                 });
 
                 const matchingBooks = cachedBooks.filter(book => {
+                    // Owner filter
+                    if (!matchesOwnerFilter(book)) return false;
+                    // Date range filter
+                    if (!isWithinDateRange(book)) return false;
                     // Tag filter
                     if (tag && (!book.tags || !book.tags.includes(tag))) return false;
                     // Text search
@@ -766,7 +828,27 @@ const Sidebar = {
         });
 
         watch(includeContent, () => {
-            if (searchQuery.value.trim() || selectedTag.value) {
+            if (searchQuery.value.trim() || selectedTag.value || searchOwnerFilter.value !== 'all' || searchDateRange.value !== 'all') {
+                performSearch();
+            }
+        });
+
+        watch(searchOwnerFilter, () => {
+            performSearch();
+        });
+
+        watch(searchDateRange, () => {
+            performSearch();
+        });
+
+        watch(searchDateStart, () => {
+            if (searchDateRange.value === 'custom') {
+                performSearch();
+            }
+        });
+
+        watch(searchDateEnd, () => {
+            if (searchDateRange.value === 'custom') {
                 performSearch();
             }
         });
@@ -801,6 +883,7 @@ const Sidebar = {
             // Search modal
             showSearchModal, searchQuery, includeContent, searchLoading, searchResults,
             searchInput, openSearchModal, allTags, selectedTag, toggleTag,
+            searchOwnerFilter, searchDateRange, searchDateStart, searchDateEnd,
             // Sidebar books
             sidebarBooks,
             // Utilities

@@ -712,11 +712,55 @@
                                placeholder="搜尋筆記和書本..."
                                class="w-full pl-10 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div class="flex items-center justify-between mt-3">
+                    <div class="flex flex-wrap items-center gap-4 mt-3">
                         <label class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                             <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600">
                             包含內文
                         </label>
+                        
+                        <!-- Owner Filter -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-user mr-1"></i>篩選：</span>
+                            <select v-model="searchOwnerFilter" 
+                                    class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="all">全部</option>
+                                <option value="my">我的</option>
+                                <option value="public">公開</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Date Range Filter -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-calendar mr-1"></i>日期：</span>
+                            <select v-model="searchDateRange" 
+                                    class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="all">全部</option>
+                                <option value="today">今天</option>
+                                <option value="week">一週內</option>
+                                <option value="month">一個月內</option>
+                                <option value="year">一年內</option>
+                                <option value="custom">自訂</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Date Range Inputs -->
+                    <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
+                            <input type="date" v-model="searchDateStart" 
+                                   class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
+                            <input type="date" v-model="searchDateEnd" 
+                                   class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <button v-if="searchDateStart || searchDateEnd" 
+                                @click="searchDateStart = ''; searchDateEnd = ''" 
+                                class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fa-solid fa-xmark"></i> 清除
+                        </button>
                     </div>
                     
                     <!-- Tag Filter -->
@@ -743,9 +787,9 @@
                         <i class="fa-solid fa-spinner fa-spin mr-2"></i>搜尋中...
                     </div>
                     
-                    <!-- No query or tag selected -->
-                    <div v-else-if="!searchQuery.trim() && !selectedTag" class="text-center text-gray-400 py-8">
-                        輸入關鍵字或選擇標籤開始搜尋
+                    <!-- No query or filter selected -->
+                    <div v-else-if="!searchQuery.trim() && !selectedTag && searchOwnerFilter === 'all' && searchDateRange === 'all'" class="text-center text-gray-400 py-8">
+                        輸入關鍵字或設定篩選條件開始搜尋
                     </div>
                     
                     <!-- No results -->
