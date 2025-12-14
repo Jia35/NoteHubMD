@@ -503,6 +503,15 @@ const Sidebar = {
         // App version
         const appVersion = ref('');
 
+        // Global View Mode (persisted in localStorage)
+        const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my'); // 'my' or 'all'
+
+        const setGlobalViewMode = (mode) => {
+            globalViewMode.value = mode;
+            localStorage.setItem('NoteHubMD-viewMode', mode);
+            window.dispatchEvent(new Event('viewmode-changed'));
+        };
+
         const loadPinnedItems = async () => {
             try {
                 const data = await api.getPinnedItems();
@@ -661,6 +670,15 @@ const Sidebar = {
                 console.error('[Sidebar] Failed to load books:', e);
             }
         };
+
+        // Filtered sidebar books based on view mode
+        const filteredSidebarBooks = computed(() => {
+            if (globalViewMode.value === 'my') {
+                return sidebarBooks.value.filter(book => book.isOwner);
+            } else {
+                return sidebarBooks.value.filter(book => book.isPublic);
+            }
+        });
 
         // Search Modal state and functions
         const showSearchModal = ref(false);
@@ -889,7 +907,9 @@ const Sidebar = {
             searchInput, openSearchModal, allTags, selectedTag, toggleTag,
             searchOwnerFilter, searchDateRange, searchDateStart, searchDateEnd,
             // Sidebar books
-            sidebarBooks,
+            sidebarBooks, filteredSidebarBooks,
+            // Global View Mode
+            globalViewMode, setGlobalViewMode,
             // Utilities
             dayjs
         };
@@ -926,7 +946,12 @@ const Home = {
         const selectedTag = ref('');
         const searchQuery = ref('');
         const includeContent = ref(false);
-        const notesViewMode = ref('my'); // 'my' or 'all'
+        const notesViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my'); // 'my' or 'all' - synced with sidebar
+
+        // Handler to sync with global view mode changes from sidebar
+        const handleViewModeChanged = () => {
+            notesViewMode.value = localStorage.getItem('NoteHubMD-viewMode') || 'my';
+        };
         const sortBy = ref('updatedAt'); // 'updatedAt', 'lastEditedAt', 'createdAt', 'title'
         const sortOrder = ref('desc'); // 'desc' or 'asc'
 
@@ -1392,10 +1417,13 @@ const Home = {
             loadData();
             // Close menu when clicking outside
             document.addEventListener('click', closeMenu);
+            // Listen for view mode changes from sidebar
+            window.addEventListener('viewmode-changed', handleViewModeChanged);
         });
 
         onUnmounted(() => {
             document.removeEventListener('click', closeMenu);
+            window.removeEventListener('viewmode-changed', handleViewModeChanged);
         });
 
         return {

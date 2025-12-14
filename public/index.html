@@ -467,6 +467,26 @@
                 <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
             </router-link>
 
+            <!-- View Mode Toggle -->
+            <div class="px-3 pt-3 pb-1">
+                <div class="flex bg-gray-700 rounded-lg p-1">
+                    <button @click="setGlobalViewMode('my')" 
+                            class="flex-1 px-2 py-1 text-xs rounded-md transition"
+                            :class="globalViewMode === 'my' 
+                                ? 'bg-gray-600 text-blue-400 font-medium' 
+                                : 'text-gray-400 hover:text-white'">
+                        <i class="fa-solid fa-user mr-1"></i>我的項目
+                    </button>
+                    <button @click="setGlobalViewMode('all')" 
+                            class="flex-1 px-2 py-1 text-xs rounded-md transition"
+                            :class="globalViewMode === 'all' 
+                                ? 'bg-gray-600 text-blue-400 font-medium' 
+                                : 'text-gray-400 hover:text-white'">
+                        <i class="fa-solid fa-globe mr-1"></i>公開項目
+                    </button>
+                </div>
+            </div>
+
             <!-- Search & Create Buttons -->
             <div class="p-3 space-y-2 border-b border-gray-800">
                 <button @click="openSearchModal" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition flex items-center justify-center text-sm">
@@ -522,7 +542,7 @@
                     <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox text-gray-400"></i></span>
                     <span class="truncate">未分類筆記</span>
                 </router-link>
-                <div v-for="book in sidebarBooks" :key="book.id">
+                <div v-for="book in filteredSidebarBooks" :key="book.id">
                     <router-link :to="'/book/' + book.id" 
                                  class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
@@ -719,8 +739,8 @@
                         </label>
                         
                         <!-- Owner Filter -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-user mr-1"></i>篩選：</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-globe mr-1"></i>範圍：</span>
                             <select v-model="searchOwnerFilter" 
                                     class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
                                 <option value="all">全部</option>
@@ -730,7 +750,7 @@
                         </div>
                         
                         <!-- Date Range Filter -->
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
                             <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-calendar mr-1"></i>日期：</span>
                             <select v-model="searchDateRange" 
                                     class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -746,12 +766,12 @@
                     
                     <!-- Custom Date Range Inputs -->
                     <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
                             <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
                             <input type="date" v-model="searchDateStart" 
                                    class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
                             <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
                             <input type="date" v-model="searchDateEnd" 
                                    class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -764,7 +784,7 @@
                     </div>
                     
                     <!-- Tag Filter -->
-                    <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-2 items-center">
+                    <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-1 items-center">
                         <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-tags mr-1"></i>標籤：</span>
                         <button v-for="tag in allTags" :key="tag" 
                                 @click="toggleTag(tag)"
@@ -872,27 +892,8 @@
                 <span>Home</span>
             </div>
             
-            <!-- View Mode Tabs and Sort Controls -->
-            <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
-                <!-- View Mode Tabs -->
-                <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-                    <button @click="notesViewMode = 'my'" 
-                            class="px-3 py-1 text-sm rounded-md transition"
-                            :class="notesViewMode === 'my' 
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm font-medium' 
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'">
-                        <i class="fa-solid fa-user mr-1"></i>我的項目
-                    </button>
-                    <button @click="notesViewMode = 'all'" 
-                            class="px-3 py-1 text-sm rounded-md transition"
-                            :class="notesViewMode === 'all' 
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm font-medium' 
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'">
-                        <i class="fa-solid fa-globe mr-1"></i>公開項目
-                    </button>
-                </div>
-
-                <!-- Sort Controls -->
+            <!-- Sort Controls -->
+            <div class="mb-6 flex flex-wrap gap-4 items-center justify-end">
                 <div class="flex items-center gap-2 ml-auto">
                     <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
                     <select v-model="sortBy" 
