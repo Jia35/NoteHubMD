@@ -447,7 +447,7 @@
             </router-link>
 
             <!-- Search & Create Buttons -->
-            <div class="p-4 space-y-2 border-b border-gray-800">
+            <div class="p-3 space-y-2 border-b border-gray-800">
                 <button @click="openSearchModal" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition flex items-center justify-center text-sm">
                     <i class="fa-solid fa-search mr-2"></i> 搜尋
                 </button>
@@ -460,25 +460,27 @@
             </div>
 
             <!-- Navigation -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            <div class="flex-1 overflow-y-auto p-3">
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
-                <router-link to="/" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                    <i class="fa-solid fa-house-chimney mr-3"></i> Home
+                <router-link to="/" class="block p-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney"></i></span> Home
                 </router-link>
-                <router-link to="/trash" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                    <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
+                <router-link to="/trash" class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can"></i></span> 垃圾桶
                 </router-link>
 
                 <!-- Pinned Items -->
                 <template v-if="pinnedItems.length > 0">
                     <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
-                        <i class="fa-solid fa-thumbtack mr-2"></i> Pinned
+                        <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
                     </div>
                     <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
                         <router-link :to="'/' + item.type + '/' + item.id" 
                                      class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center justify-between">
                             <div class="flex items-center min-w-0">
-                                <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-3 shrink-0"></i>
+                                <span class="w-5 mr-3 text-center shrink-0">
+                                    <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'"></i>
+                                </span>
                                 <span class="truncate">{{ item.title || 'Untitled' }}</span>
                             </div>
                             <button @click.prevent.stop="unpinItem(item.type, item.id)" 
@@ -492,17 +494,17 @@
 
                 <!-- Books Section -->
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
-                    <i class="fa-solid fa-book mr-2"></i> Books
+                    Books
                 </div>
                 <router-link to="/uncategorized" 
-                             class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                    <i class="fa-solid fa-folder-open mr-3 text-gray-400"></i>
+                             class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-folder-open text-gray-400"></i></span>
                     <span class="truncate">未分類筆記</span>
                 </router-link>
                 <div v-for="book in sidebarBooks" :key="book.id">
                     <router-link :to="'/book/' + book.id" 
-                                 class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-book mr-3 text-green-500"></i>
+                                 class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                        <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
                         <span class="truncate">{{ book.title }}</span>
                     </router-link>
                 </div>
@@ -1450,13 +1452,13 @@
                         </div>
 
                         <!-- Navigation -->
-                        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <div class="flex-1 overflow-y-auto p-3">
                             <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
-                            <router-link to="/" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                                <i class="fa-solid fa-house-chimney mr-3"></i> Home
+                            <router-link to="/" class="block p-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                                <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney"></i></span> Home
                             </router-link>
-                            <router-link to="/trash" class="block px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                                <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
+                            <router-link to="/trash" class="block p-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                                <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can"></i></span> 垃圾桶
                             </router-link>
                         </div>
 
