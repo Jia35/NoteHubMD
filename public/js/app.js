@@ -2119,7 +2119,7 @@ const Note = {
         const showSettingsModal = ref(false);
         const showPermissionModal = ref(false);
         const currentUser = ref(null);
-        const theme = ref(localStorage.getItem('theme') || 'light');
+        const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'light');
 
         // User permissions state
         const userPermissions = ref([]);
@@ -2269,7 +2269,7 @@ const Note = {
 
         const setTheme = (newTheme) => {
             theme.value = newTheme;
-            localStorage.setItem('theme', newTheme);
+            localStorage.setItem('NoteHubMD-theme', newTheme);
             if (newTheme === 'dark') {
                 document.documentElement.classList.add('dark');
             } else {

@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* Dark mode: use .dark class on html element */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Custom theme configuration for TailwindCSS v4 */
+@theme {
+    --color-dark-bg: #1a1a1a;
+    --color-dark-surface: #2d2d2d;
+    --color-dark-text: #e0e0e0;
+}
+
+/* Source paths for content scanning */
+@source "../**/*.html";
+@source "../**/*.js";

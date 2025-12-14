@@ -5,95 +5,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NoteHubMD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            bg: '#1a1a1a',
-                            surface: '#2d2d2d',
-                            text: '#e0e0e0'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+
+    <!-- TailwindCSS (compiled) -->
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+
+    <!-- Vue & Vue Router -->
+    <script src="/vendors/js/vue.global.prod.js"></script>
+    <script src="/vendors/js/vue-router.global.prod.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
+    <script src="/vendors/js/morphdom.min.js"></script>
 
     <!-- CodeMirror 5 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/3024-day.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/3024-night.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/ayu-dark.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/bespin.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/colorforth.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/dracula.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/duotone-dark.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/eclipse.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/material.min.css">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/material-palenight.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/monokai.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/nord.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/rubyblue.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/solarized.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/xq-light.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/theme/xq-dark.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror-one-dark-theme@1.1.1/one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/markdown/markdown.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/clike/clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/python/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/shell/shell.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/sql/sql.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/go/go.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/yaml/yaml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/powershell/powershell.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/mode/vbscript/vbscript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/addon/display/placeholder.min.js"></script>
+    <link rel="stylesheet" href="/vendors/css/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/3024-day.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/3024-night.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/ayu-dark.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/bespin.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/colorforth.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/dracula.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/duotone-dark.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/eclipse.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/material.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/material-palenight.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/monokai.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/nord.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/rubyblue.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/solarized.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/xq-light.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/xq-dark.min.css">
+    <link rel="stylesheet" href="/vendors/css/codemirror/one-dark.min.css">
+    <script src="/vendors/js/codemirror/codemirror.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/markdown.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/xml.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/javascript.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/css.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/htmlmixed.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/clike.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/python.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/shell.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/sql.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/go.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/yaml.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/powershell.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/vbscript.min.js"></script>
+    <script src="/vendors/js/codemirror/addon/placeholder.min.js"></script>
     <!-- CodeMirror Hint Addon -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/addon/hint/show-hint.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/addon/hint/show-hint.min.js"></script>
+    <link rel="stylesheet" href="/vendors/css/codemirror/show-hint.min.css">
+    <script src="/vendors/js/codemirror/addon/show-hint.min.js"></script>
 
     <!-- Markdown-it -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-container@4.0.0/dist/markdown-it-container.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-anchor@9.2.0/dist/markdownItAnchor.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-imsize@2.0.1/dist/markdown-it-imsize.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji@3.0.0/dist/markdown-it-emoji.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists@2.1.1/dist/markdown-it-task-lists.min.js"></script>
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <script src="/vendors/js/markdown-it/markdown-it.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-container.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-anchor.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-imsize.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-mark.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-sup.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-emoji.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-task-lists.min.js"></script>
+    <link rel="stylesheet" href="/vendors/css/github-markdown.min.css">
 
     <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
-        id="hljs-light-theme">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
-        id="hljs-dark-theme" disabled>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="/vendors/css/highlight/github.min.css" id="hljs-light-theme">
+    <link rel="stylesheet" href="/vendors/css/highlight/github-dark.min.css" id="hljs-dark-theme" disabled>
+    <script src="/vendors/js/highlight.min.js"></script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/vendors/css/fontawesome/all.min.css">
+
+    <!-- Mermaid & Sortable -->
+    <script src="/vendors/js/mermaid.min.js"></script>
+    <script src="/vendors/js/sortable.min.js"></script>
 
     <!-- Day.js for date/time manipulation -->
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/relativeTime.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/locale/zh-tw.js"></script>
+    <script src="/vendors/js/dayjs/dayjs.min.js"></script>
+    <script src="/vendors/js/dayjs/relativeTime.js"></script>
+    <script src="/vendors/js/dayjs/zh-tw.js"></script>
     <script>
         dayjs.extend(dayjs_plugin_relativeTime);
         dayjs.locale('zh-tw');

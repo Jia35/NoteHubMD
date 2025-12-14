@@ -5,6 +5,7 @@ const socketIo = require('socket.io');
 const path = require('path');
 const session = require('express-session');
 const bodyParser = require('body-parser');
+const compression = require('compression');
 const db = require('./models');
 
 const app = express();
@@ -13,11 +14,33 @@ const io = socketIo(server);
 
 const PORT = config.server.port;
 
+// Gzip/Brotli Compression Middleware
+app.use(compression());
+
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/_uploads', express.static(path.join(__dirname, '../_uploads')));
+
+// Static files with cache control
+// Vendors (third-party libraries) - 1 week cache
+app.use('/vendors', express.static(path.join(__dirname, '../public/vendors'), {
+    maxAge: '7d',
+    etag: true,
+    immutable: true
+}));
+
+// Uploads - 1 day cache
+app.use('/_uploads', express.static(path.join(__dirname, '../_uploads'), {
+    maxAge: '1d',
+    etag: true
+}));
+
+// Other static files - 6 hours cache
+app.use(express.static(path.join(__dirname, '../public'), {
+    maxAge: '6h',
+    etag: true
+}));
+
 app.use(session({
     secret: config.session.secret,
     resave: false,
