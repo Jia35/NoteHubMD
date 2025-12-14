@@ -652,6 +652,16 @@ const Sidebar = {
             } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
+        // Sidebar Books list
+        const sidebarBooks = ref([]);
+        const loadSidebarBooks = async () => {
+            try {
+                sidebarBooks.value = await api.getBooks();
+            } catch (e) {
+                console.error('[Sidebar] Failed to load books:', e);
+            }
+        };
+
         // Search Modal state and functions
         const showSearchModal = ref(false);
         const searchQuery = ref('');
@@ -765,12 +775,15 @@ const Sidebar = {
             updateThemeClass(theme.value);
             loadPinnedItems();
             loadAppVersion();
+            loadSidebarBooks();
             // Listen for pin updates from other components
             window.addEventListener('pins-updated', loadPinnedItems);
+            window.addEventListener('books-updated', loadSidebarBooks);
         });
 
         onUnmounted(() => {
             window.removeEventListener('pins-updated', loadPinnedItems);
+            window.removeEventListener('books-updated', loadSidebarBooks);
         });
 
         return {
@@ -788,6 +801,8 @@ const Sidebar = {
             // Search modal
             showSearchModal, searchQuery, includeContent, searchLoading, searchResults,
             searchInput, openSearchModal, allTags, selectedTag, toggleTag,
+            // Sidebar books
+            sidebarBooks,
             // Utilities
             dayjs
         };
@@ -3185,6 +3200,42 @@ const Note = {
     }
 };
 
+// Uncategorized Notes Component - shows notes without book
+const Uncategorized = {
+    template: '#uncategorized-template',
+    setup() {
+        const notes = ref([]);
+        const loading = ref(true);
+
+        const loadNotes = async () => {
+            loading.value = true;
+            try {
+                const allNotes = await api.getNotes();
+                notes.value = allNotes.filter(note => !note.bookId);
+            } catch (e) {
+                console.error('[Uncategorized] Failed to load notes:', e);
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const deleteNote = async (noteId) => {
+            const confirmed = await globalModal.showConfirm('確定要將此筆記移至垃圾桶？');
+            if (!confirmed) return;
+            try {
+                await api.softDeleteNote(noteId);
+                notes.value = notes.value.filter(n => n.id !== noteId);
+            } catch (e) {
+                globalModal.showAlert('刪除失敗');
+            }
+        };
+
+        onMounted(loadNotes);
+
+        return { notes, loading, deleteNote, dayjs };
+    }
+};
+
 const Trash = {
     template: '#trash-template',
     setup() {
@@ -3356,6 +3407,7 @@ const routes = [
         children: [
             { path: '', component: Home },
             { path: 'book/:id', component: Book },
+            { path: 'uncategorized', component: Uncategorized },
             { path: 'trash', component: Trash },
             { path: 'admin', component: Admin },
         ]

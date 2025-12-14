@@ -489,6 +489,23 @@
                         </router-link>
                     </div>
                 </template>
+
+                <!-- Books Section -->
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
+                    <i class="fa-solid fa-book mr-2"></i> Books
+                </div>
+                <router-link to="/uncategorized" 
+                             class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                    <i class="fa-solid fa-folder-open mr-3 text-gray-400"></i>
+                    <span class="truncate">未分類筆記</span>
+                </router-link>
+                <div v-for="book in sidebarBooks" :key="book.id">
+                    <router-link :to="'/book/' + book.id" 
+                                 class="block px-3 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
+                        <i class="fa-solid fa-book mr-3 text-green-500"></i>
+                        <span class="truncate">{{ book.title }}</span>
+                    </router-link>
+                </div>
             </div>
 
             <!-- User & Settings -->
@@ -921,6 +938,58 @@
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }" @add-user-permission="addInfoUserPermission"
                 @remove-user-permission="removeInfoUserPermission" @update-user-permission="updateInfoUserPermissionLevel" />
+        </div>
+    </script>
+
+    <script type="text/x-template" id="uncategorized-template">
+        <div class="p-8 container mx-auto overflow-y-auto h-full">
+            <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
+                <router-link to="/" class="hover:text-blue-500">Home</router-link>
+                <span class="mx-2">/</span>
+                <span>未分類筆記</span>
+            </div>
+
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+                <i class="fa-solid fa-folder-open mr-2"></i>未分類筆記
+            </h1>
+
+            <div v-if="loading" class="text-center text-gray-500 py-8">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
+            </div>
+
+            <div v-else-if="notes.length === 0" class="text-center text-gray-400 py-8">
+                <i class="fa-solid fa-folder-open text-4xl mb-4 block"></i>
+                <p>沒有未分類的筆記</p>
+            </div>
+
+            <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div v-for="note in notes" :key="note.id"
+                     class="bg-white dark:bg-dark-surface rounded-lg shadow p-4 hover:shadow-lg transition relative group">
+                    <router-link :to="'/note/' + note.id" class="block">
+                        <div class="flex items-center mb-2">
+                            <i class="fa-solid fa-note-sticky text-blue-500 mr-2"></i>
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ note.title || 'Untitled' }}</h3>
+                        </div>
+                        <div class="mb-2">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</p>
+                            <p v-if="note.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{ note.owner.username }}</p>
+                        </div>
+                        <!-- Tags -->
+                        <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
+                            <span v-for="tag in note.tags" :key="tag" 
+                                  class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+                                {{ tag }}
+                            </span>
+                        </div>
+                    </router-link>
+                    <!-- Delete button -->
+                    <button @click.prevent="deleteNote(note.id)" 
+                            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition"
+                            title="移至垃圾桶">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </script>
 
