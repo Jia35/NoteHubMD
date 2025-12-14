@@ -13,12 +13,16 @@ module.exports = (sequelize, DataTypes) => {
         description: {
             type: DataTypes.TEXT
         },
+        tags: {
+            type: DataTypes.JSON
+        },
         permission: {
             type: DataTypes.STRING,
             defaultValue: config.defaults.bookPermission
         },
-        tags: {
-            type: DataTypes.JSON
+        isPublic: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         },
         lastUpdaterId: {
             type: DataTypes.INTEGER,

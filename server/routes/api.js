@@ -271,11 +271,14 @@ router.put('/notes/:id', async (req, res) => {
 
         // Prevent permission from being updated via this endpoint
         // Use PUT /notes/:id/permission instead
-        const { permission: _, commentsDisabled: requestedCommentsDisabled, ...updateData } = req.body;
+        const { permission: _, commentsDisabled: requestedCommentsDisabled, isPublic: requestedIsPublic, ...updateData } = req.body;
 
-        // Only owner can update commentsDisabled
+        // Only owner can update commentsDisabled and isPublic
         if (isOwner && requestedCommentsDisabled !== undefined) {
             updateData.commentsDisabled = requestedCommentsDisabled;
+        }
+        if (isOwner && requestedIsPublic !== undefined) {
+            updateData.isPublic = requestedIsPublic;
         }
 
         // Auto-parse tags from content if content is being updated
@@ -638,7 +641,12 @@ router.put('/books/:id', async (req, res) => {
 
         // Prevent permission from being updated via this endpoint
         // Use PUT /books/:id/permission instead
-        const { permission: _, ...updateData } = req.body;
+        const { permission: _, isPublic: requestedIsPublic, ...updateData } = req.body;
+
+        // Only owner can update isPublic
+        if (isOwner && requestedIsPublic !== undefined) {
+            updateData.isPublic = requestedIsPublic;
+        }
 
         // Set last updater
         if (userId) {

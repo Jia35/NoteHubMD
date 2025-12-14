@@ -111,7 +111,7 @@
         <Teleport to="body">
             <Transition name="fade">
                 <div v-if="$root.modal.show"
-                    class="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50"
+                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 200;"
                     @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
                     <Transition name="modal-scale">
                         <div v-if="$root.modal.show"
@@ -175,7 +175,7 @@
     <!-- Shared Info Modal Component Template -->
     <script type="text/x-template" id="info-modal-template">
         <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 h-[70vh] overflow-hidden flex flex-col">
+            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="height: 70vh;">
                 <!-- Modal Header -->
                 <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
                     <h2 class="text-xl font-bold text-gray-800 dark:text-white">
@@ -289,9 +289,8 @@
                                         <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
                                     </div>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" :checked="commentsEnabled" @change="$emit('update:commentsEnabled', $event.target.checked)" class="sr-only peer">
-                                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" :checked="commentsEnabled" @change="$emit('update:commentsEnabled', $event.target.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
                                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ commentsEnabled ? '開啟' : '關閉' }}</span>
                                     </label>
                                 </div>
@@ -329,7 +328,7 @@
                             </div>
                             
                             <template v-if="item.isOwner">
-                                <div class="border-t dark:border-gray-600 pt-4">
+                                <div class="border-t dark:border-gray-600 py-4">
                                     <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                                         <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
                                     </label>
@@ -393,6 +392,23 @@
                                     </p>
                                 </div>
                             </template>
+
+                            <!-- Public Toggle (for Owner only) -->
+                            <div v-if="item.isOwner" class="border-t dark:border-gray-600 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-globe text-gray-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">公開到首頁</span>
+                                    </div>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" :checked="item.isPublic" @change="$emit('update:isPublic', $event.target.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ item.isPublic ? '是' : '否' }}</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    開啟後，此{{ type === 'book' ? '書本' : '筆記' }}將會顯示在首頁的「公開項目」列表中。
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -503,7 +519,7 @@
                 </div>
                 <router-link to="/uncategorized" 
                              class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-folder-open text-gray-400"></i></span>
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox text-gray-400"></i></span>
                     <span class="truncate">未分類筆記</span>
                 </router-link>
                 <div v-for="book in sidebarBooks" :key="book.id">
@@ -675,7 +691,7 @@
 
         <!-- Search Modal -->
         <div v-if="showSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSearchModal = false">
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="max-height: 80vh;">
                 <!-- Modal Header -->
                 <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
                     <h2 class="text-xl font-bold text-gray-800 dark:text-white">
@@ -824,7 +840,7 @@
                             :class="notesViewMode === 'all' 
                                 ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm font-medium' 
                                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'">
-                        <i class="fa-solid fa-globe mr-1"></i>全部項目
+                        <i class="fa-solid fa-globe mr-1"></i>公開項目
                     </button>
                 </div>
 
@@ -941,6 +957,7 @@
                 :new-user-permission="infoNewUserPermission" @close="showInfoModal = false" @save="saveInfoChanges"
                 @update:tab="infoModalTab = $event" @update:description="editableDescription = $event"
                 @update:permission="editablePermission = $event" @update:commentsEnabled="infoCommentsEnabled = $event"
+                @update:isPublic="infoModalItem.isPublic = $event"
                 @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }" @add-user-permission="addInfoUserPermission"
@@ -957,7 +974,7 @@
             </div>
 
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-                <i class="fa-solid fa-folder-open mr-2"></i>未分類筆記
+                <i class="fa-solid fa-inbox mr-2"></i>未分類筆記
             </h1>
 
             <div v-if="loading" class="text-center text-gray-500 py-8">
@@ -1247,6 +1264,7 @@
                 :user-search-results="infoUserSearchResults" :new-user-permission="infoNewUserPermission"
                 @close="showInfoModal = false" @save="saveBookChanges" @update:tab="infoModalTab = $event"
                 @update:description="editableDescription = $event" @update:permission="editablePermission = $event"
+                @update:isPublic="book.isPublic = $event"
                 @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }"
@@ -1316,7 +1334,7 @@
                             </div>
                             <router-link to="/uncategorized" 
                                          class="block px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white transition flex items-center">
-                                <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-folder-open text-gray-400"></i></span>
+                                <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox text-gray-400"></i></span>
                                 <span class="truncate">未分類筆記</span>
                             </router-link>
                             <div v-for="book in sidebarBooks" :key="book.id">
@@ -1489,7 +1507,8 @@
                     :loading-user-permissions="loadingUserPermissions" :user-search-query="userSearchQuery"
                     :user-search-results="userSearchResults" :new-user-permission="newUserPermission" @close="showNoteInfoModal = false"
                     @save="saveNoteSettings" @update:tab="noteInfoModalTab = $event" @update:permission="handlePermissionChange"
-                    @update:commentsEnabled="noteCommentsEnabled = $event" @update:newUserPermission="newUserPermission = $event"
+                    @update:commentsEnabled="noteCommentsEnabled = $event" @update:isPublic="noteIsPublic = $event"
+                    @update:newUserPermission="newUserPermission = $event"
                     @search-users="(q) => { userSearchQuery = q; searchUsers(); }" @add-user-permission="addUserPermission"
                     @remove-user-permission="removeUserPermission" @update-user-permission="updateUserPermissionLevel" />
                 
@@ -1509,7 +1528,7 @@
                                 <!-- Book Notes Tooltip -->
                                 <div v-if="book.Notes && book.Notes.length > 0" 
                                      class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
-                                    <div class="min-w-[280px] max-w-[400px] bg-gray-800 rounded-lg shadow-xl border border-gray-700">
+                                    <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700" style="min-width: 280px; max-width: 400px;">
                                         <!-- Arrow -->
                                         <div class="absolute top-0 left-4 w-4 h-4 bg-gray-800 border-t border-l border-gray-700 transform rotate-45"></div>
                                         <div class="relative z-10 p-3">
@@ -1639,18 +1658,19 @@
                             <!-- Preview Info Bar -->
                             <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0"
                                 :class="{'flex justify-center': !showEditor}">
-                                <div :class="{'max-w-[800px] w-full px-8': !showEditor, 'px-4': showEditor}">
+                                <div :class="{'w-full px-8': !showEditor, 'px-4': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
                                     <div class="flex items-center space-x-4">
                                     <!-- Owner -->
                                     <div v-if="noteOwner" class="flex items-center">
                                         <div class="relative group mr-1.5">
-                                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  style="font-size: 10px;"
                                                   :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                                                 <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
                                                 <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
                                             </span>
                                             <!-- Tooltip -->
-                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600">
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
                                                 <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
                                                 <div class="flex items-center relative z-10">
                                                     <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
@@ -1670,13 +1690,14 @@
                                     <!-- Last Editor -->
                                     <div v-if="lastEditor" class="flex items-center">
                                         <div class="relative group mr-1.5">
-                                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  style="font-size: 10px;"
                                                   :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                                                 <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
                                                 <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
                                             </span>
                                             <!-- Tooltip -->
-                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600">
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
                                                 <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
                                                 <div class="flex items-center relative z-10">
                                                     <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
@@ -1704,13 +1725,13 @@
                             <!-- Preview Content -->
                             <div class="markdown-body dark:text-gray-300"
                                 :class="{'flex justify-center': !showEditor}">
-                                <div :class="{'max-w-[800px] w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" ref="previewContent"></div>
+                                <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent"></div>
                             </div>
 
                             <!-- Comments Section (hidden when commentsDisabled) -->
                             <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                                 :class="{'flex justify-center': !showEditor}">
-                                <div :class="{'max-w-[800px] w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}">
+                                <div :class="{'w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
                                     <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
                                         <i class="fa-solid fa-comments mr-2"></i>留言 ({{ comments.length }})
                                     </h3>
@@ -1735,10 +1756,12 @@
                                                     :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
                                                 <!-- Preview area -->
                                                 <div v-if="commentPreviewMode && newComment.trim()" 
-                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-[76px] max-h-[192px] overflow-auto"
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-auto"
+                                                    style="min-height: 76px; max-height: 192px;"
                                                     v-html="renderCommentMarkdown(newComment)"></div>
                                                 <div v-if="commentPreviewMode && !newComment.trim()" 
-                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 min-h-[76px] italic">
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 italic"
+                                                    style="min-height: 76px;">
                                                     沒有內容可預覽
                                                 </div>
                                                 <div class="flex justify-between items-center mt-1">
@@ -1799,7 +1822,7 @@
                                                                     <i class="fa-solid fa-ellipsis-vertical"></i>
                                                                 </button>
                                                                 <div v-if="openMenuId === comment.id" 
-                                                                    class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
+                                                                    class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10" style="min-width: 100px;">
                                                                     <button v-if="canEditComment(comment)" @click="startEditComment(comment)" 
                                                                         class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
                                                                         <i class="fa-solid fa-pen mr-2"></i>編輯
@@ -1869,7 +1892,7 @@
                                                                         <i class="fa-solid fa-ellipsis-vertical"></i>
                                                                     </button>
                                                                     <div v-if="openMenuId === reply.id" 
-                                                                        class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10 min-w-[100px]">
+                                                                        class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10" style="min-width: 100px;">
                                                                         <button v-if="canEditComment(reply)" @click="startEditComment(reply)" 
                                                                             class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
                                                                             <i class="fa-solid fa-pen mr-2"></i>編輯
@@ -1911,7 +1934,8 @@
                         
                         <!-- TOC Sidebar (only in view mode) - positioned relative to content -->
                         <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
-                            class="fixed top-[120px] ml-[calc(50%+420px)] w-56 h-[calc(100vh-150px)] overflow-y-auto p-3 hidden xl:block">
+                            class="fixed w-56 overflow-y-auto p-3 hidden xl:block"
+                            style="top: 120px; margin-left: calc(50% + 420px); height: calc(100vh - 150px);">
                             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">目錄</div>
                             <nav class="space-y-1">
                                 <a v-for="item in toc" :key="item.id" 
@@ -1937,7 +1961,8 @@
         <!-- Image Lightbox Modal -->
         <Transition name="fade">
             <div v-if="lightboxImage" 
-                 class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 cursor-zoom-out"
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 cursor-zoom-out"
+                 style="z-index: 100;"
                  @click="closeLightbox">
                 <!-- Close button -->
                 <button @click="closeLightbox" 
@@ -1946,11 +1971,11 @@
                 </button>
                 <!-- Image -->
                 <img :src="lightboxImage" 
-                     class="max-w-[90vw] max-h-[90vh] object-contain cursor-default shadow-2xl"
+                     class="object-contain cursor-default shadow-2xl"
+                     style="max-width: 90vw; max-height: 90vh;"
                      @click.stop>
             </div>
         </Transition>
-    </div>
     </script>
 
     <script src="/js/app.js"></script>

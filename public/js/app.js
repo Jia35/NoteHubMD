@@ -418,7 +418,7 @@ const InfoModal = {
     emits: [
         'close', 'save', 'update:tab', 'update:description', 'update:permission',
         'update:commentsEnabled', 'update:newTag', 'update:newUserPermission',
-        'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
+        'update:isPublic', 'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
         'remove-user-permission', 'update-user-permission'
     ],
     setup(props) {
@@ -974,9 +974,12 @@ const Home = {
         const filteredNotes = computed(() => {
             let result = notes.value;
 
-            // Apply ownership filter (my notes vs all notes)
+            // Apply ownership filter (my notes vs public notes)
             if (notesViewMode.value === 'my') {
                 result = result.filter(note => note.isOwner);
+            } else {
+                // 'all' mode: only show items marked as public
+                result = result.filter(note => note.isPublic);
             }
 
             // Apply tag filter
@@ -1000,9 +1003,12 @@ const Home = {
         const filteredBooks = computed(() => {
             let result = books.value;
 
-            // Apply ownership filter (my items vs all items)
+            // Apply ownership filter (my items vs public items)
             if (notesViewMode.value === 'my') {
                 result = result.filter(book => book.isOwner);
+            } else {
+                // 'all' mode: only show items marked as public
+                result = result.filter(book => book.isPublic);
             }
 
             // Apply tag filter
@@ -1164,6 +1170,11 @@ const Home = {
                     }
                 }
 
+                // Add isPublic to updateData if owner
+                if (infoModalItem.value.isOwner) {
+                    updateData.isPublic = infoModalItem.value.isPublic;
+                }
+
                 if (infoModalType.value === 'book') {
                     updateData.description = editableDescription.value;
                     await api.updateBook(infoModalItem.value.id, updateData);
@@ -1173,6 +1184,7 @@ const Home = {
                         books.value[bookIndex].tags = [...editableTags.value];
                         books.value[bookIndex].description = editableDescription.value;
                         books.value[bookIndex].permission = editablePermission.value;
+                        books.value[bookIndex].isPublic = infoModalItem.value.isPublic;
                     }
                 } else {
                     updateData.commentsDisabled = !infoCommentsEnabled.value;
@@ -1183,11 +1195,13 @@ const Home = {
                         notes.value[noteIndex].tags = [...editableTags.value];
                         notes.value[noteIndex].permission = editablePermission.value;
                         notes.value[noteIndex].commentsDisabled = !infoCommentsEnabled.value;
+                        notes.value[noteIndex].isPublic = infoModalItem.value.isPublic;
                     }
                     // Also update in allNotesForTags
                     const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === infoModalItem.value.id);
                     if (allNoteIndex !== -1) {
                         allNotesForTags.value[allNoteIndex].tags = [...editableTags.value];
+                        allNotesForTags.value[allNoteIndex].isPublic = infoModalItem.value.isPublic;
                     }
                 }
                 showInfoModal.value = false;
@@ -1539,10 +1553,15 @@ const Book = {
                     await api.updateBookPermission(book.value.id, editablePermission.value);
                     permission.value = editablePermission.value;
                 }
-                await api.updateBook(book.value.id, {
+                const updateData = {
                     description: editableDescription.value,
                     tags: editableTags.value
-                });
+                };
+                // Add isPublic if owner
+                if (isOwner.value) {
+                    updateData.isPublic = book.value.isPublic;
+                }
+                await api.updateBook(book.value.id, updateData);
                 book.value.description = editableDescription.value;
                 book.value.tags = [...editableTags.value];
                 showInfoModal.value = false;
@@ -1568,7 +1587,8 @@ const Book = {
             updatedAt: book.value.updatedAt,
             permission: permission.value,
             isOwner: isOwner.value,
-            canEdit: canEdit.value
+            canEdit: canEdit.value,
+            isPublic: book.value.isPublic || false
         }));
 
         return {
@@ -1613,6 +1633,7 @@ const Note = {
         const showNoteInfoModal = ref(false);
         const noteInfoModalTab = ref('info'); // 'info' or 'permission'
         const noteCommentsEnabled = ref(true); // Default to enabled (inverse of commentsDisabled)
+        const noteIsPublic = ref(false); // Track if note is marked as public
 
         // Editor statistics
         const charCount = computed(() => content.value.length);
@@ -1916,12 +1937,17 @@ const Note = {
             return html;
         };
 
-        // Save note settings (commentsDisabled toggle)
+        // Save note settings (commentsDisabled toggle & isPublic)
         const saveNoteSettings = async () => {
             try {
-                await api.updateNote(noteId.value, {
+                const updateData = {
                     commentsDisabled: !noteCommentsEnabled.value
-                });
+                };
+                // Add isPublic if owner
+                if (isOwner.value) {
+                    updateData.isPublic = noteIsPublic.value;
+                }
+                await api.updateNote(noteId.value, updateData);
                 showNoteInfoModal.value = false;
             } catch (e) {
                 globalModal.showAlert('儲存失敗：' + e.message);
@@ -2882,6 +2908,7 @@ const Note = {
                 updatedAt.value = note.updatedAt || null;
                 lastEditedAt.value = note.lastEditedAt || null;
                 noteCommentsEnabled.value = !note.commentsDisabled; // Invert: true means enabled
+                noteIsPublic.value = note.isPublic || false;
 
                 // If user can't edit and no specific mode was requested, default to 'view' mode
                 if (!canEdit.value && !('edit' in route.query) && !('both' in route.query) && !('view' in route.query)) {
@@ -3070,6 +3097,8 @@ const Note = {
                     lastUpdater.value = note.lastUpdater || null;
                     updatedAt.value = note.updatedAt || null;
                     lastEditedAt.value = note.lastEditedAt || null;
+                    noteCommentsEnabled.value = !note.commentsDisabled;
+                    noteIsPublic.value = note.isPublic || false;
 
                     // Update editor content
                     if (cmInstance) {
@@ -3112,7 +3141,8 @@ const Note = {
             permission: permission.value,
             effectivePermission: effectivePermission.value,
             isOwner: isOwner.value,
-            canEdit: canEdit.value
+            canEdit: canEdit.value,
+            isPublic: noteIsPublic.value
         }));
 
         return {
@@ -3225,6 +3255,7 @@ const Note = {
             showNoteInfoModal,
             noteInfoModalTab,
             noteCommentsEnabled,
+            noteIsPublic,
             saveNoteSettings,
             noteInfoItem
         };

@@ -14,12 +14,16 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             defaultValue: ''
         },
+        tags: {
+            type: DataTypes.JSON
+        },
         permission: {
             type: DataTypes.STRING,
             defaultValue: config.defaults.notePermission
         },
-        tags: {
-            type: DataTypes.JSON
+        isPublic: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         },
         lastEditedAt: {
             type: DataTypes.DATE,
