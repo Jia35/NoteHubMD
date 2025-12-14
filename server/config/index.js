@@ -44,6 +44,9 @@ const defaults = {
     },
     features: {
         comments: true
+    },
+    api: {
+        masterKey: ''  // 預設為空，表示停用 Master API Key 功能
     }
 };
 

@@ -48,7 +48,7 @@ const upload = multer({
 
 // Image upload endpoint
 router.post('/upload/image', upload.single('image'), (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
     if (!req.file) {
@@ -122,7 +122,7 @@ function parseTags(content) {
 
 // Search Users (for permission assignment)
 router.get('/users/search', async (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
     try {
@@ -153,7 +153,7 @@ router.get('/users/search', async (req, res) => {
 
 // Create Note
 router.post('/notes', async (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
     let id = generateId();
@@ -541,7 +541,7 @@ router.get('/notes', async (req, res) => {
 
 // Create Book
 router.post('/books', async (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session.userId && !req.isMasterApiKey) {
         return res.status(401).json({ error: 'Login required' });
     }
     let id = generateId();
@@ -993,12 +993,12 @@ router.delete('/books/:id', async (req, res) => {
 // Restore Book
 router.post('/books/:id/restore', async (req, res) => {
     try {
-        if (!req.session.userId) {
+        if (!req.session.userId && !req.isMasterApiKey) {
             return res.status(401).json({ error: 'Login required' });
         }
         const book = await db.Book.findByPk(req.params.id, { paranoid: false });
         if (!book) return res.status(404).json({ error: 'Book not found' });
-        if (book.ownerId !== req.session.userId) {
+        if (book.ownerId !== req.session.userId && !req.isMasterApiKey) {
             return res.status(403).json({ error: 'Only owner can restore' });
         }
         await book.restore();
@@ -1011,12 +1011,12 @@ router.post('/books/:id/restore', async (req, res) => {
 // Force Delete Book
 router.delete('/books/:id/force', async (req, res) => {
     try {
-        if (!req.session.userId) {
+        if (!req.session.userId && !req.isMasterApiKey) {
             return res.status(401).json({ error: 'Login required' });
         }
         const book = await db.Book.findByPk(req.params.id, { paranoid: false });
         if (!book) return res.status(404).json({ error: 'Book not found' });
-        if (book.ownerId !== req.session.userId) {
+        if (book.ownerId !== req.session.userId && !req.isMasterApiKey) {
             return res.status(403).json({ error: 'Only owner can force delete' });
         }
         await book.destroy({ force: true });
@@ -1069,12 +1069,12 @@ router.delete('/notes/:id', async (req, res) => {
 // Restore Note
 router.post('/notes/:id/restore', async (req, res) => {
     try {
-        if (!req.session.userId) {
+        if (!req.session.userId && !req.isMasterApiKey) {
             return res.status(401).json({ error: 'Login required' });
         }
         const note = await db.Note.findByPk(req.params.id, { paranoid: false });
         if (!note) return res.status(404).json({ error: 'Note not found' });
-        if (note.ownerId !== req.session.userId) {
+        if (note.ownerId !== req.session.userId && !req.isMasterApiKey) {
             return res.status(403).json({ error: 'Only owner can restore' });
         }
         await note.restore();
@@ -1087,12 +1087,12 @@ router.post('/notes/:id/restore', async (req, res) => {
 // Force Delete Note
 router.delete('/notes/:id/force', async (req, res) => {
     try {
-        if (!req.session.userId) {
+        if (!req.session.userId && !req.isMasterApiKey) {
             return res.status(401).json({ error: 'Login required' });
         }
         const note = await db.Note.findByPk(req.params.id, { paranoid: false });
         if (!note) return res.status(404).json({ error: 'Note not found' });
-        if (note.ownerId !== req.session.userId) {
+        if (note.ownerId !== req.session.userId && !req.isMasterApiKey) {
             return res.status(403).json({ error: 'Only owner can force delete' });
         }
         await note.destroy({ force: true });
@@ -1105,7 +1105,7 @@ router.delete('/notes/:id/force', async (req, res) => {
 // Get Trash
 router.get('/trash', async (req, res) => {
     try {
-        if (!req.session.userId) {
+        if (!req.session.userId && !req.isMasterApiKey) {
             return res.status(401).json({ error: 'Login required' });
         }
         const notes = await db.Note.findAll({

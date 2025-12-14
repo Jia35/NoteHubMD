@@ -22,3 +22,7 @@ defaults:
 
 features:
   comments: true  # 是否開放留言功能
+
+api:
+  # 最高權限 API Key，可使用所有 API（留空或不設定表示停用此功能）
+  masterKey: "${API_MASTER_KEY}"
