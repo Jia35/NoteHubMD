@@ -652,6 +652,115 @@ const Sidebar = {
             } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
+        // Search Modal state and functions
+        const showSearchModal = ref(false);
+        const searchQuery = ref('');
+        const includeContent = ref(false);
+        const searchLoading = ref(false);
+        const searchResults = ref({ books: [], notes: [] });
+        const searchInput = ref(null);
+        const allTags = ref([]);
+        const selectedTag = ref('');
+
+        // Cache for notes and books data
+        let cachedNotes = [];
+        let cachedBooks = [];
+
+        const loadTagsAndData = async () => {
+            try {
+                const [notes, books] = await Promise.all([
+                    api.getAllNotesForTags(),
+                    api.getBooks()
+                ]);
+                cachedNotes = notes;
+                cachedBooks = books;
+
+                // Build tag list
+                const tagSet = new Set();
+                notes.forEach(n => n.tags?.forEach(t => tagSet.add(t)));
+                books.forEach(b => b.tags?.forEach(t => tagSet.add(t)));
+                allTags.value = Array.from(tagSet).sort();
+            } catch (e) {
+                console.error('[Search] Failed to load data:', e);
+            }
+        };
+
+        const openSearchModal = async () => {
+            showSearchModal.value = true;
+            searchQuery.value = '';
+            selectedTag.value = '';
+            searchResults.value = { books: [], notes: [] };
+            await loadTagsAndData();
+            // Focus input after modal opens
+            nextTick(() => {
+                searchInput.value?.focus();
+            });
+        };
+
+        const toggleTag = (tag) => {
+            selectedTag.value = selectedTag.value === tag ? '' : tag;
+            performSearch();
+        };
+
+        // Debounced search function
+        const performSearch = debounce(() => {
+            const query = searchQuery.value.trim().toLowerCase();
+            const tag = selectedTag.value;
+
+            if (!query && !tag) {
+                searchResults.value = { books: [], notes: [] };
+                return;
+            }
+
+            searchLoading.value = true;
+            try {
+                // Filter based on search query and tag
+                const matchingNotes = cachedNotes.filter(note => {
+                    // Tag filter
+                    if (tag && (!note.tags || !note.tags.includes(tag))) return false;
+                    // Text search
+                    if (!query) return true;
+                    const titleMatch = (note.title || '').toLowerCase().includes(query);
+                    const descMatch = (note.description || '').toLowerCase().includes(query);
+                    if (includeContent.value) {
+                        const contentMatch = (note.content || '').toLowerCase().includes(query);
+                        return titleMatch || descMatch || contentMatch;
+                    }
+                    return titleMatch || descMatch;
+                });
+
+                const matchingBooks = cachedBooks.filter(book => {
+                    // Tag filter
+                    if (tag && (!book.tags || !book.tags.includes(tag))) return false;
+                    // Text search
+                    if (!query) return true;
+                    const titleMatch = (book.title || '').toLowerCase().includes(query);
+                    const descMatch = (book.description || '').toLowerCase().includes(query);
+                    return titleMatch || descMatch;
+                });
+
+                searchResults.value = {
+                    books: matchingBooks.slice(0, 20),
+                    notes: matchingNotes.slice(0, 20)
+                };
+            } catch (e) {
+                console.error('[Search] Failed:', e);
+            } finally {
+                searchLoading.value = false;
+            }
+        }, 300);
+
+        // Watch for search query changes
+        watch(searchQuery, () => {
+            performSearch();
+        });
+
+        watch(includeContent, () => {
+            if (searchQuery.value.trim() || selectedTag.value) {
+                performSearch();
+            }
+        });
+
         onMounted(() => {
             updateThemeClass(theme.value);
             loadPinnedItems();
@@ -675,7 +784,12 @@ const Sidebar = {
             // Pinned items
             pinnedItems, unpinItem,
             // App version
-            appVersion
+            appVersion,
+            // Search modal
+            showSearchModal, searchQuery, includeContent, searchLoading, searchResults,
+            searchInput, openSearchModal, allTags, selectedTag, toggleTag,
+            // Utilities
+            dayjs
         };
     }
 };
@@ -1183,7 +1297,9 @@ const Home = {
             infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
             removeInfoUserPermission, updateInfoUserPermissionLevel,
             // Pinned items
-            pinnedItems, isPinned, togglePin
+            pinnedItems, isPinned, togglePin,
+            // Utilities
+            dayjs
         };
     }
 };
@@ -2937,7 +3053,7 @@ const Note = {
                 }
             }
         });
-        
+
         const noteInfoItem = computed(() => ({
             id: noteId.value,
             title: title.value || 'Untitled',
