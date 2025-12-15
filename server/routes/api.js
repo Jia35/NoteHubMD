@@ -953,11 +953,12 @@ router.get('/books', async (req, res) => {
             limit: 1000,
             include: [
                 { model: db.User, as: 'owner', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] },
+                { model: db.Note, attributes: ['id'] }
             ]
         });
 
-        // Add canDelete and canEdit for each book, and filter by permission
+        // Add canDelete, canEdit, and noteCount for each book, and filter by permission
         const booksWithPermissions = books.map(book => {
             const bookData = book.toJSON();
             const isOwner = bookData.ownerId && bookData.ownerId === userId;
@@ -983,7 +984,11 @@ router.get('/books', async (req, res) => {
                 canDelete = true;
             }
 
-            return { ...bookData, isOwner, canEdit, canDelete };
+            // Calculate noteCount and remove Notes array to keep response clean
+            const noteCount = bookData.Notes ? bookData.Notes.length : 0;
+            delete bookData.Notes;
+
+            return { ...bookData, isOwner, canEdit, canDelete, noteCount };
         });
 
         // Filter out null entries (items user cannot access)
