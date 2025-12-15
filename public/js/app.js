@@ -2014,6 +2014,15 @@ const Note = {
             }
         };
 
+        // Filtered sidebar books based on view mode
+        const filteredSidebarBooks = computed(() => {
+            if (globalViewMode.value === 'my') {
+                return sidebarBooks.value.filter(book => book.isOwner);
+            } else {
+                return sidebarBooks.value.filter(book => book.isPublic);
+            }
+        });
+
         // Sidebar Pinned items
         const pinnedItems = ref([]);
         const loadPinnedItems = async () => {
@@ -3559,6 +3568,7 @@ const Note = {
             openCreateBookModal,
             createBookFromNote,
             sidebarBooks,
+            filteredSidebarBooks,
             pinnedItems,
             unpinItem,
             currentRoute,
