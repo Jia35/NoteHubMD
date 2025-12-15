@@ -486,6 +486,9 @@ const Sidebar = {
     template: '#sidebar-template',
     props: ['user'],
     setup(props) {
+        const route = useRoute();
+        const currentRoute = computed(() => route.path);
+
         const showSettings = ref(false);
         const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
 
@@ -920,6 +923,8 @@ const Sidebar = {
             sidebarBooks, filteredSidebarBooks, limitedSidebarBooks, hasMoreBooks,
             // Global View Mode
             globalViewMode, setGlobalViewMode,
+            // Current route for active state
+            currentRoute,
             // Utilities
             dayjs
         };
