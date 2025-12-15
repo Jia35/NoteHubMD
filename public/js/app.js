@@ -446,6 +446,19 @@ const InfoModal = {
     }
 };
 
+// Shared Sidebar Navigation Component
+const SidebarNav = {
+    template: '#sidebar-nav-template',
+    props: {
+        books: { type: Array, default: () => [] },
+        pinnedItems: { type: Array, default: () => [] },
+        showPinned: { type: Boolean, default: true },
+        showMoreBooks: { type: Boolean, default: false },
+        currentRoute: { type: String, default: '/' }
+    },
+    emits: ['unpin']
+};
+
 
 const Login = {
     template: '#login-template',
@@ -484,6 +497,7 @@ const Login = {
 
 const Sidebar = {
     template: '#sidebar-template',
+    components: { SidebarNav },
     props: ['user'],
     setup(props) {
         const route = useRoute();
@@ -1745,10 +1759,12 @@ const Book = {
 
 const Note = {
     template: '#note-template',
+    components: { SidebarNav },
     setup() {
         const route = useRoute();
         const router = VueRouter.useRouter();
         const noteId = computed(() => route.params.id);
+        const currentRoute = computed(() => route.path);
 
         const editorTextarea = ref(null);
         const previewContainer = ref(null);
@@ -1817,6 +1833,24 @@ const Note = {
                 sidebarBooks.value = await api.getBooks();
             } catch (e) {
                 console.error('[Note] Failed to load books:', e);
+            }
+        };
+
+        // Sidebar Pinned items
+        const pinnedItems = ref([]);
+        const loadPinnedItems = async () => {
+            try {
+                pinnedItems.value = await api.getPinnedItems();
+            } catch (e) {
+                console.error('[Note] Failed to load pinned items:', e);
+            }
+        };
+        const unpinItem = async (type, id) => {
+            try {
+                await api.removePin(type, id);
+                pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id));
+            } catch (e) {
+                globalModal.showAlert('取消釘選失敗');
             }
         };
 
@@ -3012,6 +3046,7 @@ const Note = {
             // Load app version
             loadAppVersion();
             loadSidebarBooks();
+            loadPinnedItems();
 
             // Load comments and features config
             loadComments();
@@ -3332,6 +3367,9 @@ const Note = {
             openCreateBookModal,
             createBookFromNote,
             sidebarBooks,
+            pinnedItems,
+            unpinItem,
+            currentRoute,
             showSettingsModal,
             currentUser,
             theme,
