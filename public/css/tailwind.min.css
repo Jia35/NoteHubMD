@@ -528,6 +528,9 @@
   .max-h-64 {
     max-height: calc(var(--spacing) * 64);
   }
+  .min-h-\[120px\] {
+    min-height: 120px;
+  }
   .min-h-screen {
     min-height: 100vh;
   }
@@ -831,6 +834,10 @@
   .border-l-2 {
     border-left-style: var(--tw-border-style);
     border-left-width: 2px;
+  }
+  .border-dashed {
+    --tw-border-style: dashed;
+    border-style: dashed;
   }
   .border-blue-600 {
     border-color: var(--color-blue-600);

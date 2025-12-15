@@ -1061,7 +1061,10 @@
             <div class="mb-8">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
                 <div class="flex overflow-x-auto gap-6 pb-4">
-                    <div v-if="filteredBooks.length == 0" class="text-gray-400 italic shrink-0 px-4 py-8">(無書本)</div>
+                    <div v-if="filteredBooks.length == 0" @click="openCreateBookModal" class="w-64 shrink-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6">
+                        <i class="fa-solid fa-plus text-3xl text-green-500 mb-3"></i>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立書本</p>
+                    </div>
                     <div v-for="book in filteredBooks" :key="book.id" class="w-64 shrink-0 group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
@@ -1125,7 +1128,10 @@
                 </div>
                 
                 <div v-if="notesDisplayMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                    <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無筆記)</div>
+                    <div v-if="filteredNotes.length == 0" @click="createNote" class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]">
+                        <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立筆記</p>
+                    </div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
@@ -1165,9 +1171,11 @@
                     </div>
                 </div>
                 
-                <!-- List View -->
                 <div v-else class="flex flex-col gap-2">
-                    <div v-if="filteredNotes.length == 0" class="text-gray-400 italic">(無筆記)</div>
+                    <div v-if="filteredNotes.length == 0" @click="createNote" class="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-4">
+                        <i class="fa-solid fa-plus text-xl text-blue-500 mr-3"></i>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立筆記</p>
+                    </div>
                     <div v-for="note in filteredNotes" :key="note.id" class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer border border-gray-100 dark:border-gray-700 transition group relative" @click="$router.push('/note/' + note.id)">
                          <!-- Icon -->
                         <div class="w-10 text-center text-xl mr-3 text-blue-500 flex-shrink-0"><i class="fa-solid fa-note-sticky"></i></div>
