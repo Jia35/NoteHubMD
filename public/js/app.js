@@ -446,17 +446,187 @@ const InfoModal = {
     }
 };
 
-// Shared Sidebar Navigation Component
+// Shared Sidebar Navigation Component (self-contained with search modal)
 const SidebarNav = {
     template: '#sidebar-nav-template',
     props: {
+        user: { type: Object, default: null },
         books: { type: Array, default: () => [] },
         pinnedItems: { type: Array, default: () => [] },
         showPinned: { type: Boolean, default: true },
         showMoreBooks: { type: Boolean, default: false },
-        currentRoute: { type: String, default: '/' }
+        currentRoute: { type: String, default: '/' },
+        globalViewMode: { type: String, default: 'my' },
+        appVersion: { type: String, default: '' }
     },
-    emits: ['unpin']
+    emits: ['unpin', 'view-mode-change', 'create-note', 'create-book', 'open-profile', 'open-settings'],
+    setup() {
+        // Search Modal state and functions
+        const showSearchModal = ref(false);
+        const searchQuery = ref('');
+        const includeContent = ref(false);
+        const searchLoading = ref(false);
+        const searchResults = ref({ books: [], notes: [] });
+        const searchInput = ref(null);
+        const allTags = ref([]);
+        const selectedTag = ref('');
+        const searchOwnerFilter = ref('all');
+        const searchDateRange = ref('all');
+        const searchDateStart = ref('');
+        const searchDateEnd = ref('');
+
+        // Cache for notes and books data
+        let cachedNotes = [];
+        let cachedBooks = [];
+
+        const loadTagsAndData = async () => {
+            try {
+                const [notes, books] = await Promise.all([
+                    api.getAllNotesForTags(),
+                    api.getBooks()
+                ]);
+                cachedNotes = notes;
+                cachedBooks = books;
+
+                const tagSet = new Set();
+                notes.forEach(n => n.tags?.forEach(t => tagSet.add(t)));
+                books.forEach(b => b.tags?.forEach(t => tagSet.add(t)));
+                allTags.value = Array.from(tagSet).sort();
+            } catch (e) {
+                console.error('[SidebarNav] Failed to load data:', e);
+            }
+        };
+
+        const openSearchModal = async () => {
+            showSearchModal.value = true;
+            searchQuery.value = '';
+            selectedTag.value = '';
+            searchOwnerFilter.value = 'all';
+            searchDateRange.value = 'all';
+            searchDateStart.value = '';
+            searchDateEnd.value = '';
+            searchResults.value = { books: [], notes: [] };
+            await loadTagsAndData();
+            nextTick(() => {
+                searchInput.value?.focus();
+            });
+        };
+
+        const toggleTag = (tag) => {
+            selectedTag.value = selectedTag.value === tag ? '' : tag;
+            performSearch();
+        };
+
+        const isWithinDateRange = (item) => {
+            if (searchDateRange.value === 'all') return true;
+            const itemDate = new Date(item.updatedAt || item.createdAt);
+            const now = new Date();
+
+            switch (searchDateRange.value) {
+                case 'today':
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    return itemDate >= todayStart;
+                case 'week':
+                    return itemDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                case 'month':
+                    return itemDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                case 'year':
+                    return itemDate >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                case 'custom':
+                    if (!searchDateStart.value && !searchDateEnd.value) return true;
+                    if (searchDateStart.value) {
+                        const startDate = new Date(searchDateStart.value);
+                        startDate.setHours(0, 0, 0, 0);
+                        if (itemDate < startDate) return false;
+                    }
+                    if (searchDateEnd.value) {
+                        const endDate = new Date(searchDateEnd.value);
+                        endDate.setHours(23, 59, 59, 999);
+                        if (itemDate > endDate) return false;
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        };
+
+        const matchesOwnerFilter = (item) => {
+            if (searchOwnerFilter.value === 'all') return true;
+            if (searchOwnerFilter.value === 'my') return item.isOwner === true;
+            if (searchOwnerFilter.value === 'public') return item.isPublic === true;
+            return true;
+        };
+
+        const performSearch = debounce(() => {
+            const query = searchQuery.value.trim().toLowerCase();
+            const tag = selectedTag.value;
+            const hasDateFilter = searchDateRange.value !== 'all' &&
+                !(searchDateRange.value === 'custom' && !searchDateStart.value && !searchDateEnd.value);
+            const hasFilters = searchOwnerFilter.value !== 'all' || hasDateFilter;
+
+            if (!query && !tag && !hasFilters) {
+                searchResults.value = { books: [], notes: [] };
+                return;
+            }
+
+            searchLoading.value = true;
+            try {
+                const matchingNotes = cachedNotes.filter(note => {
+                    if (!matchesOwnerFilter(note)) return false;
+                    if (!isWithinDateRange(note)) return false;
+                    if (tag && (!note.tags || !note.tags.includes(tag))) return false;
+                    if (!query) return true;
+                    const titleMatch = (note.title || '').toLowerCase().includes(query);
+                    const descMatch = (note.description || '').toLowerCase().includes(query);
+                    if (includeContent.value) {
+                        const contentMatch = (note.content || '').toLowerCase().includes(query);
+                        return titleMatch || descMatch || contentMatch;
+                    }
+                    return titleMatch || descMatch;
+                });
+
+                const matchingBooks = cachedBooks.filter(book => {
+                    if (!matchesOwnerFilter(book)) return false;
+                    if (!isWithinDateRange(book)) return false;
+                    if (tag && (!book.tags || !book.tags.includes(tag))) return false;
+                    if (!query) return true;
+                    const titleMatch = (book.title || '').toLowerCase().includes(query);
+                    const descMatch = (book.description || '').toLowerCase().includes(query);
+                    return titleMatch || descMatch;
+                });
+
+                searchResults.value = {
+                    books: matchingBooks.slice(0, 20),
+                    notes: matchingNotes.slice(0, 20)
+                };
+            } catch (e) {
+                console.error('[SidebarNav] Search failed:', e);
+            } finally {
+                searchLoading.value = false;
+            }
+        }, 300);
+
+        // Watches for search
+        watch(searchQuery, () => performSearch());
+        watch(includeContent, () => {
+            if (searchQuery.value.trim() || selectedTag.value || searchOwnerFilter.value !== 'all' || searchDateRange.value !== 'all') {
+                performSearch();
+            }
+        });
+        watch(searchOwnerFilter, () => performSearch());
+        watch(searchDateRange, () => performSearch());
+        watch(searchDateStart, () => { if (searchDateRange.value === 'custom') performSearch(); });
+        watch(searchDateEnd, () => { if (searchDateRange.value === 'custom') performSearch(); });
+
+        return {
+            // Search modal
+            showSearchModal, searchQuery, includeContent, searchLoading, searchResults,
+            searchInput, openSearchModal, allTags, selectedTag, toggleTag,
+            searchOwnerFilter, searchDateRange, searchDateStart, searchDateEnd,
+            // Utilities
+            dayjs
+        };
+    }
 };
 
 
@@ -910,6 +1080,14 @@ const Sidebar = {
             // Listen for pin updates from other components
             window.addEventListener('pins-updated', loadPinnedItems);
             window.addEventListener('books-updated', loadSidebarBooks);
+
+            // Check for search query param (from Note page redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('search') === '1') {
+                openSearchModal();
+                // Clean up URL
+                window.history.replaceState({}, '', '/');
+            }
         });
 
         onUnmounted(() => {
@@ -1864,6 +2042,20 @@ const Note = {
             } catch (e) {
                 console.error('[Note] Failed to load version:', e);
             }
+        };
+
+        // Global View Mode (persisted in localStorage)
+        const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my');
+        const setGlobalViewMode = (mode) => {
+            globalViewMode.value = mode;
+            localStorage.setItem('NoteHubMD-viewMode', mode);
+            window.dispatchEvent(new Event('viewmode-changed'));
+        };
+
+        // Search Modal - redirect to home page with search
+        const openSearchModal = () => {
+            // Navigate to home page which has the full search modal
+            window.location.href = '/?search=1';
         };
 
         // --- Comments ---
@@ -3383,6 +3575,11 @@ const Note = {
             lastEditor,
             relativeUpdatedTime,
             relativeLastContentEditedTime,
+            // Global View Mode
+            globalViewMode,
+            setGlobalViewMode,
+            // Search
+            openSearchModal,
             // Profile modal
             showUserProfileModal,
             editableName,
