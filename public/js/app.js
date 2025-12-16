@@ -462,6 +462,36 @@ const InfoModal = {
     }
 };
 
+// Book Card Component
+const BookCard = {
+    template: '#book-card-template',
+    props: {
+        book: { type: Object, required: true },
+        showMenu: { type: Boolean, default: false },
+        isPinned: { type: Boolean, default: false }
+    },
+    emits: ['toggle-menu', 'open-info', 'toggle-pin', 'delete', 'click'],
+    setup() {
+        return { dayjs };
+    }
+};
+
+// Note Card Component
+const NoteCard = {
+    template: '#note-card-template',
+    props: {
+        note: { type: Object, required: true },
+        mode: { type: String, default: 'grid' }, // 'grid' or 'list'
+        showMenu: { type: Boolean, default: false },
+        isPinned: { type: Boolean, default: false },
+        showMoveOption: { type: Boolean, default: true } // Show move to book option
+    },
+    emits: ['toggle-menu', 'open-info', 'toggle-pin', 'open-move', 'delete', 'click'],
+    setup() {
+        return { dayjs };
+    }
+};
+
 // Shared Sidebar Navigation Component (self-contained with search modal)
 const SidebarNav = {
     template: '#sidebar-nav-template',
@@ -3881,23 +3911,41 @@ const Uncategorized = {
             const confirmed = await globalModal.showConfirm('確定要將此筆記移至垃圾桶？');
             if (!confirmed) return;
             try {
-                await api.softDeleteNote(noteId);
+                await api.deleteNote(noteId);
                 notes.value = notes.value.filter(n => n.id !== noteId);
             } catch (e) {
                 globalModal.showAlert('刪除失敗');
             }
         };
 
+        // Menu state for dropdown
+        const openMenuId = ref(null);
+        const toggleMenu = (noteId) => {
+            openMenuId.value = openMenuId.value === noteId ? null : noteId;
+        };
+        const closeMenu = () => {
+            openMenuId.value = null;
+        };
+
+        // Close menu when clicking outside
+        const handleClickOutside = (event) => {
+            if (openMenuId.value && !event.target.closest('.relative')) {
+                closeMenu();
+            }
+        };
+
         onMounted(() => {
             loadNotes();
             window.addEventListener('viewmode-changed', handleViewModeChanged);
+            document.addEventListener('click', handleClickOutside);
         });
 
         onUnmounted(() => {
             window.removeEventListener('viewmode-changed', handleViewModeChanged);
+            document.removeEventListener('click', handleClickOutside);
         });
 
-        return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode };
+        return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode, openMenuId, toggleMenu };
     }
 };
 
@@ -4330,5 +4378,7 @@ const app = createApp({
 
 app.component('Sidebar', Sidebar);
 app.component('InfoModal', InfoModal);
+app.component('BookCard', BookCard);
+app.component('NoteCard', NoteCard);
 app.use(router);
 app.mount('#app');
