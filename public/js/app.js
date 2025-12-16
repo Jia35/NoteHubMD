@@ -413,15 +413,16 @@ const InfoModal = {
         loadingUserPermissions: Boolean,
         userSearchQuery: String,
         userSearchResults: Array,
-        newUserPermission: { type: String, default: 'view' }
+        newUserPermission: { type: String, default: 'view' },
+        books: { type: Array, default: () => [] }
     },
     emits: [
         'close', 'save', 'update:tab', 'update:description', 'update:permission',
         'update:commentsEnabled', 'update:newTag', 'update:newUserPermission',
         'update:isPublic', 'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
-        'remove-user-permission', 'update-user-permission'
+        'remove-user-permission', 'update-user-permission', 'move-note'
     ],
-    setup(props) {
+    setup(props, { emit }) {
         const formatDate = (dateStr) => {
             if (!dateStr) return '(無)';
             return dayjs(dateStr).format('YYYY/MM/DD HH:mm');
@@ -439,9 +440,24 @@ const InfoModal = {
             return labels[permission] || permission;
         };
 
+        const selectedMoveBookId = ref('');
+
+        watch(() => props.item, (newItem) => {
+            if (newItem && props.type === 'note') {
+                selectedMoveBookId.value = newItem.bookId || ''; // Allow string/null handling
+            }
+        }, { immediate: true });
+
+        const moveNote = () => {
+            // 'null' or '' handling is up to parent, usually '' means no book
+            emit('move-note', selectedMoveBookId.value || null);
+        };
+
         return {
             formatDate,
-            getPermissionLabel
+            getPermissionLabel,
+            selectedMoveBookId,
+            moveNote
         };
     }
 };
@@ -1706,12 +1722,34 @@ const Home = {
             window.removeEventListener('viewmode-changed', handleViewModeChanged);
         });
 
+        const handleMoveNoteFromInfo = async (targetBookId) => {
+            moveNoteTarget.value = infoModalItem.value;
+            selectedBookId.value = targetBookId;
+            await moveNote();
+            if (showInfoModal.value) {
+                // Refresh info modal item if needed, but moveNote might update it?
+                // Usually moveNote updates the note in note list.
+                // infoModalItem.value refers to the object in the list.
+                // So update should reflect.
+                // But wait, moveNote re-fetches or splices?
+                // If note is moved to another book, does it stay in view?
+                // Depends on view mode.
+            }
+            // We don't necessarily close info modal if user wants to keep editing?
+            // But the user clicked "Move". Usually implies done?
+            // Move modal closes.
+            // Info modal "Move" button.
+            // Let's close it to be safe/clear.
+            showInfoModal.value = false;
+        };
+
         return {
             notes, books, createNote, createBook, deleteNote, deleteBook,
             allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
             searchQuery, includeContent, notesViewMode, notesDisplayMode, setNotesDisplayMode,
             // Move Note
             showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote,
+            handleMoveNoteFromInfo,
             sortBy, sortOrder, sortOptions,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem, infoModalTab,
@@ -3586,7 +3624,33 @@ const Note = {
             isPublic: noteIsPublic.value
         }));
 
+        // Move Note support
+        const books = ref([]);
+        const loadAvailableBooks = async () => {
+            if (!canEdit.value && !isOwner.value) return;
+            try {
+                const allBooks = await api.getBooks();
+                books.value = allBooks.filter(b => b.isOwner || b.canEdit);
+            } catch (e) { console.error('Failed to load books for move', e); }
+        };
+
+        watch(showNoteInfoModal, (val) => {
+            if (val) loadAvailableBooks();
+        });
+
+        const handleMoveNote = async (targetBookId) => {
+            try {
+                await api.updateNote(noteId.value, { bookId: targetBookId || null });
+                await loadNote(); // Refresh note data including book
+                showNoteInfoModal.value = false;
+                globalModal.showAlert('移動成功');
+            } catch (e) {
+                globalModal.showAlert('移動失敗: ' + e.message);
+            }
+        };
+
         return {
+            books, handleMoveNote,
             noteId,
             editorTextarea,
             previewContainer,
