@@ -1429,6 +1429,73 @@ const Home = {
             } catch (e) { globalModal.showAlert('刪除失敗'); }
         };
 
+        // Move Note Modal state and functions
+        const showMoveNoteModal = ref(false);
+        const moveNoteTarget = ref(null);
+        const selectedBookId = ref('');
+
+        // Filter books that user can add notes to (owner or canEdit)
+        const availableBooks = computed(() => {
+            return books.value.filter(b => b.isOwner || b.canEdit);
+        });
+
+        const openMoveNoteModal = (note) => {
+            moveNoteTarget.value = note;
+            selectedBookId.value = note.bookId || '';
+            showMoveNoteModal.value = true;
+            openMenuId.value = null;
+        };
+
+        const moveNote = async () => {
+            if (!moveNoteTarget.value) return;
+            try {
+                // value '' means "no book" (null in db)
+                const bookId = selectedBookId.value || null;
+                const oldBookId = moveNoteTarget.value.bookId;
+
+                if (bookId === oldBookId) {
+                    showMoveNoteModal.value = false;
+                    return;
+                }
+
+                await api.updateNote(moveNoteTarget.value.id, { bookId });
+
+                // Update local list
+                const note = notes.value.find(n => n.id === moveNoteTarget.value.id);
+                if (note) {
+                    note.bookId = bookId;
+                }
+                // Also update in allNotesForTags
+                const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === moveNoteTarget.value.id);
+                if (allNoteIndex !== -1) {
+                    allNotesForTags.value[allNoteIndex].bookId = bookId;
+                }
+
+                // Update local books count (for Home page cards)
+                if (oldBookId) {
+                    const oldBook = books.value.find(b => b.id === oldBookId);
+                    if (oldBook) {
+                        oldBook.noteCount = Math.max(0, (oldBook.noteCount || 0) - 1);
+                    }
+                }
+                if (bookId) {
+                    const newBook = books.value.find(b => b.id === bookId);
+                    if (newBook) {
+                        newBook.noteCount = (newBook.noteCount || 0) + 1;
+                    }
+                }
+
+                // Notify other components (Sidebar) for refresh
+                window.dispatchEvent(new Event('books-updated'));
+
+                showMoveNoteModal.value = false;
+                globalModal.showAlert('移動成功', { type: 'success' });
+            } catch (e) {
+                console.error(e);
+                globalModal.showAlert('移動失敗: ' + e.message);
+            }
+        };
+
         // Menu functions
         const toggleMenu = (type, id) => {
             const menuId = `${type}-${id}`;
@@ -1643,6 +1710,8 @@ const Home = {
             notes, books, createNote, createBook, deleteNote, deleteBook,
             allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
             searchQuery, includeContent, notesViewMode, notesDisplayMode, setNotesDisplayMode,
+            // Move Note
+            showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote,
             sortBy, sortOrder, sortOptions,
             openMenuId, toggleMenu, closeMenu,
             showInfoModal, infoModalType, infoModalItem, infoModalTab,

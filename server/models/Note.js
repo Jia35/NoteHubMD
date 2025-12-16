@@ -17,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         tags: {
             type: DataTypes.JSON
         },
+        bookId: {
+            type: DataTypes.STRING(8),
+            allowNull: true
+        },
         permission: {
             type: DataTypes.STRING,
             defaultValue: config.defaults.notePermission

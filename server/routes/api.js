@@ -323,6 +323,21 @@ router.put('/notes/:id', async (req, res) => {
             updateData.lastUpdaterId = userId;
         }
 
+        // Handle bookId change: assign order at the end
+        if (updateData.bookId !== undefined && updateData.bookId !== note.bookId) {
+            if (updateData.bookId) {
+                const maxOrderNote = await db.Note.findOne({
+                    where: { bookId: updateData.bookId },
+                    order: [['order', 'DESC']]
+                });
+
+                const currentMax = maxOrderNote ? Number(maxOrderNote.order) : -1;
+                updateData.order = isNaN(currentMax) ? 0 : (currentMax + 1);
+            } else {
+                updateData.order = 0;
+            }
+        }
+
         await note.update(updateData);
         res.json({
             ...note.toJSON(),
