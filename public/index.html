@@ -1068,7 +1068,7 @@
                     <div v-for="book in filteredBooks" :key="book.id" class="w-64 shrink-0 group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
-                            <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
+                            <button @click.stop="toggleMenu('book', book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
@@ -1135,7 +1135,7 @@
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <!-- Dropdown Menu Button -->
                         <div class="absolute top-2 right-2">
-                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
+                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
@@ -1201,7 +1201,7 @@
 
                         <!-- Context Menu Button -->
                         <div class="relative shrink-0">
-                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
+                            <button @click.stop="toggleMenu('note', note.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                                  <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <!-- Dropdown Menu -->
@@ -1371,7 +1371,7 @@
                 <div v-for="book in sortedBooks" :key="book.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                     <!-- Dropdown Menu Button -->
                     <div class="absolute top-2 right-2">
-                        <button @click.stop="toggleMenu(book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-1">
+                        <button @click.stop="toggleMenu(book.id)" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                             <i class="fa-solid fa-ellipsis-vertical"></i>
                         </button>
                         <!-- Dropdown Menu -->
