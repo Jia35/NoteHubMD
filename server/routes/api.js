@@ -1346,4 +1346,105 @@ router.delete('/comments/:id', async (req, res) => {
     }
 });
 
+// --- Export ---
+
+// Export user's notes as ZIP
+const archiver = require('archiver');
+
+// Helper function to sanitize filename
+function sanitizeFilename(name) {
+    if (!name) return 'Untitled';
+    // Remove invalid characters for Windows/Unix filenames
+    return name.replace(/[\/\\:*?"<>|]/g, '_').trim() || 'Untitled';
+}
+
+router.get('/export/my-notes', async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId && !req.isMasterApiKey) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const userId = req.session.userId;
+
+        // Get all notes owned by the user
+        const notes = await db.Note.findAll({
+            where: { ownerId: userId },
+            include: [
+                { model: db.Book, attributes: ['id', 'title'] }
+            ],
+            order: [['updatedAt', 'DESC']]
+        });
+
+        if (notes.length === 0) {
+            return res.status(400).json({ error: 'No notes to export' });
+        }
+
+        // Set headers for ZIP download
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const zipFilename = `notes_export_${timestamp}.zip`;
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+
+        // Create archive
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Maximum compression
+        });
+
+        // Handle archive errors
+        archive.on('error', (err) => {
+            console.error('Archive error:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to create archive' });
+            }
+        });
+
+        // Pipe archive to response
+        archive.pipe(res);
+
+        // Track filenames to avoid duplicates
+        const filenameCount = {};
+
+        // Add notes to archive
+        for (const note of notes) {
+            const noteTitle = sanitizeFilename(note.title);
+            let filename;
+
+            if (note.Book) {
+                // Note is in a book: {bookTitle}__{noteTitle}.md
+                const bookTitle = sanitizeFilename(note.Book.title);
+                filename = `${bookTitle}__${noteTitle}`;
+            } else {
+                // Standalone note: {noteTitle}.md
+                filename = noteTitle;
+            }
+
+            // Handle duplicate filenames
+            if (filenameCount[filename]) {
+                filenameCount[filename]++;
+                filename = `${filename}_${filenameCount[filename]}`;
+            } else {
+                filenameCount[filename] = 1;
+            }
+
+            // Add .md extension
+            filename = `${filename}.md`;
+
+            // Add file to archive
+            archive.append(note.content || '', { name: filename });
+        }
+
+        // Finalize the archive
+        await archive.finalize();
+
+    } catch (e) {
+        console.error('Export error:', e);
+        if (!res.headersSent) {
+            res.status(500).json({ error: e.message });
+        }
+    }
+});
+
 module.exports = router;

@@ -960,9 +960,20 @@
                 </router-link>
             </div>
 
+            <!-- Export Notes -->
+            <div class="mb-4" v-if="user">
+                <button @click="exportNotes" :disabled="exportingNotes"
+                    class="flex items-center w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50">
+                    <i
+                        :class="exportingNotes ? 'fa-solid fa-spinner fa-spin mr-2' : 'fa-solid fa-file-export mr-2'"></i>
+                    {{ exportingNotes ? '匯出中...' : '匯出筆記' }}
+                </button>
+            </div>
+
             <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <button @click="logout"
                     class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
+
             </div>
 
             <div class="flex justify-end mt-4">
@@ -1787,7 +1798,7 @@
                     <span class="text-sm text-gray-500 dark:text-gray-400 shrink-0 ml-2" title="最後編輯時間">{{ new Date(note.updatedAt).toLocaleString() }}</span>
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                    No notes in this book yet.
+                    這本書裡還沒有筆記。
                 </div>
             </div>
 
