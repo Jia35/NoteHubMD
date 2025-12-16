@@ -471,8 +471,19 @@ const BookCard = {
         isPinned: { type: Boolean, default: false }
     },
     emits: ['toggle-menu', 'open-info', 'toggle-pin', 'delete', 'click'],
-    setup() {
-        return { dayjs };
+    setup(props) {
+        const menuButton = ref(null);
+
+        const menuStyle = computed(() => {
+            if (!menuButton.value || !props.showMenu) return {};
+            const rect = menuButton.value.getBoundingClientRect();
+            return {
+                top: `${rect.bottom + 4}px`,
+                left: `${rect.right - 144}px` // 144px = menu width (w-36 = 9rem = 144px)
+            };
+        });
+
+        return { dayjs, menuButton, menuStyle };
     }
 };
 
