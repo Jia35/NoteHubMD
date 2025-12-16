@@ -442,10 +442,10 @@
                     <i class="fa-solid fa-search mr-2"></i> 搜尋
                 </button>
                 <button @click="$emit('create-note')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm">
-                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
                 </button>
                 <button @click="$emit('create-book')" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center text-sm">
-                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 建立書本
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 新增書本
                 </button>
             </div>
 
@@ -855,7 +855,7 @@
                 </button>
                 <button @click="createBook"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                    <i class="fa-solid fa-plus mr-1"></i> 建立
+                    <i class="fa-solid fa-plus mr-1"></i> 新增
                 </button>
             </div>
         </div>
@@ -1077,7 +1077,7 @@
                 <div class="flex gap-6 pb-28" style="overflow-x: auto;">
                     <div v-if="filteredBooks.length == 0" @click="openCreateBookModal" class="w-64 shrink-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6">
                         <i class="fa-solid fa-plus text-3xl text-green-500 mb-3"></i>
-                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立書本</p>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">新增書本</p>
                     </div>
                     <div v-for="book in filteredBooks" :key="book.id" class="w-64 shrink-0 group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/book/' + book.id)">
                         <!-- Dropdown Menu Button -->
@@ -1144,7 +1144,7 @@
                 <div v-if="notesDisplayMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     <div v-if="filteredNotes.length == 0" @click="createNote" class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]">
                         <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
-                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立筆記</p>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
                     </div>
                     <div v-for="note in filteredNotes" :key="note.id" class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700" @click="$router.push('/note/' + note.id)">
                         <!-- Dropdown Menu Button -->
@@ -1191,7 +1191,7 @@
                 <div v-else class="flex flex-col gap-2">
                     <div v-if="filteredNotes.length == 0" @click="createNote" class="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-4">
                         <i class="fa-solid fa-plus text-xl text-blue-500 mr-3"></i>
-                        <p class="text-gray-600 dark:text-gray-300 font-medium">建立筆記</p>
+                        <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
                     </div>
                     <div v-for="note in filteredNotes" :key="note.id" class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer border border-gray-100 dark:border-gray-700 transition group relative" @click="$router.push('/note/' + note.id)">
                          <!-- Icon -->
@@ -1296,7 +1296,7 @@
                         </button>
                         <button @click="createBook"
                             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                            <i class="fa-solid fa-plus mr-1"></i> 建立
+                            <i class="fa-solid fa-plus mr-1"></i> 新增
                         </button>
                     </div>
                 </div>
@@ -1709,7 +1709,7 @@
                 </h1>
                 <div class="flex items-center gap-3">
                     <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
-                        <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 建立筆記
+                        <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
                     </button>
                     <!-- Permission Button (Owner only) / Display (Non-owner) -->
                     <button v-if="isOwner" @click="infoModalTab = 'permission'; showInfoModal = true; initInfoModal()" 
@@ -1966,7 +1966,7 @@
                                 取消
                             </button>
                             <button @click="createBookFromNote" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                                <i class="fa-solid fa-plus mr-1"></i> 建立
+                                <i class="fa-solid fa-plus mr-1"></i> 新增
                             </button>
                         </div>
                     </div>
