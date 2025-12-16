@@ -2091,6 +2091,13 @@ const Book = {
 
         onMounted(loadBook);
 
+        // Watch for route parameter changes to reload book when navigating between books
+        watch(() => route.params.id, (newId, oldId) => {
+            if (newId && newId !== oldId) {
+                loadBook();
+            }
+        });
+
         onUnmounted(() => {
             if (sortableInstance) {
                 sortableInstance.destroy();
