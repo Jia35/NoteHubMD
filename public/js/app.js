@@ -655,10 +655,18 @@ const Login = {
         const username = ref('');
         const password = ref('');
         const error = ref('');
+        const usernameInput = ref(null);
+
+        onMounted(() => {
+            usernameInput.value?.focus();
+        });
 
         const toggleMode = () => {
             isRegister.value = !isRegister.value;
             error.value = '';
+            nextTick(() => {
+                usernameInput.value?.focus();
+            });
         };
 
         const handleSubmit = async () => {
@@ -677,7 +685,7 @@ const Login = {
             }
         };
 
-        return { isRegister, username, password, error, toggleMode, handleSubmit };
+        return { isRegister, username, password, error, toggleMode, handleSubmit, usernameInput };
     }
 };
 
@@ -842,11 +850,15 @@ const Sidebar = {
         const showCreateBookModal = ref(false);
         const newBookTitle = ref('');
         const newBookDescription = ref('');
+        const newBookTitleInput = ref(null);
 
         const openCreateBookModal = () => {
             newBookTitle.value = '';
             newBookDescription.value = '';
             showCreateBookModal.value = true;
+            nextTick(() => {
+                newBookTitleInput.value?.focus();
+            });
         };
 
         const createBook = async () => {
@@ -1115,7 +1127,8 @@ const Sidebar = {
             showSettings, theme, setTheme, logout,
             createNote,
             showCreateBookModal, newBookTitle, newBookDescription,
-            openCreateBookModal, createBook,
+            // Create Book modal
+            showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal, createBook, newBookTitleInput,
             // Profile modal
             showUserProfileModal, editableName, avatarPreview,
             openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile,
@@ -2440,11 +2453,16 @@ const Note = {
             } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
+        const newBookTitleInputLocal = ref(null);
+
         const openCreateBookModal = () => {
             newBookTitle.value = '';
             newBookDescription.value = '';
             showCreateBookModalLocal.value = true;
             showSidebar.value = false;
+            nextTick(() => {
+                newBookTitleInputLocal.value?.focus();
+            });
         };
 
         const createBookFromNote = async () => {
@@ -3422,6 +3440,11 @@ const Note = {
 
                 cmInstance.setValue(content.value);
 
+                // Autofocus logic
+                if (canEdit.value && showEditor.value) {
+                    cmInstance.focus();
+                }
+
                 cmInstance.on('change', (cm) => {
                     const val = cm.getValue();
                     if (val !== content.value) {
@@ -3701,6 +3724,7 @@ const Note = {
             openCreateBookModal,
             createBookFromNote,
             sidebarBooks,
+            newBookTitleInputLocal,
             filteredSidebarBooks,
             pinnedItems,
             unpinItem,
