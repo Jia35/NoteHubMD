@@ -346,3 +346,176 @@ console.log(`Created: ${noteJsPath}`);
 console.log(`Size: ${noteJsContent.length} bytes`);
 
 console.log('\nBuild complete!');
+
+// ===== Create home.js =====
+console.log('\nExtracting Home components for home.js...');
+
+// Home-related component line ranges (from app.js)
+// Note: Note component (2138-3881) is NOT included - it's in note.js
+const homeComponents = [
+    { name: 'Sidebar', start: 733, end: 1226 },
+    { name: 'Layout', start: 1228, end: 1246 },
+    { name: 'Home', start: 1248, end: 1856 },
+    { name: 'Book', start: 1857, end: 2137 },
+    { name: 'Uncategorized', start: 3884, end: 4002 },
+    { name: 'AllBooks', start: 4003, end: 4146 },
+    { name: 'Trash', start: 4147, end: 4202 },
+    { name: 'Admin', start: 4203, end: 4308 }
+];
+
+let homeComponentsCode = '';
+for (const comp of homeComponents) {
+    const lines = appJsLines.slice(comp.start - 1, comp.end);
+    homeComponentsCode += lines.join('\n') + '\n\n';
+    console.log(`  - ${comp.name}: lines ${comp.start}-${comp.end} (${lines.length} lines)`);
+}
+
+const homeJsContent = `/**
+ * NoteHubMD Home Page Script
+ * Handles home, book list, and admin pages
+ */
+
+// Get dependencies from common.js
+const { 
+    Vue: { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick },
+    VueRouter: { createRouter, createWebHistory, useRoute },
+    api,
+    globalModal,
+    setAppInstance,
+    debounce,
+    extractTags,
+    compressImage
+} = window.NoteHubMD;
+
+// Get components from components.js
+const { SidebarNav, InfoModal, BookCard, NoteCard } = window.NoteHubMD.components;
+
+${homeComponentsCode}
+
+// Routes for Home pages (Note and Login are separate pages)
+const routes = [
+    {
+        path: '/',
+        component: Layout,
+        children: [
+            { path: '', component: Home },
+            { path: 'book/:id', component: Book },
+            { path: 'books', component: AllBooks },
+            { path: 'uncategorized', component: Uncategorized },
+            { path: 'trash', component: Trash },
+            { path: 'admin', component: Admin },
+        ]
+    }
+];
+
+const router = createRouter({
+    history: createWebHistory(),
+    routes,
+});
+
+// Global Auth Guard
+router.beforeEach(async (to, from, next) => {
+    try {
+        await api.getMe();
+        next();
+    } catch (e) {
+        // Save the original path and redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(to.fullPath);
+    }
+});
+
+// Create Vue App
+const app = createApp({
+    setup() {
+        // Modal state
+        const modal = reactive({
+            show: false,
+            type: 'alert',
+            title: '',
+            message: '',
+            confirmText: '確定',
+            cancelText: '取消',
+            resolve: null
+        });
+
+        const showModal = (options) => {
+            return new Promise((resolve) => {
+                modal.show = true;
+                modal.type = options.type || 'alert';
+                modal.title = options.title || '';
+                modal.message = options.message || '';
+                modal.confirmText = options.confirmText || '確定';
+                modal.cancelText = options.cancelText || '取消';
+                modal.resolve = resolve;
+            });
+        };
+
+        const showAlert = (message, options = {}) => {
+            return showModal({
+                type: options.type || 'alert',
+                title: options.title || '',
+                message,
+                confirmText: options.confirmText || '確定'
+            });
+        };
+
+        const showConfirm = (message, options = {}) => {
+            return showModal({
+                type: 'confirm',
+                title: options.title || '確認',
+                message,
+                confirmText: options.confirmText || '確定',
+                cancelText: options.cancelText || '取消'
+            });
+        };
+
+        const closeModal = (result = true) => {
+            modal.show = false;
+            if (modal.resolve) {
+                modal.resolve(result);
+                modal.resolve = null;
+            }
+        };
+
+        onMounted(() => {
+            const theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        return {
+            modal,
+            showModal,
+            showAlert,
+            showConfirm,
+            closeModal
+        };
+    }
+});
+
+// Register global components
+app.component('Sidebar', Sidebar);
+app.component('InfoModal', InfoModal);
+app.component('BookCard', BookCard);
+app.component('NoteCard', NoteCard);
+app.component('SidebarNav', SidebarNav);
+
+app.use(router);
+
+// Mount app
+app.mount('#app');
+
+// Set app instance for global modal
+setAppInstance(app._instance.proxy);
+`;
+
+const homeJsPath = path.join(__dirname, '../public/js/home.js');
+fs.writeFileSync(homeJsPath, homeJsContent, 'utf8');
+console.log(`Created: ${homeJsPath}`);
+console.log(`Size: ${homeJsContent.length} bytes`);
+
+console.log('\nAll files built successfully!');
+
