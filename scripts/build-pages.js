@@ -114,6 +114,16 @@ const noteHtmlContent = `<!DOCTYPE html>
     </script>
 
     <link rel="stylesheet" href="/css/style.css">
+
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            var theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 
 <body

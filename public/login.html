@@ -18,6 +18,16 @@
     <link rel="stylesheet" href="/vendors/css/fontawesome/all.min.css">
 
     <link rel="stylesheet" href="/css/style.css">
+
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function () {
+            var theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 
 <body
