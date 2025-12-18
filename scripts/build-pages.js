@@ -223,21 +223,15 @@ const noteJsContent = `/**
  * Handles note editor functionality with real-time collaboration
  */
 
-// Get dependencies from common.js
-const { 
-    Vue: { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick },
-    VueRouter: { createRouter, createWebHistory, useRoute },
-    socket,
-    api,
-    globalModal,
-    setAppInstance,
-    debounce,
-    extractTags,
-    compressImage
-} = window.NoteHubMD;
+// Use IIFE to avoid polluting global scope
+(function() {
+    // Get dependencies from common.js
+    const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } = window.NoteHubMD.Vue;
+    const { createRouter, createWebHistory, useRoute } = window.NoteHubMD.VueRouter;
+    const { socket, api, globalModal, setAppInstance, debounce, extractTags, compressImage } = window.NoteHubMD;
 
-// Get components from components.js
-const { SidebarNav, InfoModal } = window.NoteHubMD.components;
+    // Get components from components.js
+    const { SidebarNav, InfoModal } = window.NoteHubMD.components;
 
 ${noteComponent}
 
@@ -338,6 +332,7 @@ updateHljsTheme();
 // Watch for theme changes
 const observer = new MutationObserver(updateHljsTheme);
 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+})();
 `;
 
 const noteJsPath = path.join(__dirname, '../public/js/note.js');
@@ -375,22 +370,18 @@ const homeJsContent = `/**
  * Handles home, book list, and admin pages
  */
 
-// Get dependencies from common.js
-const { 
-    Vue: { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick },
-    VueRouter: { createRouter, createWebHistory, useRoute },
-    api,
-    globalModal,
-    setAppInstance,
-    debounce,
-    extractTags,
-    compressImage
-} = window.NoteHubMD;
+// Use IIFE to avoid polluting global scope
+(function() {
+    // Get dependencies from common.js
+    const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } = window.NoteHubMD.Vue;
+    const { createRouter, createWebHistory, useRoute } = window.NoteHubMD.VueRouter;
+    const { api, globalModal, setAppInstance, debounce, extractTags, compressImage } = window.NoteHubMD;
 
-// Get components from components.js
-const { SidebarNav, InfoModal, BookCard, NoteCard } = window.NoteHubMD.components;
+    // Get components from components.js
+    const { SidebarNav, InfoModal, BookCard, NoteCard } = window.NoteHubMD.components;
 
 ${homeComponentsCode}
+
 
 // Routes for Home pages (Note and Login are separate pages)
 const routes = [
@@ -510,6 +501,7 @@ app.mount('#app');
 
 // Set app instance for global modal
 setAppInstance(app._instance.proxy);
+})();
 `;
 
 const homeJsPath = path.join(__dirname, '../public/js/home.js');

@@ -3,21 +3,15 @@
  * Handles note editor functionality with real-time collaboration
  */
 
-// Get dependencies from common.js
-const { 
-    Vue: { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick },
-    VueRouter: { createRouter, createWebHistory, useRoute },
-    socket,
-    api,
-    globalModal,
-    setAppInstance,
-    debounce,
-    extractTags,
-    compressImage
-} = window.NoteHubMD;
+// Use IIFE to avoid polluting global scope
+(function() {
+    // Get dependencies from common.js
+    const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } = window.NoteHubMD.Vue;
+    const { createRouter, createWebHistory, useRoute } = window.NoteHubMD.VueRouter;
+    const { socket, api, globalModal, setAppInstance, debounce, extractTags, compressImage } = window.NoteHubMD;
 
-// Get components from components.js
-const { SidebarNav, InfoModal } = window.NoteHubMD.components;
+    // Get components from components.js
+    const { SidebarNav, InfoModal } = window.NoteHubMD.components;
 
 const Note = {
     template: '#note-template',
@@ -1861,3 +1855,4 @@ updateHljsTheme();
 // Watch for theme changes
 const observer = new MutationObserver(updateHljsTheme);
 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+})();
