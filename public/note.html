@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteHubMD</title>
+
+    <!-- TailwindCSS (compiled) -->
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+
+    <!-- Vue & Vue Router -->
+    <script src="/vendors/js/vue.global.prod.js"></script>
+    <script src="/vendors/js/vue-router.global.prod.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/vendors/js/morphdom.min.js"></script>
+
+    <!-- CodeMirror 5 (CSS bundled) -->
+    <link rel="stylesheet" href="/vendors/css/codemirror.bundle.css">
+    <script src="/vendors/js/codemirror/codemirror.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/markdown.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/xml.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/javascript.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/css.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/htmlmixed.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/clike.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/python.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/shell.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/sql.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/go.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/yaml.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/powershell.min.js"></script>
+    <script src="/vendors/js/codemirror/mode/vbscript.min.js"></script>
+    <script src="/vendors/js/codemirror/addon/placeholder.min.js"></script>
+    <script src="/vendors/js/codemirror/addon/show-hint.min.js"></script>
+
+    <!-- Markdown-it -->
+    <script src="/vendors/js/markdown-it/markdown-it.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-container.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-anchor.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-imsize.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-mark.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-sup.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-emoji.min.js"></script>
+    <script src="/vendors/js/markdown-it/markdown-it-task-lists.min.js"></script>
+    <link rel="stylesheet" href="/vendors/css/github-markdown.min.css">
+
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="/vendors/css/highlight/github.min.css" id="hljs-light-theme">
+    <link rel="stylesheet" href="/vendors/css/highlight/github-dark.min.css" id="hljs-dark-theme" disabled>
+    <script src="/vendors/js/highlight.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/vendors/css/fontawesome/all.min.css">
+
+    <!-- Mermaid -->
+    <script src="/vendors/js/mermaid.min.js"></script>
+
+    <!-- Day.js for date/time manipulation -->
+    <script src="/vendors/js/dayjs/dayjs.min.js"></script>
+    <script src="/vendors/js/dayjs/relativeTime.js"></script>
+    <script src="/vendors/js/dayjs/zh-tw.js"></script>
+    <script>
+        dayjs.extend(dayjs_plugin_relativeTime);
+        dayjs.locale('zh-tw');
+    </script>
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body
+    class="bg-gray-100 dark:bg-dark-bg h-screen overflow-hidden text-gray-900 dark:text-dark-text transition-colors duration-200">
+    <div id="app" class="h-full flex flex-col">
+        <router-view></router-view>
+
+        <!-- Global Modal (replaces alert/confirm) -->
+        <Teleport to="body">
+            <Transition name="fade">
+                <div v-if="$root.modal.show"
+                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 200;"
+                    @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
+                    <Transition name="modal-scale">
+                        <div v-if="$root.modal.show"
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                            <!-- Header -->
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center"
+                                :class="{
+                                    'bg-blue-50 dark:bg-blue-900/20': $root.modal.type === 'info',
+                                    'bg-green-50 dark:bg-green-900/20': $root.modal.type === 'success',
+                                    'bg-yellow-50 dark:bg-yellow-900/20': $root.modal.type === 'warning',
+                                    'bg-red-50 dark:bg-red-900/20': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                }">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3" :class="{
+                                        'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300': $root.modal.type === 'success',
+                                        'bg-yellow-100 text-yellow-600 dark:bg-yellow-800 dark:text-yellow-300': $root.modal.type === 'warning',
+                                        'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-300': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                    }">
+                                    <i class="fa-solid text-lg" :class="{
+                                        'fa-circle-info': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'fa-circle-check': $root.modal.type === 'success',
+                                        'fa-triangle-exclamation': $root.modal.type === 'warning',
+                                        'fa-circle-xmark': $root.modal.type === 'error',
+                                        'fa-question-circle': $root.modal.type === 'confirm'
+                                    }"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {{ $root.modal.title || ($root.modal.type === 'confirm' ? '確認' : '提示') }}
+                                </h3>
+                            </div>
+                            <!-- Body -->
+                            <div class="px-6 py-4">
+                                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $root.modal.message
+                                    }}</p>
+                            </div>
+                            <!-- Footer -->
+                            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-3">
+                                <button v-if="$root.modal.type === 'confirm'" @click="$root.closeModal(false)"
+                                    class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                                    {{ $root.modal.cancelText || '取消' }}
+                                </button>
+                                <button @click="$root.closeModal(true)"
+                                    class="px-4 py-2 text-white rounded-lg transition" :class="{
+                                        'bg-blue-600 hover:bg-blue-700': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'bg-green-600 hover:bg-green-700': $root.modal.type === 'success',
+                                        'bg-yellow-600 hover:bg-yellow-700': $root.modal.type === 'warning',
+                                        'bg-red-600 hover:bg-red-700': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                    }">
+                                    {{ $root.modal.confirmText || '確定' }}
+                                </button>
+                            </div>
+                        </div>
+                    </Transition>
+                </div>
+            </Transition>
+        </Teleport>
+    </div>
+
+    <!-- Templates -->
+    <script type="text/x-template" id="info-modal-template">
+        <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
+            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="height: 70vh;">
+                <!-- Modal Header -->
+                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                        <i :class="type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-2"></i>
+                        {{ type === 'book' ? '書本設定' : '筆記設定' }}
+                    </h2>
+                    <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Body with Tabs -->
+                <div class="flex flex-1 overflow-hidden">
+                    <!-- Left Sidebar Tabs -->
+                    <div class="w-40 border-r dark:border-gray-700 shrink-0">
+                        <button @click="$emit('update:tab', 'info')" 
+                                :class="tab === 'info' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-info-circle mr-2"></i>{{ type === 'book' ? '書本資訊' : '筆記資訊' }}
+                        </button>
+                        <button @click="$emit('update:tab', 'permission')" 
+                                :class="tab === 'permission' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-lock mr-2"></i>權限設定
+                        </button>
+                    </div>
+
+                    <!-- Right Content Area -->
+                    <div class="flex-1 overflow-y-auto">
+                        <!-- Info Tab Content -->
+                        <div v-show="tab === 'info'" class="p-4 space-y-4">
+                            <!-- Item Info -->
+                            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ item.id }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ item.title || 'Untitled' }}</span></div>
+                                <div class="text-gray-500 dark:text-gray-400 mb-1">{{ type === 'book' ? '建立者' : '擁有者' }}：<span class="text-gray-700 dark:text-gray-300">{{ item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.createdAt) }}</span></div>
+                                <!-- Book: 最後更新者, 最後更新時間 -->
+                                <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastUpdater?.username || item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
+                                <!-- Note: 最後編輯者, 最後編輯時間, 最後更新者, 最後更新時間 -->
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.lastEditedAt) }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新者：<span class="text-gray-700 dark:text-gray-300">{{ item.lastUpdater?.username || item.lastEditor?.username || item.owner?.username || '(未知)' }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.updatedAt) }}</span></div>
+                                <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">字元數：<span class="text-gray-700 dark:text-gray-300">{{ item.charCount ?? item.content?.length ?? 0 }}</span></div>
+                                <div v-if="type === 'note' && item.lineCount !== undefined" class="text-gray-500 dark:text-gray-400">行數：<span class="text-gray-700 dark:text-gray-300">{{ item.lineCount }}</span></div>
+                            </div>
+
+                            <!-- Description Editor (for books only) -->
+                            <div v-if="type === 'book'">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    <i class="fa-solid fa-align-left mr-1"></i> 描述
+                                </label>
+                                <textarea v-if="item.canEdit"
+                                          :value="editableDescription"
+                                          @input="$emit('update:description', $event.target.value)"
+                                          rows="3"
+                                          placeholder="輸入描述..."
+                                          class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                                <p v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">{{ editableDescription || '無描述' }}</p>
+                            </div>
+
+                            <!-- Book Info (for notes) -->
+                            <div v-if="type === 'note'" class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm mb-2">
+                                <div class="text-gray-500 dark:text-gray-400 mb-2 font-medium">
+                                    <i class="fa-solid fa-book mr-1"></i>所屬書本
+                                </div>
+                                <div class="flex items-center gap-2">
+                                     <select v-model="selectedMoveBookId" 
+                                             class="flex-1 px-2 py-1.5 border rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                         <option value="">(未分類筆記)</option>
+                                         <option v-for="book in books" :key="book.id" :value="book.id">{{ book.title }}</option>
+                                     </select>
+                                     <button @click="moveNote" 
+                                             class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs whitespace-nowrap">
+                                         移動
+                                     </button>
+                                </div>
+                                <div v-if="item.book" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                     目前位置：
+                                     <router-link :to="'/book/' + item.book.id" class="text-blue-500 hover:underline" @click="$emit('close')">
+                                         {{ item.book.title }}
+                                     </router-link>
+                                </div>
+                            </div>
+
+                            <!-- Tags Section -->
+                            <div v-if="editableTags !== undefined">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    <i class="fa-solid fa-tags mr-1"></i> 標籤
+                                </label>
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <span v-for="tag in editableTags" :key="tag" 
+                                          :class="type === 'book' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'"
+                                          class="px-3 py-1 text-sm rounded-full flex items-center">
+                                        {{ tag }}
+                                        <button v-if="type === 'book' && item.canEdit" @click="$emit('remove-tag', tag)" class="ml-2 hover:text-red-500">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </span>
+                                    <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
+                                </div>
+                                <div v-if="type === 'book' && item.canEdit" class="flex gap-2">
+                                    <input :value="newTagInput" 
+                                           @input="$emit('update:newTag', $event.target.value)"
+                                           @keyup.enter="$emit('add-tag')"
+                                           type="text" 
+                                           placeholder="輸入新標籤..." 
+                                           class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button @click="$emit('add-tag')" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
+                                </div>
+                                <p v-if="type === 'note'" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    筆記標籤需在筆記內容中使用 <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">###### tags: `標籤名稱`</code> 語法進行編輯。
+                                </p>
+                            </div>
+
+                            <!-- Comments Toggle (for notes, Owner only) -->
+                            <div v-if="type === 'note' && item.isOwner" class="border-t dark:border-gray-700 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">留言功能</span>
+                                    </div>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" :checked="commentsEnabled" @change="$emit('update:commentsEnabled', $event.target.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ commentsEnabled ? '開啟' : '關閉' }}</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    關閉後，此筆記將不顯示留言區域，現有留言也會被隱藏。
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Permission Tab Content -->
+                        <div v-show="tab === 'permission'" class="p-4">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">目前權限</label>
+                                <select v-if="item.isOwner" 
+                                        :value="editablePermission"
+                                        @change="$emit('update:permission', $event.target.value)"
+                                        class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option v-if="type === 'note' && item.bookId" value="inherit">繼承書本權限</option>
+                                    <option value="public-edit">可編輯</option>
+                                    <option value="auth-edit">可編輯(需登入)</option>
+                                    <option value="public-view">唯讀</option>
+                                    <option value="auth-view">唯讀(需登入)</option>
+                                    <option value="private">私人</option>
+                                </select>
+                                <div v-else class="text-gray-700 dark:text-gray-300 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                                    {{ getPermissionLabel(item.permission) }}
+                                </div>
+                                <p v-if="editablePermission === 'inherit' && item.effectivePermission" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    實際權限：{{ getPermissionLabel(item.effectivePermission) }}
+                                </p>
+                                <p v-if="!item.isOwner" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    只有擁有者可以變更權限設定。
+                                </p>
+                            </div>
+                            
+                            <template v-if="item.isOwner">
+                                <div class="border-t dark:border-gray-600 py-4">
+                                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                        <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
+                                    </label>
+                                    
+                                    <div v-if="loadingUserPermissions" class="text-center py-2 text-gray-500 text-sm">
+                                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入中...
+                                    </div>
+                                    
+                                    <div v-if="userPermissions && userPermissions.length > 0" class="space-y-2 mb-3">
+                                        <div v-for="perm in userPermissions" :key="perm.userId" 
+                                             class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                                            <div class="flex items-center">
+                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                    <img v-if="perm.user?.avatar" :src="perm.user.avatar" class="w-full h-full object-cover" alt="">
+                                                    <template v-else>{{ perm.user?.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                </span>
+                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ perm.user?.name || perm.user?.username }}</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <select :value="perm.permission" @change="$emit('update-user-permission', perm, $event.target.value)"
+                                                        class="text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-1">
+                                                    <option value="view">可查看</option>
+                                                    <option value="edit">可編輯</option>
+                                                </select>
+                                                <button @click="$emit('remove-user-permission', perm.userId)" 
+                                                        class="text-red-500 hover:text-red-700 text-xs" title="移除">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="relative">
+                                        <div class="flex space-x-2">
+                                            <input :value="userSearchQuery" @input="$emit('search-users', $event.target.value)" 
+                                                   type="text" placeholder="搜尋使用者名稱..."
+                                                   class="flex-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <select :value="newUserPermission" @change="$emit('update:newUserPermission', $event.target.value)"
+                                                    class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-2">
+                                                <option value="view">可查看</option>
+                                                <option value="edit">可編輯</option>
+                                            </select>
+                                        </div>
+                                        <div v-if="userSearchResults && userSearchResults.length > 0" 
+                                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                            <button v-for="user in userSearchResults" :key="user.id" 
+                                                    @click="$emit('add-user-permission', user)"
+                                                    class="w-full flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white mr-2 shrink-0 overflow-hidden bg-blue-600">
+                                                    <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
+                                                    <template v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                                </span>
+                                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ user.name || user.username }}</span>
+                                                <span class="text-xs text-gray-500 ml-1">@{{ user.username }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        輸入使用者名稱以新增個別權限。個別權限會覆蓋預設權限設定。
+                                    </p>
+                                </div>
+                            </template>
+
+                            <!-- Public Toggle (for Owner only) -->
+                            <div v-if="item.isOwner" class="border-t dark:border-gray-600 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-globe text-gray-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">公開到首頁</span>
+                                    </div>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" :checked="item.isPublic" @change="$emit('update:isPublic', $event.target.checked)" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ item.isPublic ? '是' : '否' }}</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    開啟後，此{{ type === 'book' ? '書本' : '筆記' }}將會顯示在首頁的「公開項目」列表中。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700 shrink-0">
+                    <button @click="$emit('close')" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        {{ item.canEdit || item.isOwner ? '取消' : '關閉' }}
+                    </button>
+                    <button v-if="item.canEdit || item.isOwner" @click="$emit('save')" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                        <i class="fa-solid fa-save mr-1"></i> 儲存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="sidebar-nav-template">
+        <div class="w-56 bg-gray-900 text-white flex flex-col h-full border-r border-gray-800 shrink-0">
+            <!-- Header -->
+            <router-link to="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
+                <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
+            </router-link>
+
+            <!-- View Mode Toggle -->
+            <div class="px-3 pt-3 pb-1">
+                <div class="flex bg-gray-700 rounded-lg p-1">
+                    <button @click="$emit('view-mode-change', 'my')" 
+                            class="flex-1 px-2 py-1 text-sm rounded-md transition"
+                            :class="globalViewMode === 'my' 
+                                ? 'bg-gray-600 text-blue-400 font-medium' 
+                                : 'text-gray-400 hover:text-white'">
+                        <i class="fa-solid fa-user mr-1"></i>我的項目
+                    </button>
+                    <button @click="$emit('view-mode-change', 'all')" 
+                            class="flex-1 px-2 py-1 text-sm rounded-md transition"
+                            :class="globalViewMode === 'all' 
+                                ? 'bg-gray-600 text-blue-400 font-medium' 
+                                : 'text-gray-400 hover:text-white'">
+                        <i class="fa-solid fa-globe mr-1"></i>公開項目
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Create Buttons -->
+            <div class="p-3 space-y-2 border-b border-gray-800">
+                <button @click="openSearchModal" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-search mr-2"></i> 搜尋
+                </button>
+                <button @click="$emit('create-note')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
+                </button>
+                <button @click="$emit('create-book')" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 新增書本
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex-1 overflow-y-auto p-3">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
+                <router-link to="/" 
+                             class="block p-2 py-1 rounded transition flex items-center"
+                             :class="currentRoute === '/' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney"></i></span> Home
+                </router-link>
+                <router-link to="/trash" 
+                             class="block px-2 py-1 rounded transition flex items-center"
+                             :class="currentRoute === '/trash' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can"></i></span> 垃圾桶
+                </router-link>
+
+                <!-- Pinned Items -->
+                <template v-if="showPinned && pinnedItems && pinnedItems.length > 0">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
+                        <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
+                    </div>
+                    <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
+                        <router-link :to="'/' + item.type + '/' + item.id" 
+                                     class="block px-3 py-1 rounded transition flex items-center justify-between"
+                                     :class="currentRoute === '/' + item.type + '/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                            <div class="flex items-center min-w-0">
+                                <span class="w-5 mr-3 text-center shrink-0">
+                                    <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'"></i>
+                                </span>
+                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                            </div>
+                            <button @click.prevent.stop="$emit('unpin', item.type, item.id)" 
+                                    class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
+                                    title="取消釘選">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </router-link>
+                    </div>
+                </template>
+
+                <!-- Books Section -->
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center justify-between">
+                    <span>Books</span>
+                    <router-link to="/books" class="text-gray-400 hover:text-white transition" title="全部書本">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </router-link>
+                </div>
+                <router-link to="/uncategorized" 
+                             class="block px-2 py-1 rounded transition flex items-center"
+                             :class="currentRoute === '/uncategorized' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox" :class="currentRoute === '/uncategorized' ? 'text-white' : 'text-gray-400'"></i></span>
+                    <span class="truncate">未分類筆記</span>
+                </router-link>
+                <div v-for="book in books" :key="book.id">
+                    <router-link :to="'/book/' + book.id" 
+                                 class="block px-2 py-1 rounded transition flex items-center"
+                                 :class="currentRoute === '/book/' + book.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                        <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
+                        <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
+                    </router-link>
+                </div>
+                <router-link v-if="showMoreBooks" to="/books" 
+                             class="block px-2 py-1 mt-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition flex items-center text-sm">
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-ellipsis"></i></span>
+                    <span class="truncate">更多書本...</span>
+                </router-link>
+            </div>
+
+            <!-- User & Settings -->
+            <div class="p-4 border-t border-gray-800 bg-gray-900">
+                <div class="text-xs text-gray-500 text-center mb-2">NoteHubMD v{{ appVersion }}</div>
+                <div class="flex items-center justify-between">
+                    <button @click="$emit('open-profile')" class="flex items-center overflow-hidden cursor-pointer hover:opacity-80 transition">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center mr-2 shrink-0 overflow-hidden"
+                             :class="user ? 'bg-blue-600' : 'bg-gray-500'">
+                            <img v-if="user?.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="Avatar">
+                            <span v-else>{{ user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                        </div>
+                        <span class="text-sm font-medium truncate">{{ user?.name || user?.username || 'Guest' }}</span>
+                    </button>
+                    <button @click="$emit('open-settings')" class="text-gray-400 hover:text-white transition ml-2">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Modal (inside SidebarNav) -->
+            <div v-if="showSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSearchModal = false">
+                <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="max-height: 80vh;">
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                            <i class="fa-solid fa-search mr-2"></i>搜尋
+                        </h2>
+                        <button @click="showSearchModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="p-4 border-b dark:border-gray-700">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
+                                class="w-full pl-10 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-4 mt-3">
+                            <label class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                                <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600">
+                                包含內文
+                            </label>
+                            <!-- Owner Filter -->
+                            <div class="flex items-center gap-1">
+                                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-globe mr-1"></i>範圍：</span>
+                                <select v-model="searchOwnerFilter" class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <option value="all">全部</option>
+                                    <option value="my">我的</option>
+                                    <option value="public">公開</option>
+                                </select>
+                            </div>
+                            <!-- Date Range Filter -->
+                            <div class="flex items-center gap-1">
+                                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-calendar mr-1"></i>日期：</span>
+                                <select v-model="searchDateRange" class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <option value="all">全部</option>
+                                    <option value="today">今天</option>
+                                    <option value="week">一週內</option>
+                                    <option value="month">一個月內</option>
+                                    <option value="year">一年內</option>
+                                    <option value="custom">自訂</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Custom Date Range -->
+                        <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-1">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
+                                <input type="date" v-model="searchDateStart" class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
+                                <input type="date" v-model="searchDateEnd" class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <button v-if="searchDateStart || searchDateEnd" @click="searchDateStart = ''; searchDateEnd = ''" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark"></i> 清除
+                            </button>
+                        </div>
+                        <!-- Tag Filter -->
+                        <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-1 items-center">
+                            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-tags mr-1"></i>標籤：</span>
+                            <button v-for="tag in allTags" :key="tag" @click="toggleTag(tag)" class="px-2 py-0.5 text-xs rounded-full transition"
+                                :class="selectedTag === tag ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-600'">
+                                {{ tag }}
+                            </button>
+                            <button v-if="selectedTag" @click="selectedTag = ''" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark"></i> 清除
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div v-if="searchLoading" class="text-center text-gray-500 py-8">
+                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>搜尋中...
+                        </div>
+                        <div v-else-if="!searchQuery.trim() && !selectedTag && searchOwnerFilter === 'all' && (searchDateRange === 'all' || (searchDateRange === 'custom' && !searchDateStart && !searchDateEnd))" class="text-center text-gray-400 py-8">
+                            輸入關鍵字或設定篩選條件開始搜尋
+                        </div>
+                        <div v-else-if="searchResults.books.length === 0 && searchResults.notes.length === 0" class="text-center text-gray-400 py-8">
+                            找不到符合的結果
+                        </div>
+                        <template v-else>
+                            <!-- Books -->
+                            <div v-if="searchResults.books.length > 0" class="mb-6">
+                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{ searchResults.books.length }})</h3>
+                                <div class="space-y-2">
+                                    <router-link v-for="book in searchResults.books" :key="book.id" :to="'/book/' + book.id" @click="showSearchModal = false"
+                                        class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center">
+                                                    <i class="fa-solid fa-book text-green-500 mr-3 shrink-0"></i>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ book.title }}</span>
+                                                </div>
+                                                <p v-if="book.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7 truncate">{{ book.description }}</p>
+                                            </div>
+                                            <span class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap">
+                                                {{ dayjs(book.lastEditedAt || book.updatedAt).format('YYYY/MM/DD HH:mm') }}
+                                            </span>
+                                        </div>
+                                    </router-link>
+                                </div>
+                            </div>
+                            <!-- Notes -->
+                            <div v-if="searchResults.notes.length > 0">
+                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{ searchResults.notes.length }})</h3>
+                                <div class="space-y-2">
+                                    <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/note/' + note.id" @click="showSearchModal = false"
+                                        class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center">
+                                                    <i class="fa-solid fa-note-sticky text-blue-500 mr-3 shrink-0"></i>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ note.title || 'Untitled' }}</span>
+                                                </div>
+                                                <p class="text-xs text-gray-400 mt-1 ml-7">
+                                                    <i class="fa-solid fa-book mr-1"></i>
+                                                    <span v-if="note.book">{{note.book.title}}</span>
+                                                    <span v-else><i>未分類</i></span>
+                                                </p>
+                                            </div>
+                                            <span class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap">
+                                                {{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}
+                                            </span>
+                                        </div>
+                                    </router-link>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="note-template">
+        <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
+            <!-- Collapsed Sidebar Strip (always visible) - click anywhere to expand -->
+            <div @click="showSidebar = true" 
+                 class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-800 transition-colors"
+                 title="展開選單">
+                <!-- LOGO at top -->
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white">
+                    N
+                </div>
+                
+                <!-- Spacer -->
+                <div class="flex-1"></div>
+                
+                <!-- Avatar at bottom -->
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white overflow-hidden"
+                     :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
+                    <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
+                    <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                </div>
+            </div>
+
+            <!-- Expanded Sidebar with Animation -->
+            <Transition name="note-sidebar-slide">
+                <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
+                    <!-- Backdrop with fade -->
+                    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                    <!-- Sidebar Content using SidebarNav component -->
+                    <div class="absolute top-0 h-full" @click.stop>
+                        <SidebarNav 
+                            :user="currentUser"
+                            :books="filteredSidebarBooks"
+                            :pinned-items="pinnedItems"
+                            :show-pinned="true"
+                            :show-more-books="false"
+                            :current-route="currentRoute"
+                            :global-view-mode="globalViewMode"
+                            :app-version="appVersion"
+                            @unpin="unpinItem"
+                            @view-mode-change="setGlobalViewMode"
+                            @create-note="createNewNote"
+                            @create-book="openCreateBookModal"
+                            @open-profile="openUserProfileModal"
+                            @open-settings="showSettingsModal = true"
+                        />
+                    </div>
+                </div>
+            </Transition>
+            
+            <!-- Main Content Area -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+
+                <!-- User Profile Modal -->
+                <div v-if="showUserProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showUserProfileModal = false">
+                    <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
+                        <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user mr-2"></i>個人資料</h2>
+                        
+                        <!-- Avatar Section -->
+                        <div class="flex flex-col items-center mb-6">
+                            <label class="cursor-pointer group">
+                                <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3 relative"
+                                     :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
+                                    <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
+                                    <span v-else class="text-3xl text-white">{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                    <!-- Hover overlay -->
+                                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                        <i class="fa-solid fa-camera text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                            </label>
+                            <div class="flex gap-3">
+                                <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
+                                    <i class="fa-solid fa-camera mr-1"></i>變更頭像
+                                    <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                                </label>
+                                <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i>移除頭像
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Username (read-only) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">帳號 (Username)</label>
+                            <div class="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-sm">
+                                {{ currentUser?.username }}
+                            </div>
+                        </div>
+
+                        <!-- Name (editable) -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">顯示名稱 (Name)</label>
+                            <input v-model="editableName" 
+                                   type="text" 
+                                   placeholder="輸入顯示名稱..."
+                                   class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end gap-2">
+                            <button @click="showUserProfileModal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                取消
+                            </button>
+                            <button @click="saveProfile" :disabled="savingProfile" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50">
+                                <i v-if="savingProfile" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                                <i v-else class="fa-solid fa-save mr-1"></i>
+                                儲存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Modal -->
+                <div v-if="showSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettingsModal = false">
+                    <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
+                        <h2 class="text-xl font-bold mb-4">設定</h2>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">Theme</label>
+                            <div class="flex space-x-2">
+                                <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                    <i class="fa-solid fa-sun"></i>
+                                </button>
+                                <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                    <i class="fa-solid fa-moon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                            <button @click="logout" class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
+                        </div>
+
+                        <div class="flex justify-end mt-4">
+                            <button @click="showSettingsModal = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">Close</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Book Modal -->
+                <div v-if="showCreateBookModalLocal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModalLocal = false">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                                <i class="fa-solid fa-book mr-2"></i> 新增書本
+                            </h2>
+                            <button @click="showCreateBookModalLocal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    標題 <span class="text-red-500">*</span>
+                                </label>
+                                <input v-model="newBookTitle" 
+                                    ref="newBookTitleInputLocal"
+                                    type="text" 
+                                    placeholder="輸入書本標題..." 
+                                    class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    @keyup.enter="createBookFromNote">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    描述
+                                </label>
+                                <textarea v-model="newBookDescription" 
+                                        rows="3" 
+                                        placeholder="輸入描述..."
+                                        class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                            <button @click="showCreateBookModalLocal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                取消
+                            </button>
+                            <button @click="createBookFromNote" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                                <i class="fa-solid fa-plus mr-1"></i> 新增
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note Info Modal (shared component) -->
+                <InfoModal :show="showNoteInfoModal" type="note" :item="noteInfoItem" :tab="noteInfoModalTab"
+                    :editable-permission="permission" :comments-enabled="noteCommentsEnabled" :user-permissions="userPermissions"
+                    :loading-user-permissions="loadingUserPermissions" :user-search-query="userSearchQuery"
+                    :user-search-results="userSearchResults" :new-user-permission="newUserPermission" @close="showNoteInfoModal = false"
+                    @save="saveNoteSettings" @update:tab="noteInfoModalTab = $event" @update:permission="handlePermissionChange"
+                    @update:commentsEnabled="noteCommentsEnabled = $event" @update:isPublic="noteIsPublic = $event"
+                    @update:newUserPermission="newUserPermission = $event"
+                    @search-users="(q) => { userSearchQuery = q; searchUsers(); }" @add-user-permission="addUserPermission"
+                    @remove-user-permission="removeUserPermission" @update-user-permission="updateUserPermissionLevel" />
+                
+                <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
+                    <div class="flex-1 flex items-center space-x-2">
+                        <router-link to="/" class="hover:text-blue-400 transition font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </router-link>
+                        <template v-if="book">
+                            <span class="text-gray-600">/</span>
+                            <div class="relative group">
+                                <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
+                                    <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+                                </router-link>
+                                <!-- Book Notes Tooltip -->
+                                <div v-if="book.Notes && book.Notes.length > 0" 
+                                     class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                                    <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700" style="min-width: 280px; max-width: 400px;">
+                                        <!-- Arrow -->
+                                        <div class="absolute top-0 left-4 w-4 h-4 bg-gray-800 border-t border-l border-gray-700 transform rotate-45"></div>
+                                        <div class="relative z-10 p-3">
+                                            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                                                <i class="fa-solid fa-list mr-2"></i>
+                                                書本筆記 ({{ book.Notes.length }})
+                                            </div>
+                                            <ul class="space-y-1 max-h-64 overflow-y-auto">
+                                                <li v-for="bookNote in book.Notes" :key="bookNote.id">
+                                                    <router-link 
+                                                        :to="'/note/' + bookNote.id"
+                                                        class="flex items-center text-sm py-1.5 px-2 rounded transition"
+                                                        :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
+                                                        <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
+                                                        <span class="truncate">{{ bookNote.title || 'Untitled' }}</span>
+                                                    </router-link>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <span class="text-gray-600">/</span>
+                        <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
+                        <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
+                        <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
+                    </div>
+                    <div class="flex bg-gray-800 rounded-lg p-1 space-x-1">
+                        <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Both">
+                            <i class="fa-solid fa-columns"></i>
+                        </button>
+                        <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="View">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <!-- Permission Display/Selector -->
+                    <div class="flex-1 flex justify-end items-center space-x-3">
+                        <!-- Online Users Badge -->
+                        <div class="relative">
+                            <button @click="toggleOnlineUsersPopup" 
+                                    class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
+                                    title="在線人數">
+                                <i class="fa-solid fa-users text-xs"></i>
+                                <span class="font-medium">{{ onlineUsers.length }}</span>
+                            </button>
+                            <!-- Online Users Popup -->
+                            <div v-if="showOnlineUsersPopup" 
+                                class="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+                                <div class="p-3">
+                                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                        <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
+                                    </div>
+                                    <ul class="space-y-1 max-h-48 overflow-y-auto">
+                                        <li v-for="(user, index) in onlineUsers" :key="index" 
+                                            class="flex items-center text-sm text-gray-200 py-1">
+                                            <span class="w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0"
+                                                  :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                {{ user.username?.charAt(0).toUpperCase() || '?' }}
+                                            </span>
+                                            <span class="truncate">{{ user.username || 'Guest' }}</span>
+                                        </li>
+                                        <li v-if="onlineUsers.length === 0" class="text-gray-500 text-sm italic py-1">
+                                            無在線用戶
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Permission Button (Owner only) / Display (Non-owner) -->
+                        <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                title="點擊設定權限">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span v-if="permission === 'inherit'">繼承書本</span>
+                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                        </button>
+                        <span v-else class="flex items-center space-x-1 bg-gray-800 px-2 py-1 rounded text-sm text-gray-400">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span v-if="permission === 'inherit'">繼承書本</span>
+                            <span v-else>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+                        </span>
+                        <!-- Note Info Button -->
+                        <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                title="筆記設定">
+                            <i class="fa-solid fa-cog text-xs"></i>
+                            <span>筆記設定</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 flex overflow-hidden relative">
+                    <!-- Editor -->
+                    <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
+                        <div class="flex-1 overflow-hidden relative">
+                            <textarea ref="editorTextarea"></textarea>
+                        </div>
+                        <!-- Editor Footer -->
+                        <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-between items-center text-xs z-10 shrink-0">
+                            <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400 px-2">
+                                <span>字數: {{ charCount }}</span>
+                                <span>行數: {{ lineCount }}</span>
+                                <span v-if="selectedChars > 0 || selectedLines > 0">|</span>
+                                <span v-if="selectedLines > 0">已選擇 {{ selectedLines }} 行</span>
+                                <span v-if="selectedChars > 0">已選擇 {{ selectedChars }} 個字</span>
+                            </div>
+                            <select v-model="selectedTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+                                <option v-for="theme in themes" :key="theme.value" :value="theme.value">
+                                    {{ theme.label }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview with TOC -->
+                    <div v-show="showPreview" class="h-full flex min-w-0" :class="{'flex-1': true}">
+                        <!-- Preview Content -->
+                        <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg"
+                            ref="previewContainer"
+                            @scroll="handlePreviewScroll"
+                            @click="handlePreviewClick">
+                            <!-- Preview Info Bar -->
+                            <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                :class="{'flex justify-center': !showEditor}">
+                                <div :class="{'w-full px-8': !showEditor, 'px-4': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
+                                    <div class="flex items-center space-x-4">
+                                    <!-- Owner -->
+                                    <div v-if="noteOwner" class="flex items-center">
+                                        <div class="relative group mr-1.5">
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  style="font-size: 10px;"
+                                                  :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
+                                                <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                            </span>
+                                            <!-- Tooltip -->
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
+                                                <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                                                <div class="flex items-center relative z-10">
+                                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                                         :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                         <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover">
+                                                         <span v-else class="text-xl text-white font-bold">{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ noteOwner.name || noteOwner.username || 'Guest' }}</div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400">@{{ noteOwner.username || 'guest' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
+                                    </div>
+                                    <!-- Last Editor -->
+                                    <div v-if="lastEditor" class="flex items-center">
+                                        <div class="relative group mr-1.5">
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                                                  style="font-size: 10px;"
+                                                  :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
+                                                <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                                            </span>
+                                            <!-- Tooltip -->
+                                            <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
+                                                <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                                                <div class="flex items-center relative z-10">
+                                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                                         :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                                                         <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover">
+                                                         <span v-else class="text-xl text-white font-bold">{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ lastEditor.name || lastEditor.username || 'Guest' }}</div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400">@{{ lastEditor.username || 'guest' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
+                                    </div>
+                                    <!-- Last Content Edited Time -->
+                                    <div v-if="relativeLastContentEditedTime" class="flex items-center">
+                                        <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
+                                        <span>編輯於 {{ relativeLastContentEditedTime }}</span>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Preview Content -->
+                            <div class="markdown-body dark:text-gray-300"
+                                :class="{'flex justify-center': !showEditor}">
+                                <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent"></div>
+                            </div>
+
+                            <!-- Comments Section (hidden when commentsDisabled) -->
+                            <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                                :class="{'flex justify-center': !showEditor}">
+                                <div :class="{'w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
+                                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
+                                        <i class="fa-solid fa-comments mr-2"></i>留言 ({{ comments.length }})
+                                    </h3>
+                                    
+                                    <!-- Comment Form (only if logged in and comments enabled) -->
+                                    <div v-if="currentUser && commentsEnabled" class="mb-6">
+                                        <div class="flex items-start space-x-3">
+                                            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden bg-blue-600 text-white text-sm">
+                                                <img v-if="currentUser.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="">
+                                                <span v-else>{{ currentUser.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                            </div>
+                                            <div class="flex-1">
+                                                <!-- Textarea for editing -->
+                                                <textarea v-show="!commentPreviewMode" v-model="newComment" 
+                                                    placeholder="寫下你的留言..."
+                                                    ref="commentTextarea"
+                                                    @focus="commentTextareaFocused = true"
+                                                    @blur="handleCommentBlur"
+                                                    @input="autoGrowCommentTextarea"
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
+                                                    :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
+                                                    :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
+                                                <!-- Preview area -->
+                                                <div v-if="commentPreviewMode && newComment.trim()" 
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-auto"
+                                                    style="min-height: 76px; max-height: 192px;"
+                                                    v-html="renderCommentMarkdown(newComment)"></div>
+                                                <div v-if="commentPreviewMode && !newComment.trim()" 
+                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 italic"
+                                                    style="min-height: 76px;">
+                                                    沒有內容可預覽
+                                                </div>
+                                                <div class="flex justify-between items-center mt-1">
+                                                    <div class="text-xs text-gray-400"><span v-show="commentTextareaFocused">支援 Markdown 語法</span></div>
+                                                    <div class="flex gap-2">
+                                                        <button @click="commentPreviewMode = !commentPreviewMode"
+                                                            :class="commentPreviewMode ? 'bg-gray-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                                            class="px-3 py-1.5 text-sm rounded-lg hover:opacity-80 transition">
+                                                            <i class="fa-solid fa-eye mr-1"></i>{{ commentPreviewMode ? '編輯' : '預覽' }}
+                                                        </button>
+                                                        <button @click="submitComment" 
+                                                            :disabled="!newComment.trim() || submittingComment"
+                                                            class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                            <i v-if="submittingComment" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                                                            送出留言
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Login prompt -->
+                                    <div v-else-if="!currentUser && commentsEnabled" class="mb-6 text-center py-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        <p class="text-gray-500 dark:text-gray-400">
+                                            <i class="fa-solid fa-lock mr-1"></i>請先 <router-link :to="'/login?redirect=/note/' + noteId" class="text-blue-500 hover:underline">登入</router-link> 後才能留言
+                                        </p>
+                                    </div>
+
+                                    <!-- Comments disabled notice -->
+                                    <div v-else-if="!commentsEnabled && comments.length === 0" class="mb-6 text-center py-4">
+                                        <p class="text-gray-400 dark:text-gray-500 text-sm">留言功能已關閉</p>
+                                    </div>
+
+                                    <!-- Comment List -->
+                                    <div class="space-y-4">
+                                        <!-- Recursive comment component for nested replies -->
+                                        <template v-for="comment in topLevelComments" :key="comment.id">
+                                            <!-- Main Comment -->
+                                            <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <div class="flex items-start space-x-3">
+                                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden text-white text-sm"
+                                                        :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
+                                                        <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                                                        <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center justify-between mb-1">
+                                                            <div class="flex items-center space-x-2">
+                                                                <span class="font-medium text-gray-800 dark:text-white text-sm">
+                                                                    {{ comment.user?.name || comment.user?.username || '匿名' }}
+                                                                </span>
+                                                                <span class="text-xs text-gray-400">{{ formatCommentTime(comment.createdAt) }}</span>
+                                                            </div>
+                                                            <!-- Dropdown Menu -->
+                                                            <div v-if="canEditComment(comment) || canDeleteComment(comment)" class="relative">
+                                                                <button @click="toggleCommentMenu(comment.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1">
+                                                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                                                </button>
+                                                                <div v-if="openMenuId === comment.id" 
+                                                                    class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10" style="min-width: 100px;">
+                                                                    <button v-if="canEditComment(comment)" @click="startEditComment(comment)" 
+                                                                        class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                                                        <i class="fa-solid fa-pen mr-2"></i>編輯
+                                                                    </button>
+                                                                    <button v-if="canDeleteComment(comment)" @click="deleteComment(comment.id)" 
+                                                                        class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                                                        <i class="fa-solid fa-trash mr-2"></i>刪除
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Edit Mode -->
+                                                        <div v-if="editingCommentId === comment.id">
+                                                            <textarea v-model="editCommentContent" 
+                                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                                                                rows="2"></textarea>
+                                                            <div class="flex justify-end space-x-2 mt-2">
+                                                                <button @click="cancelEditComment" class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700">取消</button>
+                                                                <button @click="saveEditComment(comment.id)" 
+                                                                    :disabled="!editCommentContent.trim()"
+                                                                    class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">儲存</button>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Display Mode -->
+                                                        <template v-else>
+                                                            <p class="text-gray-700 dark:text-gray-300 text-sm" v-html="renderCommentMarkdown(comment.content)"></p>
+                                                            <!-- Reply Button -->
+                                                            <button v-if="currentUser && commentsEnabled" @click="startReply(comment)" 
+                                                                class="mt-2 text-xs text-gray-400 hover:text-blue-500 transition">
+                                                                <i class="fa-solid fa-reply mr-1"></i>回覆
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Reply Form (for this comment) -->
+                                                <div v-if="replyingToId === comment.id" class="mt-4 ml-11">
+                                                    <textarea v-model="replyContent" 
+                                                        :placeholder="'回覆 ' + (comment.user?.name || comment.user?.username || '匿名') + '...'"
+                                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                                                        rows="2"></textarea>
+                                                    <div class="flex justify-end space-x-2 mt-2">
+                                                        <button @click="cancelReply" class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700">取消</button>
+                                                        <button @click="submitReply(comment.id)" 
+                                                            :disabled="!replyContent.trim()"
+                                                            class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">送出</button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Nested Replies -->
+                                                <div v-if="getReplies(comment.id).length > 0" class="mt-4 ml-8 space-y-3 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
+                                                    <div v-for="reply in getReplies(comment.id)" :key="reply.id" class="flex items-start space-x-3">
+                                                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 overflow-hidden text-white text-xs"
+                                                            :class="reply.user ? 'bg-blue-600' : 'bg-gray-500'">
+                                                            <img v-if="reply.user?.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" alt="">
+                                                            <span v-else>{{ reply.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center justify-between">
+                                                                <div class="flex items-center space-x-2">
+                                                                    <span class="font-medium text-gray-700 dark:text-gray-200 text-xs">{{ reply.user?.name || reply.user?.username || '匿名' }}</span>
+                                                                    <span class="text-xs text-gray-400">{{ formatCommentTime(reply.createdAt) }}</span>
+                                                                </div>
+                                                                <!-- Reply Dropdown Menu -->
+                                                                <div v-if="canEditComment(reply) || canDeleteComment(reply)" class="relative">
+                                                                    <button @click="toggleCommentMenu(reply.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 text-xs">
+                                                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                                                    </button>
+                                                                    <div v-if="openMenuId === reply.id" 
+                                                                        class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10" style="min-width: 100px;">
+                                                                        <button v-if="canEditComment(reply)" @click="startEditComment(reply)" 
+                                                                            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                                                            <i class="fa-solid fa-pen mr-2"></i>編輯
+                                                                        </button>
+                                                                        <button v-if="canDeleteComment(reply)" @click="deleteComment(reply.id)" 
+                                                                            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                                                            <i class="fa-solid fa-trash mr-2"></i>刪除
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Reply Edit Mode -->
+                                                            <div v-if="editingCommentId === reply.id">
+                                                                <textarea v-model="editCommentContent" 
+                                                                    class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-xs"
+                                                                    rows="2"></textarea>
+                                                                <div class="flex justify-end space-x-2 mt-1">
+                                                                    <button @click="cancelEditComment" class="px-2 py-1 text-xs text-gray-500 hover:text-gray-700">取消</button>
+                                                                    <button @click="saveEditComment(reply.id)" 
+                                                                        :disabled="!editCommentContent.trim()"
+                                                                        class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50">儲存</button>
+                                                                </div>
+                                                            </div>
+                                                            <p v-else class="text-gray-600 dark:text-gray-400 text-xs" v-html="renderCommentMarkdown(reply.content)"></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <div v-if="comments.length === 0 && commentsEnabled" class="text-center py-8 text-gray-400 dark:text-gray-500">
+                                            <i class="fa-regular fa-comment-dots text-3xl mb-2"></i>
+                                            <p>還沒有人留言，成為第一個留言的人吧！</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- TOC Sidebar (only in view mode) - positioned relative to content -->
+                        <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
+                            class="fixed w-56 overflow-y-auto p-3 hidden xl:block"
+                            style="top: 120px; margin-left: calc(50% + 420px); height: calc(100vh - 150px);">
+                            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">目錄</div>
+                            <nav class="space-y-1">
+                                <a v-for="item in toc" :key="item.id" 
+                                @click.prevent="scrollToHeading(item.id)"
+                                class="block text-sm cursor-pointer truncate transition border-l-2"
+                                :class="{
+                                    'pl-1': item.level === 1, 
+                                    'pl-4': item.level === 2, 
+                                    'pl-7': item.level === 3,
+                                    'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-medium': activeTocId === item.id,
+                                    'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent': activeTocId !== item.id
+                                }"
+                                :title="item.text">
+                                    {{ item.text }}
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Lightbox Modal -->
+        <Transition name="fade">
+            <div v-if="lightboxImage" 
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 cursor-zoom-out"
+                 style="z-index: 100;"
+                 @click="closeLightbox">
+                <!-- Close button -->
+                <button @click="closeLightbox" 
+                        class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white text-2xl hover:bg-white hover:bg-opacity-20 rounded-full transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <!-- Image -->
+                <img :src="lightboxImage" 
+                     class="object-contain cursor-default shadow-2xl"
+                     style="max-width: 90vw; max-height: 90vh;"
+                     @click.stop>
+            </div>
+        </Transition>
+    </script>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/components.js"></script>
+    <script src="/js/note.js"></script>
+</body>
+
+</html>

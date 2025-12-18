@@ -56,7 +56,18 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
-// Serve index.html for all non-api routes (SPA support)
+// Serve different HTML files based on route (Page Separation)
+// Login page
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
+// Note page
+app.get('/note/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/note.html'));
+});
+
+// All other routes (Home, Books, Trash, Admin, etc.) - use index.html
 // Using regex for catch-all in Express 5
 app.get(/(.*)/, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));

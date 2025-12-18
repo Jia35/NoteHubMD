@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NoteHubMD</title>
+
+    <!-- TailwindCSS (compiled) -->
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+
+    <!-- Vue & Vue Router -->
+    <script src="/vendors/js/vue.global.prod.js"></script>
+    <script src="/vendors/js/vue-router.global.prod.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/vendors/css/fontawesome/all.min.css">
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body
+    class="bg-gray-100 dark:bg-dark-bg h-screen overflow-hidden text-gray-900 dark:text-dark-text transition-colors duration-200">
+    <div id="app" class="h-full flex flex-col">
+        <router-view></router-view>
+
+        <!-- Global Modal (replaces alert/confirm) -->
+        <Teleport to="body">
+            <Transition name="fade">
+                <div v-if="$root.modal.show"
+                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 200;"
+                    @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
+                    <Transition name="modal-scale">
+                        <div v-if="$root.modal.show"
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                            <!-- Header -->
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center"
+                                :class="{
+                                    'bg-blue-50 dark:bg-blue-900/20': $root.modal.type === 'info',
+                                    'bg-green-50 dark:bg-green-900/20': $root.modal.type === 'success',
+                                    'bg-yellow-50 dark:bg-yellow-900/20': $root.modal.type === 'warning',
+                                    'bg-red-50 dark:bg-red-900/20': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                }">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3" :class="{
+                                        'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-300': $root.modal.type === 'success',
+                                        'bg-yellow-100 text-yellow-600 dark:bg-yellow-800 dark:text-yellow-300': $root.modal.type === 'warning',
+                                        'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-300': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                    }">
+                                    <i class="fa-solid text-lg" :class="{
+                                        'fa-circle-info': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'fa-circle-check': $root.modal.type === 'success',
+                                        'fa-triangle-exclamation': $root.modal.type === 'warning',
+                                        'fa-circle-xmark': $root.modal.type === 'error',
+                                        'fa-question-circle': $root.modal.type === 'confirm'
+                                    }"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {{ $root.modal.title || ($root.modal.type === 'confirm' ? '確認' : '提示') }}
+                                </h3>
+                            </div>
+                            <!-- Body -->
+                            <div class="px-6 py-4">
+                                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ $root.modal.message
+                                    }}</p>
+                            </div>
+                            <!-- Footer -->
+                            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex justify-end space-x-3">
+                                <button v-if="$root.modal.type === 'confirm'" @click="$root.closeModal(false)"
+                                    class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                                    {{ $root.modal.cancelText || '取消' }}
+                                </button>
+                                <button @click="$root.closeModal(true)"
+                                    class="px-4 py-2 text-white rounded-lg transition" :class="{
+                                        'bg-blue-600 hover:bg-blue-700': $root.modal.type === 'info' || $root.modal.type === 'alert',
+                                        'bg-green-600 hover:bg-green-700': $root.modal.type === 'success',
+                                        'bg-yellow-600 hover:bg-yellow-700': $root.modal.type === 'warning',
+                                        'bg-red-600 hover:bg-red-700': $root.modal.type === 'error' || $root.modal.type === 'confirm'
+                                    }">
+                                    {{ $root.modal.confirmText || '確定' }}
+                                </button>
+                            </div>
+                        </div>
+                    </Transition>
+                </div>
+            </Transition>
+        </Teleport>
+    </div>
+
+    <!-- Login Template -->
+    <script type="text/x-template" id="login-template">
+        <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-bg">
+            <div class="bg-white dark:bg-dark-surface p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-bold mb-2 text-center text-gray-800 dark:text-white">NoteHubMD</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">{{ isRegister ? 'Register' : 'Login' }}</h2>
+                
+                <form @submit.prevent="handleSubmit">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Username</label>
+                        <input v-model="username" ref="usernameInput" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Password</label>
+                        <input v-model="password" type="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
+                    </div>
+
+                    <div v-if="error" class="mb-4 text-red-500 text-sm text-center">{{ error }}</div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                        {{ isRegister ? '註冊' : '登入' }}
+                    </button>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <button @click="toggleMode" class="text-blue-600 hover:text-blue-800 text-sm">
+                        {{ isRegister ? '已經有帳號？ Login' : '註冊新帳號？ Register' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/login.js"></script>
+</body>
+
+</html>
