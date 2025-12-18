@@ -121,11 +121,11 @@
 
     app.use(router);
 
-    // Mount app
-    app.mount('#app');
+    // Mount app and get the instance
+    const vm = app.mount('#app');
 
     // Set app instance for global modal
-    setAppInstance(app._instance.proxy);
+    setAppInstance(vm);
 
     // Apply theme
     const theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
