@@ -19,6 +19,7 @@
         props: ['user'],
         setup(props) {
             const route = useRoute();
+            const router = VueRouter.useRouter();
             const currentRoute = computed(() => route.path);
 
             const showSettings = ref(false);
@@ -228,7 +229,7 @@
                         description: newBookDescription.value.trim()
                     });
                     showCreateBookModal.value = false;
-                    window.location.href = '/book/' + book.id;
+                    router.push('/book/' + book.id);
                 } catch (e) { globalModal.showAlert('Error creating book'); }
             };
 
@@ -532,6 +533,15 @@
         template: '#home-template',
         setup() {
             const router = VueRouter.useRouter();
+
+            const openNote = (note) => {
+                window.location.href = '/note/' + note.id;
+            };
+
+            const openBook = (book) => {
+                router.push('/book/' + book.id);
+            };
+
             const notes = ref([]);
             const books = ref([]);
             const allNotesForTags = ref([]); // All notes including book notes, for tag collection
@@ -760,8 +770,60 @@
                     );
                 }
 
-                // Apply sorting
+                // Apply sorting and limit to 10 for display
                 return sortItems(result).slice(0, 10);
+            });
+
+            // Check if there are more books beyond the displayed limit
+            const hasMoreBooks = computed(() => {
+                let result = books.value;
+
+                // Apply ownership filter (my items vs public items)
+                if (notesViewMode.value === 'my') {
+                    result = result.filter(book => book.isOwner);
+                } else {
+                    // 'all' mode: only show items marked as public
+                    result = result.filter(book => book.isPublic);
+                }
+
+                // Apply tag filter
+                if (selectedTag.value) {
+                    const bookIdsWithMatchingNotes = new Set();
+                    allNotesForTags.value.forEach(note => {
+                        if (note.bookId && note.tags && Array.isArray(note.tags) && note.tags.includes(selectedTag.value)) {
+                            bookIdsWithMatchingNotes.add(note.bookId);
+                        }
+                    });
+
+                    result = result.filter(book =>
+                        (book.tags && Array.isArray(book.tags) && book.tags.includes(selectedTag.value)) ||
+                        bookIdsWithMatchingNotes.has(book.id)
+                    );
+                }
+
+                // Apply search filter
+                if (searchQuery.value.trim()) {
+                    const query = searchQuery.value.toLowerCase().trim();
+
+                    const bookIdsWithMatchingNotes = new Set();
+                    if (includeContent.value) {
+                        allNotesForTags.value.forEach(note => {
+                            if (note.bookId) {
+                                const titleMatch = (note.title || '').toLowerCase().includes(query);
+                                const contentMatch = (note.content || '').toLowerCase().includes(query);
+                                if (titleMatch || contentMatch) {
+                                    bookIdsWithMatchingNotes.add(note.bookId);
+                                }
+                            }
+                        });
+                    }
+
+                    result = result.filter(book =>
+                        matchesSearch(book, false) || bookIdsWithMatchingNotes.has(book.id)
+                    );
+                }
+
+                return result.length > 10;
             });
 
             const selectTag = (tag) => {
@@ -771,7 +833,7 @@
             const createNote = async () => {
                 try {
                     const note = await api.createNote();
-                    router.push('/note/' + note.id);
+                    window.location.href = '/note/' + note.id;
                 } catch (e) { globalModal.showAlert('Error creating note'); }
             };
 
@@ -1114,7 +1176,8 @@
 
             return {
                 notes, books, createNote, createBook, deleteNote, deleteBook,
-                allTags, selectedTag, filteredNotes, filteredBooks, selectTag,
+                openNote, openBook,
+                allTags, selectedTag, filteredNotes, filteredBooks, hasMoreBooks, selectTag,
                 searchQuery, includeContent, notesViewMode, notesDisplayMode, setNotesDisplayMode,
                 // Move Note
                 showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote,
@@ -1143,6 +1206,9 @@
         setup() {
             const route = useRoute();
             const router = VueRouter.useRouter();
+            const openNote = (note) => {
+                window.location.href = '/note/' + note.id;
+            };
             const book = ref({});
             const newTag = ref('');
             const editableDescription = ref('');
@@ -1309,7 +1375,7 @@
             const createNote = async () => {
                 try {
                     const note = await api.createNoteInBook(book.value.id);
-                    router.push('/note/' + note.id);
+                    window.location.href = '/note/' + note.id;
                 } catch (e) {
                     if (e.message.includes('Cannot add notes')) {
                         globalModal.showAlert('您沒有權限在此書本新增筆記');
@@ -1404,7 +1470,7 @@
             }));
 
             return {
-                book, createNote,
+                book, createNote, openNote,
                 editableDescription, editableTags, newTag, editablePermission,
                 addEditableTag, removeEditableTag, saveBookChanges, initInfoModal,
                 permission, isOwner, canEdit, canAddNote,
@@ -1423,6 +1489,10 @@
     const Uncategorized = {
         template: '#uncategorized-template',
         setup() {
+            const router = VueRouter.useRouter();
+            const openNote = (note) => {
+                window.location.href = '/note/' + note.id;
+            };
             const notes = ref([]);
             const loading = ref(true);
 
@@ -1534,7 +1604,7 @@
                 document.removeEventListener('click', handleClickOutside);
             });
 
-            return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode, openMenuId, toggleMenu };
+            return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode, openMenuId, toggleMenu, openNote };
         }
     };
 
@@ -1544,6 +1614,9 @@
         template: '#allbooks-template',
         setup() {
             const router = VueRouter.useRouter();
+            const openBook = (book) => {
+                router.push('/book/' + book.id);
+            };
             const books = ref([]);
             const loading = ref(true);
 
@@ -1679,7 +1752,7 @@
                 books, sortedBooks, loading,
                 dayjs, sortBy, sortOrder, sortOptions,
                 openMenuId, toggleMenu,
-                isPinned, togglePin, deleteBook
+                isPinned, togglePin, deleteBook, openBook
             };
         }
     };

@@ -434,7 +434,7 @@
                         description: newBookDescription.value.trim()
                     });
                     showCreateBookModalLocal.value = false;
-                    router.push('/book/' + book.id);
+                    window.location.href = '/book/' + book.id;
                 } catch (e) { globalModal.showAlert('Error creating book'); }
             };
 

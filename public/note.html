@@ -69,7 +69,7 @@
 
     <!-- Apply theme immediately to prevent flash -->
     <script>
-        (function() {
+        (function () {
             var theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
@@ -231,9 +231,9 @@
                                 </div>
                                 <div v-if="item.book" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                      目前位置：
-                                     <router-link :to="'/book/' + item.book.id" class="text-blue-500 hover:underline" @click="$emit('close')">
+                                     <a :href="'/book/' + item.book.id" class="text-blue-500 hover:underline" @click="$emit('close')">
                                          {{ item.book.title }}
-                                     </router-link>
+                                     </a>
                                 </div>
                             </div>
 
@@ -417,10 +417,10 @@
     <script type="text/x-template" id="sidebar-nav-template">
         <div class="w-56 bg-gray-900 text-white flex flex-col h-full border-r border-gray-800 shrink-0">
             <!-- Header -->
-            <router-link to="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
+            <a href="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
                 <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
                 <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
-            </router-link>
+            </a>
 
             <!-- View Mode Toggle -->
             <div class="px-3 pt-3 pb-1">
@@ -458,16 +458,16 @@
             <!-- Navigation -->
             <div class="flex-1 overflow-y-auto p-3">
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
-                <router-link to="/" 
+                <a href="/" 
                              class="block p-2 py-1 rounded transition flex items-center"
                              :class="currentRoute === '/' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                     <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney"></i></span> Home
-                </router-link>
-                <router-link to="/trash" 
+                </a>
+                <a href="/trash" 
                              class="block px-2 py-1 rounded transition flex items-center"
                              :class="currentRoute === '/trash' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                     <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can"></i></span> 垃圾桶
-                </router-link>
+                </a>
 
                 <!-- Pinned Items -->
                 <template v-if="showPinned && pinnedItems && pinnedItems.length > 0">
@@ -475,7 +475,7 @@
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
                     </div>
                     <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
-                        <router-link :to="'/' + item.type + '/' + item.id" 
+                        <a :href="'/' + item.type + '/' + item.id" 
                                      class="block px-3 py-1 rounded transition flex items-center justify-between"
                                      :class="currentRoute === '/' + item.type + '/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                             <div class="flex items-center min-w-0">
@@ -489,36 +489,36 @@
                                     title="取消釘選">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
-                        </router-link>
+                        </a>
                     </div>
                 </template>
 
                 <!-- Books Section -->
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center justify-between">
                     <span>Books</span>
-                    <router-link to="/books" class="text-gray-400 hover:text-white transition" title="全部書本">
+                    <a href="/books" class="text-gray-400 hover:text-white transition" title="全部書本">
                         <i class="fa-solid fa-arrow-right"></i>
-                    </router-link>
+                    </a>
                 </div>
-                <router-link to="/uncategorized" 
+                <a href="/uncategorized" 
                              class="block px-2 py-1 rounded transition flex items-center"
                              :class="currentRoute === '/uncategorized' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                     <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox" :class="currentRoute === '/uncategorized' ? 'text-white' : 'text-gray-400'"></i></span>
                     <span class="truncate">未分類筆記</span>
-                </router-link>
+                </a>
                 <div v-for="book in books" :key="book.id">
-                    <router-link :to="'/book/' + book.id" 
+                    <a :href="'/book/' + book.id" 
                                  class="block px-2 py-1 rounded transition flex items-center"
                                  :class="currentRoute === '/book/' + book.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
                         <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
-                    </router-link>
+                    </a>
                 </div>
-                <router-link v-if="showMoreBooks" to="/books" 
+                <a v-if="showMoreBooks" href="/books" 
                              class="block px-2 py-1 mt-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition flex items-center text-sm">
                     <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-ellipsis"></i></span>
                     <span class="truncate">更多書本...</span>
-                </router-link>
+                </a>
             </div>
 
             <!-- User & Settings -->
@@ -629,7 +629,7 @@
                             <div v-if="searchResults.books.length > 0" class="mb-6">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{ searchResults.books.length }})</h3>
                                 <div class="space-y-2">
-                                    <router-link v-for="book in searchResults.books" :key="book.id" :to="'/book/' + book.id" @click="showSearchModal = false"
+                                    <a v-for="book in searchResults.books" :key="book.id" :href="'/book/' + book.id" @click="showSearchModal = false"
                                         class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1 min-w-0">
@@ -643,14 +643,14 @@
                                                 {{ dayjs(book.lastEditedAt || book.updatedAt).format('YYYY/MM/DD HH:mm') }}
                                             </span>
                                         </div>
-                                    </router-link>
+                                    </a>
                                 </div>
                             </div>
                             <!-- Notes -->
                             <div v-if="searchResults.notes.length > 0">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{ searchResults.notes.length }})</h3>
                                 <div class="space-y-2">
-                                    <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/note/' + note.id" @click="showSearchModal = false"
+                                    <a v-for="note in searchResults.notes" :key="note.id" :href="'/note/' + note.id" @click="showSearchModal = false"
                                         class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1 min-w-0">
@@ -668,7 +668,7 @@
                                                 {{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}
                                             </span>
                                         </div>
-                                    </router-link>
+                                    </a>
                                 </div>
                             </div>
                         </template>
@@ -875,11 +875,12 @@
                 
                 <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-2">
-                        <router-link to="/" class="hover:text-blue-400 transition font-medium">
+                        <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
-                        </router-link>
+                        </a>
+
                         <template v-if="book">
                             <span class="text-gray-600">/</span>
                             <div class="relative group">

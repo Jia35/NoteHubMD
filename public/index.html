@@ -635,12 +635,27 @@
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
                     </div>
                     <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
-                        <router-link :to="'/' + item.type + '/' + item.id" 
+                        <a v-if="item.type === 'note'" :href="'/note/' + item.id" 
                                      class="block px-3 py-1 rounded transition flex items-center justify-between"
-                                     :class="currentRoute === '/' + item.type + '/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                     :class="currentRoute === '/note/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                             <div class="flex items-center min-w-0">
                                 <span class="w-5 mr-3 text-center shrink-0">
-                                    <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'"></i>
+                                    <i class="fa-solid fa-note-sticky"></i>
+                                </span>
+                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                            </div>
+                            <button @click.prevent.stop="$emit('unpin', item.type, item.id)" 
+                                    class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
+                                    title="取消釘選">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </a>
+                        <router-link v-else :to="'/book/' + item.id" 
+                                     class="block px-3 py-1 rounded transition flex items-center justify-between"
+                                     :class="currentRoute === '/book/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                            <div class="flex items-center min-w-0">
+                                <span class="w-5 mr-3 text-center shrink-0">
+                                    <i class="fa-solid fa-book"></i>
                                 </span>
                                 <span class="truncate">{{ item.title || 'Untitled' }}</span>
                             </div>
@@ -810,7 +825,7 @@
                             <div v-if="searchResults.notes.length > 0">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{ searchResults.notes.length }})</h3>
                                 <div class="space-y-2">
-                                    <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/note/' + note.id" @click="showSearchModal = false"
+                                    <a v-for="note in searchResults.notes" :key="note.id" :href="'/note/' + note.id" @click="showSearchModal = false"
                                         class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1 min-w-0">
@@ -828,7 +843,7 @@
                                                 {{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}
                                             </span>
                                         </div>
-                                    </router-link>
+                                    </a>
                                 </div>
                             </div>
                         </template>
@@ -1301,10 +1316,10 @@
                         @open-info="openInfoModal('book', book)"
                         @toggle-pin="togglePin('book', book.id)"
                         @delete="deleteBook(book.id, $event)"
-                        @click="$router.push('/book/' + book.id)"
+                        @click="openBook(book)"
                     />
                     <!-- More Books Button -->
-                    <div v-if="filteredBooks.length > 0" class="w-40 shrink-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border border-gray-200 dark:border-gray-700" @click="$router.push('/books')">
+                    <div v-if="hasMoreBooks" class="w-40 shrink-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border border-gray-200 dark:border-gray-700" @click="$router.push('/books')">
                         <div class="text-center text-gray-500 dark:text-gray-400">
                             <i class="fa-solid fa-arrow-right text-2xl mb-2"></i>
                             <p>更多書本</p>
@@ -1345,7 +1360,7 @@
                         @toggle-pin="togglePin('note', note.id)"
                         @open-move="openMoveNoteModal(note)"
                         @delete="deleteNote(note.id, $event)"
-                        @click="$router.push('/note/' + note.id)"
+                        @click="openNote(note)"
                     />
                 </div>
                 
@@ -1367,7 +1382,7 @@
                         @toggle-pin="togglePin('note', note.id)"
                         @open-move="openMoveNoteModal(note)"
                         @delete="deleteNote(note.id, $event)"
-                        @click="$router.push('/note/' + note.id)"
+                        @click="openNote(note)"
                     />
                 </div>
             </div>
@@ -1526,7 +1541,7 @@
                     @toggle-menu="toggleMenu(book.id)"
                     @toggle-pin="togglePin(book.id)"
                     @delete="deleteBook(book.id)"
-                    @click="$router.push('/book/' + book.id)"
+                    @click="openBook(book)"
                 />
             </div>
         </div>
@@ -1588,7 +1603,7 @@
                     :show-move-option="false"
                     @toggle-menu="toggleMenu(note.id)"
                     @delete="deleteNote(note.id)"
-                    @click="$router.push('/note/' + note.id)"
+                    @click="openNote(note)"
                 />
             </div>
 
@@ -1603,7 +1618,7 @@
                     :show-move-option="false"
                     @toggle-menu="toggleMenu(note.id)"
                     @delete="deleteNote(note.id)"
-                    @click="$router.push('/note/' + note.id)"
+                    @click="openNote(note)"
                 />
             </div>
         </div>
@@ -1831,7 +1846,7 @@
 
             <!-- Notes List -->
             <div ref="notesList" class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div v-for="note in book.Notes" :key="note.id" :data-id="note.id" class="note-item p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center" @click="$router.push('/note/' + note.id)">
+                <div v-for="note in book.Notes" :key="note.id" :data-id="note.id" class="note-item p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center" @click="openNote(note)">
                     <!-- Drag handle (only show if canEdit) -->
                     <span v-if="canEdit" class="drag-handle cursor-move text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3 px-1" @click.stop>
                         <i class="fa-solid fa-grip-vertical"></i>
