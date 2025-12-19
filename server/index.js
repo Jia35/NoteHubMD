@@ -72,6 +72,11 @@ app.get('/s/:shareId', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/note_share.html'));
 });
 
+// 404 page
+app.get('/404', (req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
+});
+
 // All other routes (Home, Books, Trash, Admin, etc.) - use index.html
 // Using regex for catch-all in Express 5
 app.get(/(.*)/, (req, res) => {

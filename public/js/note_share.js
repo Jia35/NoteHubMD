@@ -293,6 +293,11 @@
                         renderContent();
                     });
                 } catch (e) {
+                    // Redirect to 404 if note not found
+                    if (e.message.includes('not found') || e.message.includes('Not found')) {
+                        window.location.href = '/404';
+                        return;
+                    }
                     error.value = e.message || '無法載入筆記';
                     loading.value = false;
                 }

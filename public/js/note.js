@@ -1448,6 +1448,10 @@
                         globalModal.showAlert('您沒有權限存取此筆記');
                         router.push('/');
                         return;
+                    } else if (e.message.includes('not found') || e.message.includes('Not found')) {
+                        // Note doesn't exist - redirect to 404
+                        window.location.href = '/404';
+                        return;
                     }
                 }
 

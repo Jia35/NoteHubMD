@@ -1366,8 +1366,12 @@
                         globalModal.showAlert('您沒有權限存取此書本');
                         router.push('/');
                         return;
+                    } else if (e.message.includes('not found') || e.message.includes('Not found')) {
+                        // Book doesn't exist - redirect to 404
+                        window.location.href = '/404';
+                        return;
                     }
-                    globalModal.showAlert('Book not found');
+                    globalModal.showAlert('載入書本失敗');
                     router.push('/');
                 }
             };
