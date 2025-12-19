@@ -1545,15 +1545,15 @@ router.get('/export/my-notes', async (req, res) => {
             let filename;
 
             if (note.Book) {
-                // Note is in a book: {bookTitle}__{noteTitle}.md
+                // Note is in a book: {bookTitle}__{noteTitle} [NoteID].md
                 const bookTitle = sanitizeFilename(note.Book.title);
-                filename = `${bookTitle}__${noteTitle}`;
+                filename = `${bookTitle}__${noteTitle} [${note.id}]`;
             } else {
-                // Standalone note: {noteTitle}.md
-                filename = noteTitle;
+                // Standalone note: {noteTitle} [NoteID].md
+                filename = `${noteTitle} [${note.id}]`;
             }
 
-            // Handle duplicate filenames
+            // Handle duplicate filenames (shouldn't happen with ID, but just in case)
             if (filenameCount[filename]) {
                 filenameCount[filename]++;
                 filename = `${filename}_${filenameCount[filename]}`;
