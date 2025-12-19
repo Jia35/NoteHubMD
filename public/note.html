@@ -996,7 +996,8 @@
                 <!-- Content -->
                 <div class="flex-1 flex overflow-hidden relative">
                     <!-- Editor -->
-                    <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" :class="{'w-full': !showPreview, 'w-1/2': showPreview}">
+                    <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" 
+                         :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
                         <div class="flex-1 overflow-hidden relative">
                             <textarea ref="editorTextarea"></textarea>
                         </div>
@@ -1017,8 +1018,14 @@
                         </div>
                     </div>
                     
+                    <!-- Resizable Divider (only show in Both mode) -->
+                    <div v-if="showEditor && showPreview" 
+                         class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
+                         @mousedown="startResize"
+                         title="拖曳調整寬度"></div>
+                    
                     <!-- Preview with TOC -->
-                    <div v-show="showPreview" class="h-full flex min-w-0" :class="{'flex-1': true}">
+                    <div v-show="showPreview" class="h-full flex min-w-0 flex-1">
                         <!-- Preview Content -->
                         <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg"
                             ref="previewContainer"

@@ -827,6 +827,51 @@
             const showEditor = computed(() => mode.value === 'both' || mode.value === 'edit');
             const showPreview = computed(() => mode.value === 'both' || mode.value === 'view');
 
+            // Resizable divider state
+            const editorWidth = ref(50); // percentage
+            let isResizing = false;
+
+            const startResize = (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+
+                const onMouseMove = (e) => {
+                    if (!isResizing) return;
+                    const container = document.querySelector('.flex-1.flex.overflow-hidden.relative');
+                    if (!container) return;
+
+                    const containerRect = container.getBoundingClientRect();
+                    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+                    // Clamp between 20% and 80%
+                    editorWidth.value = Math.max(20, Math.min(80, newWidth));
+
+                    // Refresh CodeMirror
+                    if (cmInstance) cmInstance.refresh();
+                };
+
+                const onMouseUp = () => {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+
+                    // Save preference to localStorage
+                    localStorage.setItem('NoteHubMD-editorWidth', editorWidth.value);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+
+            // Load saved editor width
+            const savedEditorWidth = localStorage.getItem('NoteHubMD-editorWidth');
+            if (savedEditorWidth) {
+                editorWidth.value = parseFloat(savedEditorWidth);
+            }
+
             const setMode = (newMode) => {
                 mode.value = newMode;
                 // Set URL as ?edit, ?both, or ?view (key only, no value)
@@ -1660,6 +1705,8 @@
                 renderedContent,
                 showEditor,
                 showPreview,
+                editorWidth,
+                startResize,
                 mode,
                 setMode,
                 handlePreviewScroll,
