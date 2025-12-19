@@ -199,7 +199,7 @@
             const createNote = async () => {
                 try {
                     const note = await api.createNote();
-                    window.location.href = '/note/' + note.id;
+                    window.location.href = '/n/' + note.id;
                 } catch (e) { globalModal.showAlert('Error creating note'); }
             };
 
@@ -229,7 +229,7 @@
                         description: newBookDescription.value.trim()
                     });
                     showCreateBookModal.value = false;
-                    router.push('/book/' + book.id);
+                    router.push('/b/' + book.id);
                 } catch (e) { globalModal.showAlert('Error creating book'); }
             };
 
@@ -535,11 +535,11 @@
             const router = VueRouter.useRouter();
 
             const openNote = (note) => {
-                window.location.href = '/note/' + note.id;
+                window.location.href = '/n/' + note.id;
             };
 
             const openBook = (book) => {
-                router.push('/book/' + book.id);
+                router.push('/b/' + book.id);
             };
 
             const notes = ref([]);
@@ -833,7 +833,7 @@
             const createNote = async () => {
                 try {
                     const note = await api.createNote();
-                    window.location.href = '/note/' + note.id;
+                    window.location.href = '/n/' + note.id;
                 } catch (e) { globalModal.showAlert('Error creating note'); }
             };
 
@@ -854,7 +854,7 @@
                         description: newBookDescription.value.trim()
                     });
                     showCreateBookModal.value = false;
-                    router.push('/book/' + book.id);
+                    router.push('/b/' + book.id);
                 } catch (e) { globalModal.showAlert('Error creating book'); }
             };
 
@@ -1207,7 +1207,7 @@
             const route = useRoute();
             const router = VueRouter.useRouter();
             const openNote = (note) => {
-                window.location.href = '/note/' + note.id;
+                window.location.href = '/n/' + note.id;
             };
             const book = ref({});
             const newTag = ref('');
@@ -1375,7 +1375,7 @@
             const createNote = async () => {
                 try {
                     const note = await api.createNoteInBook(book.value.id);
-                    window.location.href = '/note/' + note.id;
+                    window.location.href = '/n/' + note.id;
                 } catch (e) {
                     if (e.message.includes('Cannot add notes')) {
                         globalModal.showAlert('您沒有權限在此書本新增筆記');
@@ -1491,7 +1491,7 @@
         setup() {
             const router = VueRouter.useRouter();
             const openNote = (note) => {
-                window.location.href = '/note/' + note.id;
+                window.location.href = '/n/' + note.id;
             };
             const notes = ref([]);
             const loading = ref(true);
@@ -1615,7 +1615,7 @@
         setup() {
             const router = VueRouter.useRouter();
             const openBook = (book) => {
-                router.push('/book/' + book.id);
+                router.push('/b/' + book.id);
             };
             const books = ref([]);
             const loading = ref(true);
@@ -1932,7 +1932,7 @@
             component: Layout,
             children: [
                 { path: '', component: Home },
-                { path: 'book/:id', component: Book },
+                { path: 'b/:id', component: Book },
                 { path: 'books', component: AllBooks },
                 { path: 'uncategorized', component: Uncategorized },
                 { path: 'trash', component: Trash },

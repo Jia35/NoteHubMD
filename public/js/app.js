@@ -915,7 +915,7 @@ const Sidebar = {
         const createNote = async () => {
             try {
                 const note = await api.createNote();
-                window.location.href = '/note/' + note.id;
+                window.location.href = '/n/' + note.id;
             } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
@@ -945,7 +945,7 @@ const Sidebar = {
                     description: newBookDescription.value.trim()
                 });
                 showCreateBookModal.value = false;
-                window.location.href = '/book/' + book.id;
+                window.location.href = '/b/' + book.id;
             } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
@@ -1488,7 +1488,7 @@ const Home = {
         const createNote = async () => {
             try {
                 const note = await api.createNote();
-                router.push('/note/' + note.id);
+                router.push('/n/' + note.id);
             } catch (e) { globalModal.showAlert('Error creating note'); }
         };
 
@@ -1509,7 +1509,7 @@ const Home = {
                     description: newBookDescription.value.trim()
                 });
                 showCreateBookModal.value = false;
-                router.push('/book/' + book.id);
+                router.push('/b/' + book.id);
             } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
@@ -2025,7 +2025,7 @@ const Book = {
         const createNote = async () => {
             try {
                 const note = await api.createNoteInBook(book.value.id);
-                router.push('/note/' + note.id);
+                router.push('/n/' + note.id);
             } catch (e) {
                 if (e.message.includes('Cannot add notes')) {
                     globalModal.showAlert('您沒有權限在此書本新增筆記');
@@ -2528,7 +2528,7 @@ const Note = {
         const createNewNote = async () => {
             try {
                 const note = await api.createNote();
-                router.push('/note/' + note.id);
+                router.push('/n/' + note.id);
                 showSidebar.value = false;
             } catch (e) { globalModal.showAlert('Error creating note'); }
         };
@@ -2556,7 +2556,7 @@ const Note = {
                     description: newBookDescription.value.trim()
                 });
                 showCreateBookModalLocal.value = false;
-                router.push('/book/' + book.id);
+                router.push('/b/' + book.id);
             } catch (e) { globalModal.showAlert('Error creating book'); }
         };
 
@@ -3699,7 +3699,7 @@ const Note = {
                     console.error('Failed to load note', e);
                     if (e.message.includes('Login required')) {
                         globalModal.showAlert('需要登入才能存取此筆記');
-                        router.push({ path: '/login', query: { redirect: '/note/' + newNoteId } });
+                        router.push({ path: '/login', query: { redirect: '/n/' + newNoteId } });
                     } else if (e.message.includes('Access denied')) {
                         globalModal.showAlert('您沒有權限存取此筆記');
                         router.push('/');
@@ -4314,14 +4314,14 @@ const routes = [
         component: Layout,
         children: [
             { path: '', component: Home },
-            { path: 'book/:id', component: Book },
+            { path: 'b/:id', component: Book },
             { path: 'books', component: AllBooks },
             { path: 'uncategorized', component: Uncategorized },
             { path: 'trash', component: Trash },
             { path: 'admin', component: Admin },
         ]
     },
-    { path: '/note/:id', component: Note }, // Note view takes full screen
+    { path: '/n/:id', component: Note }, // Note view takes full screen
 ];
 
 const router = createRouter({
@@ -4338,7 +4338,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Allow note pages (permission check happens in component/backend)
-    if (to.path.startsWith('/note/')) {
+    if (to.path.startsWith('/n/')) {
         next();
         return;
     }

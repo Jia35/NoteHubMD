@@ -390,7 +390,7 @@
                                 </div>
                                 <div v-if="item.book" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                      目前位置：
-                                     <router-link :to="'/book/' + item.book.id" class="text-blue-500 hover:underline" @click="$emit('close')">
+                                     <router-link :to="'/b/' + item.book.id" class="text-blue-500 hover:underline" @click="$emit('close')">
                                          {{ item.book.title }}
                                      </router-link>
                                 </div>
@@ -579,7 +579,7 @@
             <!-- Header -->
             <router-link to="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
                 <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
-                <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
+                <span class="font-bold text-lg tracking-wide">NoteHubMD~</span>
             </router-link>
 
             <!-- View Mode Toggle -->
@@ -635,9 +635,9 @@
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
                     </div>
                     <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
-                        <a v-if="item.type === 'note'" :href="'/note/' + item.id" 
+                        <a v-if="item.type === 'note'" :href="'/n/' + item.id" 
                                      class="block px-3 py-1 rounded transition flex items-center justify-between"
-                                     :class="currentRoute === '/note/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                     :class="currentRoute === '/n/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                             <div class="flex items-center min-w-0">
                                 <span class="w-5 mr-3 text-center shrink-0">
                                     <i class="fa-solid fa-note-sticky"></i>
@@ -650,9 +650,9 @@
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </a>
-                        <router-link v-else :to="'/book/' + item.id" 
+                        <router-link v-else :to="'/b/' + item.id" 
                                      class="block px-3 py-1 rounded transition flex items-center justify-between"
-                                     :class="currentRoute === '/book/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                     :class="currentRoute === '/b/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                             <div class="flex items-center min-w-0">
                                 <span class="w-5 mr-3 text-center shrink-0">
                                     <i class="fa-solid fa-book"></i>
@@ -682,9 +682,9 @@
                     <span class="truncate">未分類筆記</span>
                 </router-link>
                 <div v-for="book in books" :key="book.id">
-                    <router-link :to="'/book/' + book.id" 
+                    <router-link :to="'/b/' + book.id" 
                                  class="block px-2 py-1 rounded transition flex items-center"
-                                 :class="currentRoute === '/book/' + book.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                 :class="currentRoute === '/b/' + book.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
                         <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
                     </router-link>
@@ -804,7 +804,7 @@
                             <div v-if="searchResults.books.length > 0" class="mb-6">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{ searchResults.books.length }})</h3>
                                 <div class="space-y-2">
-                                    <router-link v-for="book in searchResults.books" :key="book.id" :to="'/book/' + book.id" @click="showSearchModal = false"
+                                    <router-link v-for="book in searchResults.books" :key="book.id" :to="'/b/' + book.id" @click="showSearchModal = false"
                                         class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1 min-w-0">
@@ -825,7 +825,7 @@
                             <div v-if="searchResults.notes.length > 0">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{ searchResults.notes.length }})</h3>
                                 <div class="space-y-2">
-                                    <a v-for="note in searchResults.notes" :key="note.id" :href="'/note/' + note.id" @click="showSearchModal = false"
+                                    <a v-for="note in searchResults.notes" :key="note.id" :href="'/n/' + note.id" @click="showSearchModal = false"
                                         class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1 min-w-0">
@@ -1208,7 +1208,7 @@
                         <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{
                             searchResults.books.length }})</h3>
                         <div class="space-y-2">
-                            <router-link v-for="book in searchResults.books" :key="book.id" :to="'/book/' + book.id"
+                            <router-link v-for="book in searchResults.books" :key="book.id" :to="'/b/' + book.id"
                                 @click="showSearchModal = false"
                                 class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                 <div class="flex items-center justify-between">
@@ -1236,7 +1236,7 @@
                         <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{
                             searchResults.notes.length }})</h3>
                         <div class="space-y-2">
-                            <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/note/' + note.id"
+                            <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/n/' + note.id"
                                 @click="showSearchModal = false"
                                 class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                 <div class="flex items-center justify-between">
@@ -2085,7 +2085,7 @@
                         <template v-if="book">
                             <span class="text-gray-600">/</span>
                             <div class="relative group">
-                                <router-link :to="'/book/' + book.id" class="hover:text-blue-400 transition">
+                                <router-link :to="'/b/' + book.id" class="hover:text-blue-400 transition">
                                     <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
                                 </router-link>
                                 <!-- Book Notes Tooltip -->
@@ -2102,7 +2102,7 @@
                                             <ul class="space-y-1 max-h-64 overflow-y-auto">
                                                 <li v-for="bookNote in book.Notes" :key="bookNote.id">
                                                     <router-link 
-                                                        :to="'/note/' + bookNote.id"
+                                                        :to="'/n/' + bookNote.id"
                                                         class="flex items-center text-sm py-1.5 px-2 rounded transition"
                                                         :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
                                                         <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
@@ -2350,7 +2350,7 @@
                                     <!-- Login prompt -->
                                     <div v-else-if="!currentUser && commentsEnabled" class="mb-6 text-center py-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
                                         <p class="text-gray-500 dark:text-gray-400">
-                                            <i class="fa-solid fa-lock mr-1"></i>請先 <router-link :to="'/login?redirect=/note/' + noteId" class="text-blue-500 hover:underline">登入</router-link> 後才能留言
+                                            <i class="fa-solid fa-lock mr-1"></i>請先 <router-link :to="'/login?redirect=/n/' + noteId" class="text-blue-500 hover:underline">登入</router-link> 後才能留言
                                         </p>
                                     </div>
 

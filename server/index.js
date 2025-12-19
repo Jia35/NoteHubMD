@@ -63,7 +63,7 @@ app.get('/login', (req, res) => {
 });
 
 // Note page
-app.get('/note/:id', (req, res) => {
+app.get('/n/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/note.html'));
 });
 

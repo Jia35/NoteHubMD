@@ -406,7 +406,7 @@
             const createNewNote = async () => {
                 try {
                     const note = await api.createNote();
-                    router.push('/note/' + note.id);
+                    router.push('/n/' + note.id);
                     showSidebar.value = false;
                 } catch (e) { globalModal.showAlert('Error creating note'); }
             };
@@ -434,7 +434,7 @@
                         description: newBookDescription.value.trim()
                     });
                     showCreateBookModalLocal.value = false;
-                    window.location.href = '/book/' + book.id;
+                    window.location.href = '/b/' + book.id;
                 } catch (e) { globalModal.showAlert('Error creating book'); }
             };
 
@@ -1577,7 +1577,7 @@
                         console.error('Failed to load note', e);
                         if (e.message.includes('Login required')) {
                             globalModal.showAlert('需要登入才能存取此筆記');
-                            router.push({ path: '/login', query: { redirect: '/note/' + newNoteId } });
+                            router.push({ path: '/login', query: { redirect: '/n/' + newNoteId } });
                         } else if (e.message.includes('Access denied')) {
                             globalModal.showAlert('您沒有權限存取此筆記');
                             router.push('/');
@@ -1760,7 +1760,7 @@
 
     // Routes
     const routes = [
-        { path: '/note/:id', component: Note, name: 'note' }
+        { path: '/n/:id', component: Note, name: 'note' }
     ];
 
     const router = createRouter({

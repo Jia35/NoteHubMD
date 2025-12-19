@@ -3,7 +3,7 @@ const config = require('../config');
 module.exports = (sequelize, DataTypes) => {
     const Note = sequelize.define('Note', {
         id: {
-            type: DataTypes.STRING(8),
+            type: DataTypes.STRING(9),
             primaryKey: true
         },
         title: {
@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.JSON
         },
         bookId: {
-            type: DataTypes.STRING(8),
+            type: DataTypes.STRING(9),
             allowNull: true
         },
         permission: {

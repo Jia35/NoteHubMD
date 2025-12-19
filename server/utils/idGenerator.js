@@ -1,11 +1,13 @@
-const alphabet = 'abcdefghijklmnopqrstuvwxyz234567';
+const { customAlphabet } = require('nanoid');
 
-function generateId(length = 8) {
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-  }
-  return result;
+// Custom alphabet excluding ambiguous characters (0, 1, i, l, o)
+const alphabet = '23456789abcdefghjkmnpqrstuvwxyz';
+
+// Create custom nanoid generator with 9-char length
+const nanoid = customAlphabet(alphabet, 9);
+
+function generateId() {
+  return nanoid();
 }
 
 module.exports = { generateId };
