@@ -1330,7 +1330,18 @@
 
             <div>
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">Notes</h2>
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">Notes</h2>
+                        <!-- Per Page Selector -->
+                        <div v-if="filteredNotes.length > 30" class="flex items-center gap-2 text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">每頁：</span>
+                            <button v-for="opt in perPageOptions" :key="opt" @click="setNotesPerPage(opt)"
+                                :class="notesPerPage === opt ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'"
+                                class="px-2 py-1 rounded transition cursor-pointer">
+                                {{ opt }}
+                            </button>
+                        </div>
+                    </div>
                      <!-- Toggle Buttons -->
                     <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 text-sm">
                         <button type="button" @click="setNotesDisplayMode('grid')" :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': notesDisplayMode === 'grid', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': notesDisplayMode !== 'grid'}" class="px-2 py-1 rounded transition" title="格狀顯示">
@@ -1348,7 +1359,7 @@
                         <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
                     </div>
                     <NoteCard 
-                        v-for="note in filteredNotes" 
+                        v-for="note in paginatedNotes" 
                         :key="note.id"
                         :note="note"
                         mode="grid"
@@ -1370,7 +1381,7 @@
                         <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
                     </div>
                     <NoteCard 
-                        v-for="note in filteredNotes" 
+                        v-for="note in paginatedNotes" 
                         :key="note.id"
                         :note="note"
                         mode="list"
@@ -1384,6 +1395,40 @@
                         @delete="deleteNote(note.id, $event)"
                         @click="openNote(note)"
                     />
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="totalNotesPages > 1" class="mt-6 flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-1">
+                        <!-- Previous Button -->
+                        <button @click="goToNotesPage(currentNotesPage - 1)" :disabled="currentNotesPage === 1"
+                            :class="currentNotesPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer'"
+                            class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded transition">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        
+                        <!-- Page Numbers -->
+                        <template v-for="page in notesPageNumbers" :key="page">
+                            <span v-if="page === '...'" class="px-2 py-1 text-gray-400">...</span>
+                            <button v-else @click="goToNotesPage(page)"
+                                :class="page === currentNotesPage ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                class="px-3 py-1.5 text-sm rounded transition cursor-pointer">
+                                {{ page }}
+                            </button>
+                        </template>
+                        
+                        <!-- Next Button -->
+                        <button @click="goToNotesPage(currentNotesPage + 1)" :disabled="currentNotesPage === totalNotesPages"
+                            :class="currentNotesPage === totalNotesPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer'"
+                            class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded transition">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Page Info -->
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        顯示 {{ (currentNotesPage - 1) * notesPerPage + 1 }}-{{ Math.min(currentNotesPage * notesPerPage, filteredNotes.length) }} / 共 {{ filteredNotes.length }} 篇
+                    </div>
                 </div>
             </div>
 

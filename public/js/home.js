@@ -571,6 +571,23 @@
                 { value: 'title', label: '標題' }
             ];
 
+            // Pagination state
+            const notesPerPage = ref(parseInt(localStorage.getItem('NoteHubMD-notesPerPage')) || 30);
+            const currentNotesPage = ref(1);
+            const perPageOptions = [30, 50];
+
+            const setNotesPerPage = (count) => {
+                notesPerPage.value = count;
+                currentNotesPage.value = 1;
+                localStorage.setItem('NoteHubMD-notesPerPage', count);
+            };
+
+            const goToNotesPage = (page) => {
+                if (page >= 1 && page <= totalNotesPages.value) {
+                    currentNotesPage.value = page;
+                }
+            };
+
             // Sort helper function
             const sortItems = (items) => {
                 return [...items].sort((a, b) => {
@@ -716,6 +733,43 @@
 
                 // Apply sorting
                 return sortItems(result);
+            });
+
+            // Pagination computed properties
+            const totalNotesPages = computed(() => {
+                return Math.ceil(filteredNotes.value.length / notesPerPage.value) || 1;
+            });
+
+            const paginatedNotes = computed(() => {
+                const start = (currentNotesPage.value - 1) * notesPerPage.value;
+                return filteredNotes.value.slice(start, start + notesPerPage.value);
+            });
+
+            // Reset page when filters change
+            watch([selectedTag, searchQuery, notesViewMode, sortBy, sortOrder], () => {
+                currentNotesPage.value = 1;
+            });
+
+            // Generate page numbers for display
+            const notesPageNumbers = computed(() => {
+                const total = totalNotesPages.value;
+                const current = currentNotesPage.value;
+                const pages = [];
+
+                if (total <= 7) {
+                    for (let i = 1; i <= total; i++) pages.push(i);
+                } else {
+                    pages.push(1);
+                    if (current > 3) pages.push('...');
+
+                    const start = Math.max(2, current - 1);
+                    const end = Math.min(total - 1, current + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+
+                    if (current < total - 2) pages.push('...');
+                    pages.push(total);
+                }
+                return pages;
             });
 
             // Filter books by selected tag, search query, and ownership view mode
@@ -1179,6 +1233,9 @@
                 openNote, openBook,
                 allTags, selectedTag, filteredNotes, filteredBooks, hasMoreBooks, selectTag,
                 searchQuery, includeContent, notesViewMode, notesDisplayMode, setNotesDisplayMode,
+                // Pagination
+                paginatedNotes, notesPerPage, currentNotesPage, totalNotesPages, perPageOptions,
+                notesPageNumbers, setNotesPerPage, goToNotesPage,
                 // Move Note
                 showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote,
                 handleMoveNoteFromInfo,
