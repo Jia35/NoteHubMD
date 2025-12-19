@@ -859,7 +859,7 @@
             };
 
             const deleteNote = async (id, event) => {
-                event.stopPropagation();
+                if (event) event.stopPropagation();
                 if (!await globalModal.showConfirm('確定要刪除此筆記？（可從垃圾桶還原）')) return;
                 try {
                     await api.deleteNote(id);
@@ -868,7 +868,7 @@
             };
 
             const deleteBook = async (id, event) => {
-                event.stopPropagation();
+                if (event) event.stopPropagation();
                 if (!await globalModal.showConfirm('確定要刪除此書本？（可從垃圾桶還原）')) return;
                 try {
                     await api.deleteBook(id);
