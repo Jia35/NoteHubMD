@@ -1645,10 +1645,10 @@
                     <div v-if="books.length === 0" class="text-gray-400 italic">(無已刪除的 Book)</div>
                     <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div v-for="book in books" :key="book.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 flex justify-between items-center">
-                            <div>
+                            <div class="flex-1 min-w-0 mr-4">
                                 <div class="flex items-center">
-                                    <span class="mr-3 text-gray-400"><i class="fa-solid fa-book"></i></span>
-                                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ book.title }}</span>
+                                    <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-book"></i></span>
+                                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="book.title">{{ book.title }}</span>
                                 </div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
                                     <span>刪除時間: {{ new Date(book.deletedAt).toLocaleString() }}</span>
@@ -1673,10 +1673,10 @@
                     <div v-if="notes.length === 0" class="text-gray-400 italic">(無已刪除的 Note)</div>
                     <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div v-for="note in notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 flex justify-between items-center">
-                            <div>
+                            <div class="flex-1 min-w-0 mr-4">
                                 <div class="flex items-center">
-                                    <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
-                                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200">{{ note.title }}</span>
+                                    <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
+                                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="note.title">{{ note.title }}</span>
                                 </div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
                                     <span>刪除時間: {{ new Date(note.deletedAt).toLocaleString() }}</span>
