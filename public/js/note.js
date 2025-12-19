@@ -403,7 +403,12 @@
                 }
             };
 
-            // Share note - generate share link and navigate to share page
+            // Share modal state
+            const showShareModal = ref(false);
+            const shareUrl = ref('');
+            const shareCopied = ref(false);
+
+            // Share note - generate share link and show modal
             const shareNote = async () => {
                 try {
                     const response = await fetch(`/api/notes/${noteId.value}/share`, {
@@ -417,12 +422,57 @@
                     }
 
                     const result = await response.json();
-                    // Navigate to share page
-                    window.location.href = result.shareUrl;
+                    shareUrl.value = window.location.origin + result.shareUrl;
+                    shareCopied.value = false;
+                    showShareModal.value = true;
                 } catch (e) {
                     globalModal.showAlert('分享失敗：' + e.message);
                 }
             };
+
+            // Copy share link to clipboard
+            const copyShareLink = async () => {
+                try {
+                    await navigator.clipboard.writeText(shareUrl.value);
+                    shareCopied.value = true;
+                    setTimeout(() => {
+                        shareCopied.value = false;
+                    }, 2000);
+                } catch (e) {
+                    globalModal.showAlert('複製失敗：' + e.message);
+                }
+            };
+
+            // Open share page in new tab
+            const openSharePage = () => {
+                window.open(shareUrl.value, '_blank');
+            };
+
+            // Reset share link
+            const resetShareLink = async () => {
+                if (!await globalModal.showConfirm('重設後，原有的分享連結將失效。確定要重設嗎？')) {
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/share`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to reset share link');
+                    }
+
+                    const result = await response.json();
+                    shareUrl.value = window.location.origin + result.shareUrl;
+                    shareCopied.value = false;
+                    globalModal.showAlert('分享連結已重設！', { type: 'success' });
+                } catch (e) {
+                    globalModal.showAlert('重設失敗：' + e.message);
+                }
+            };
+
 
             const createNewNote = async () => {
                 try {
@@ -1826,6 +1876,9 @@
                 noteIsPublic,
                 saveNoteSettings,
                 shareNote,
+                // Share modal
+                showShareModal, shareUrl, shareCopied,
+                copyShareLink, openSharePage, resetShareLink,
                 noteInfoItem
             };
         }

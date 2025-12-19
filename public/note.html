@@ -1349,7 +1349,56 @@
                 <img :src="lightboxImage" 
                      class="object-contain cursor-default shadow-2xl"
                      style="max-width: 90vw; max-height: 90vh;"
-                     @click.stop>
+                     @click.stop />
+            </div>
+        </Transition>
+
+        <!-- Share Modal -->
+        <Transition name="fade">
+            <div v-if="showShareModal" 
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+                 style="z-index: 150;" 
+                 @click.self="showShareModal = false">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">分享筆記</h3>
+                        <button @click="showShareModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">分享連結</label>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="text" :value="shareUrl" readonly
+                                class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                <i :class="shareCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
+                                {{ shareCopied ? '已複製' : '複製連結' }}
+                            </button>
+                            <button @click="openSharePage" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                開啟分享頁面
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-xs text-amber-600 dark:text-amber-500">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                                重設連結後，原有的分享連結將立即失效，無法再存取。
+                            </p>
+                            <button @click="resetShareLink" class="w-full px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition flex items-center justify-center gap-2 text-sm">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                重設分享連結
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Transition>
     </script>

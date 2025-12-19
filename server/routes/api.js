@@ -638,6 +638,62 @@ router.post('/notes/:id/share', async (req, res) => {
     }
 });
 
+// Reset share link for a note (generate new shareId, old link becomes invalid)
+router.delete('/notes/:id/share', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id, {
+            include: [
+                { model: db.Book, attributes: ['id', 'title', 'permission'] }
+            ]
+        });
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Check if user can reset share link (owner or has edit permission)
+        let canShare = false;
+        if (isOwner) {
+            canShare = true;
+        } else if (userPermOverride === 'edit') {
+            canShare = true;
+        } else if (effectivePermission === 'public-edit' || effectivePermission === 'auth-edit') {
+            canShare = true;
+        }
+
+        if (!canShare) {
+            return res.status(403).json({ error: 'Permission denied. Only owner or editors can reset share link.' });
+        }
+
+        // Generate new shareId
+        let shareId = generateShareId();
+        let retry = 0;
+        while (retry < 5) {
+            try {
+                await note.update({ shareId });
+                return res.json({
+                    shareId,
+                    shareUrl: `/s/${shareId}`
+                });
+            } catch (e) {
+                if (e.name === 'SequelizeUniqueConstraintError') {
+                    shareId = generateShareId();
+                    retry++;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        res.status(500).json({ error: 'Failed to generate unique share ID' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get note by share ID (permission check same as note view)
 router.get('/share/:shareId', async (req, res) => {
     try {
