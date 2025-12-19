@@ -67,6 +67,11 @@ app.get('/n/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/note.html'));
 });
 
+// Note share page
+app.get('/s/:shareId', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/note_share.html'));
+});
+
 // All other routes (Home, Books, Trash, Admin, etc.) - use index.html
 // Using regex for catch-all in Express 5
 app.get(/(.*)/, (req, res) => {
@@ -74,9 +79,8 @@ app.get(/(.*)/, (req, res) => {
 });
 
 // Sync DB and start server
-// Using force: false to preserve existing data (columns already exist)
-// Using alter: true to add new columns (change back to force: false after columns are added)
-db.sequelize.sync({ force: false }).then(() => {
+// Using alter: true to add new shareId column
+db.sequelize.sync({ alter: true }).then(() => {
     server.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
     });

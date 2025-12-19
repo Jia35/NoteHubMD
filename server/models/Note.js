@@ -52,6 +52,11 @@ module.exports = (sequelize, DataTypes) => {
         commentsDisabled: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
+        },
+        shareId: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            unique: true
         }
     }, {
         paranoid: true

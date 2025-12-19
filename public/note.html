@@ -983,6 +983,13 @@
                             <i class="fa-solid fa-cog text-xs"></i>
                             <span>筆記設定</span>
                         </button>
+                        <!-- Share Button -->
+                        <button v-if="canEdit || isOwner" @click="shareNote" 
+                                class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm text-white transition cursor-pointer"
+                                title="分享筆記">
+                            <i class="fa-solid fa-share-alt text-xs"></i>
+                            <span>分享</span>
+                        </button>
                     </div>
                 </div>
                 

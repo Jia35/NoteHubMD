@@ -5,7 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const db = require('../models');
 const config = require('../config');
-const { generateId } = require('../utils/idGenerator');
+const { generateId, generateShareId } = require('../utils/idGenerator');
 
 // --- App Info ---
 router.get('/version', (req, res) => {
@@ -567,6 +567,138 @@ router.get('/notes', async (req, res) => {
 
         // Filter out null entries (items user cannot access)
         res.json(notesWithPermissions.filter(n => n !== null));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Note Share ---
+
+// Generate share link for a note (owner or editor only)
+router.post('/notes/:id/share', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id, {
+            include: [
+                { model: db.Book, attributes: ['id', 'title', 'permission'] }
+            ]
+        });
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Check if user can share (owner or has edit permission)
+        let canShare = false;
+        if (isOwner) {
+            canShare = true;
+        } else if (userPermOverride === 'edit') {
+            canShare = true;
+        } else if (effectivePermission === 'public-edit' || effectivePermission === 'auth-edit') {
+            canShare = true;
+        }
+
+        if (!canShare) {
+            return res.status(403).json({ error: 'Permission denied. Only owner or editors can share.' });
+        }
+
+        // If shareId already exists, return it
+        if (note.shareId) {
+            return res.json({
+                shareId: note.shareId,
+                shareUrl: `/s/${note.shareId}`
+            });
+        }
+
+        // Generate new shareId with retry logic
+        let shareId = generateShareId();
+        let retry = 0;
+        while (retry < 5) {
+            try {
+                await note.update({ shareId });
+                return res.json({
+                    shareId,
+                    shareUrl: `/s/${shareId}`
+                });
+            } catch (e) {
+                if (e.name === 'SequelizeUniqueConstraintError') {
+                    shareId = generateShareId();
+                    retry++;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        res.status(500).json({ error: 'Failed to generate unique share ID' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get note by share ID (permission check same as note view)
+router.get('/share/:shareId', async (req, res) => {
+    try {
+        const note = await db.Note.findOne({
+            where: { shareId: req.params.shareId },
+            include: [
+                {
+                    model: db.Book,
+                    attributes: ['id', 'title', 'permission'],
+                    include: [
+                        { model: db.Note, attributes: ['id', 'title', 'order'], order: [['order', 'ASC']] }
+                    ]
+                },
+                { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
+                { model: db.User, as: 'lastEditor', attributes: ['id', 'username', 'name', 'avatar'] },
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username', 'name', 'avatar'] }
+            ]
+        });
+        if (!note) return res.status(404).json({ error: 'Share link not found' });
+
+        const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+
+        // Resolve effective permission (handle 'inherit' from book)
+        const effectivePermission = await resolveNotePermission(note);
+
+        // Check user-specific permission override
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Permission check (same as GET /notes/:id)
+        if (effectivePermission === 'private') {
+            if (!isOwner && !userPermOverride) {
+                if (!userId) {
+                    return res.status(401).json({ error: 'Login required' });
+                }
+                return res.status(403).json({ error: 'Access denied' });
+            }
+        } else if (effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') {
+            if (!userId) {
+                return res.status(401).json({ error: 'Login required' });
+            }
+        }
+
+        // Determine if user can edit
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (userPermOverride === 'edit') {
+            canEdit = true;
+        } else if (effectivePermission === 'public-edit') {
+            canEdit = true;
+        } else if (effectivePermission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        res.json({
+            ...note.toJSON(),
+            isOwner,
+            canEdit,
+            effectivePermission
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

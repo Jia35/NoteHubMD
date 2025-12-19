@@ -403,6 +403,27 @@
                 }
             };
 
+            // Share note - generate share link and navigate to share page
+            const shareNote = async () => {
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/share`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to generate share link');
+                    }
+
+                    const result = await response.json();
+                    // Navigate to share page
+                    window.location.href = result.shareUrl;
+                } catch (e) {
+                    globalModal.showAlert('分享失敗：' + e.message);
+                }
+            };
+
             const createNewNote = async () => {
                 try {
                     const note = await api.createNote();
@@ -1753,6 +1774,7 @@
                 noteCommentsEnabled,
                 noteIsPublic,
                 saveNoteSettings,
+                shareNote,
                 noteInfoItem
             };
         }
