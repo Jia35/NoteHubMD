@@ -684,10 +684,10 @@
             <div @click="showSidebar = true" 
                  class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-800 transition-colors"
                  title="展開選單">
-                <!-- LOGO at top -->
-                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white">
+                <!-- LOGO at top - Click to go Home -->
+                <a href="/" @click.stop class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white hover:bg-blue-700 transition" title="">
                     N
-                </div>
+                </a>
                 
                 <!-- Spacer -->
                 <div class="flex-1"></div>
@@ -875,14 +875,12 @@
                 
                 <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-2">
-                        <a href="/" class="hover:text-blue-400 transition font-medium">
+                        <!-- <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
-                        </a>
-
+                        </a> -->
                         <template v-if="book">
-                            <span class="text-gray-600">/</span>
                             <div class="relative group">
                                 <router-link :to="'/b/' + book.id" class="hover:text-blue-400 transition">
                                     <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
@@ -913,8 +911,8 @@
                                     </div>
                                 </div>
                             </div>
+                            <span class="text-gray-600">/</span>
                         </template>
-                        <span class="text-gray-600">/</span>
                         <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
                         <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
                         <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
