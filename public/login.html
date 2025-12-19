@@ -103,27 +103,34 @@
         <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-bg">
             <div class="bg-white dark:bg-dark-surface p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200 dark:border-gray-700">
                 <h2 class="text-xl font-bold mb-2 text-center text-gray-800 dark:text-white">NoteHubMD</h2>
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">{{ isRegister ? 'Register' : 'Login' }}</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
+                    {{ ldapEnabled ? 'AD 登入' : (isRegister ? 'Register' : 'Login') }}
+                </h2>
                 
                 <form @submit.prevent="handleSubmit">
                     <div class="mb-4">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Username</label>
+                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                            {{ ldapEnabled ? 'AD 帳號' : 'Username' }}
+                        </label>
                         <input v-model="username" ref="usernameInput" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
                     </div>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Password</label>
+                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                            {{ ldapEnabled ? 'AD 密碼' : 'Password' }}
+                        </label>
                         <input v-model="password" type="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600" required>
                     </div>
 
                     <div v-if="error" class="mb-4 text-red-500 text-sm text-center">{{ error }}</div>
 
                     <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-                        {{ isRegister ? '註冊' : '登入' }}
+                        {{ ldapEnabled ? '登入' : (isRegister ? '註冊' : '登入') }}
                     </button>
                 </form>
 
-                <div class="mt-4 text-center">
+                <!-- Hide register link in LDAP mode -->
+                <div v-if="!ldapEnabled" class="mt-4 text-center">
                     <button @click="toggleMode" class="text-blue-600 hover:text-blue-800 text-sm">
                         {{ isRegister ? '已經有帳號？ Login' : '註冊新帳號？ Register' }}
                     </button>

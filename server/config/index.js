@@ -63,6 +63,14 @@ const config = {
     },
     api: {
         masterKey: getEnv('API_MASTER_KEY', '')
+    },
+    ldap: {
+        enabled: getEnv('LDAP_ENABLED', false),
+        url: getEnv('LDAP_URL', ''),
+        bindDn: getEnv('LDAP_BIND_DN', ''),
+        bindPassword: getEnv('LDAP_BIND_PASSWORD', ''),
+        searchBase: getEnv('LDAP_SEARCH_BASE', ''),
+        searchFilter: getEnv('LDAP_SEARCH_FILTER', '(sAMAccountName={{username}})')
     }
 };
 

@@ -2,9 +2,127 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../models');
+const config = require('../config');
+
+// LDAP client (lazy loaded)
+let ldap = null;
+if (config.ldap.enabled) {
+    ldap = require('ldapjs');
+}
+
+/**
+ * Authenticate user via LDAP
+ * @param {string} username 
+ * @param {string} password 
+ * @returns {Promise<{success: boolean, error?: string, displayName?: string}>}
+ */
+async function ldapAuthenticate(username, password) {
+    return new Promise((resolve) => {
+        const client = ldap.createClient({
+            url: config.ldap.url,
+            connectTimeout: 5000,
+            timeout: 5000
+        });
+
+        client.on('error', (err) => {
+            console.error('[LDAP] Client error:', err.message);
+            resolve({ success: false, error: 'LDAP 連線失敗' });
+        });
+
+        // First, bind with admin credentials to search for user
+        client.bind(config.ldap.bindDn, config.ldap.bindPassword, (bindErr) => {
+            if (bindErr) {
+                console.error('[LDAP] Admin bind failed:', bindErr.message);
+                client.destroy();
+                return resolve({ success: false, error: 'LDAP 認證服務錯誤' });
+            }
+
+            // Search for user DN
+            const searchFilter = config.ldap.searchFilter.replace('{{username}}', username);
+            const searchOptions = {
+                filter: searchFilter,
+                scope: 'sub',
+                attributes: ['dn', 'displayName', 'cn', 'sAMAccountName']
+            };
+
+            client.search(config.ldap.searchBase, searchOptions, (searchErr, searchRes) => {
+                if (searchErr) {
+                    console.error('[LDAP] Search error:', searchErr.message);
+                    client.destroy();
+                    return resolve({ success: false, error: 'LDAP 搜尋失敗' });
+                }
+
+                let userDn = null;
+                let displayName = null;
+
+                searchRes.on('searchEntry', (entry) => {
+                    userDn = entry.dn.toString();
+                    // Try to get display name from various attributes
+                    const attrs = entry.pojo?.attributes || [];
+                    for (const attr of attrs) {
+                        if (attr.type === 'displayName' && attr.values?.[0]) {
+                            displayName = attr.values[0];
+                            break;
+                        }
+                        if (attr.type === 'cn' && attr.values?.[0] && !displayName) {
+                            displayName = attr.values[0];
+                        }
+                    }
+                });
+
+                searchRes.on('error', (err) => {
+                    console.error('[LDAP] Search result error:', err.message);
+                    client.destroy();
+                    resolve({ success: false, error: 'LDAP 搜尋錯誤' });
+                });
+
+                searchRes.on('end', () => {
+                    if (!userDn) {
+                        client.destroy();
+                        return resolve({ success: false, error: '帳號或密碼錯誤' });
+                    }
+
+                    // Now bind as the user to verify password
+                    const userClient = ldap.createClient({
+                        url: config.ldap.url,
+                        connectTimeout: 5000,
+                        timeout: 5000
+                    });
+
+                    userClient.on('error', () => {
+                        resolve({ success: false, error: '帳號或密碼錯誤' });
+                    });
+
+                    userClient.bind(userDn, password, (userBindErr) => {
+                        userClient.destroy();
+                        client.destroy();
+
+                        if (userBindErr) {
+                            return resolve({ success: false, error: '帳號或密碼錯誤' });
+                        }
+
+                        resolve({ success: true, displayName });
+                    });
+                });
+            });
+        });
+    });
+}
+
+// Get auth configuration (for frontend)
+router.get('/config', (req, res) => {
+    res.json({
+        ldapEnabled: config.ldap.enabled
+    });
+});
 
 // Register
 router.post('/register', async (req, res) => {
+    // Disable registration in LDAP mode
+    if (config.ldap.enabled) {
+        return res.status(403).json({ error: 'LDAP 模式下不開放註冊' });
+    }
+
     try {
         const { username, password } = req.body;
         if (!username || !password) {
@@ -39,18 +157,57 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await db.User.findOne({ where: { username } });
 
-        if (!user || !await bcrypt.compare(password, user.password)) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+        if (config.ldap.enabled) {
+            // LDAP authentication
+            const ldapResult = await ldapAuthenticate(username, password);
+
+            if (!ldapResult.success) {
+                return res.status(401).json({ error: ldapResult.error });
+            }
+
+            // Find or create local user
+            let user = await db.User.findOne({ where: { username } });
+
+            if (!user) {
+                // First user becomes super-admin
+                const userCount = await db.User.count();
+                const role = userCount === 0 ? 'super-admin' : 'user';
+
+                user = await db.User.create({
+                    username,
+                    password: '', // No password stored for LDAP users
+                    name: ldapResult.displayName || username,
+                    role,
+                    lastActiveAt: new Date()
+                });
+            } else {
+                // Update last active time and optionally name
+                const updateData = { lastActiveAt: new Date() };
+                if (ldapResult.displayName && !user.name) {
+                    updateData.name = ldapResult.displayName;
+                }
+                await user.update(updateData);
+            }
+
+            req.session.userId = user.id;
+            res.json({ id: user.id, username: user.username, role: user.role });
+        } else {
+            // Local authentication
+            const user = await db.User.findOne({ where: { username } });
+
+            if (!user || !await bcrypt.compare(password, user.password)) {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+
+            // Update last active time
+            await user.update({ lastActiveAt: new Date() });
+
+            req.session.userId = user.id;
+            res.json({ id: user.id, username: user.username, role: user.role });
         }
-
-        // Update last active time
-        await user.update({ lastActiveAt: new Date() });
-
-        req.session.userId = user.id;
-        res.json({ id: user.id, username: user.username, role: user.role });
     } catch (e) {
+        console.error('[Login] Error:', e);
         res.status(500).json({ error: e.message });
     }
 });
@@ -224,4 +381,3 @@ router.delete('/pins/:type/:id', async (req, res) => {
 });
 
 module.exports = router;
-

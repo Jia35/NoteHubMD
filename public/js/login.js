@@ -1,6 +1,6 @@
 /**
  * NoteHubMD Login Page Script
- * Handles login/register functionality
+ * Handles login/register functionality with LDAP support
  */
 
 // Use IIFE to avoid polluting global scope
@@ -20,12 +20,30 @@
             const password = ref('');
             const error = ref('');
             const usernameInput = ref(null);
+            const ldapEnabled = ref(false);
+            const configLoaded = ref(false);
+
+            // Load auth config
+            const loadAuthConfig = async () => {
+                try {
+                    const response = await fetch('/api/auth/config');
+                    if (response.ok) {
+                        const config = await response.json();
+                        ldapEnabled.value = config.ldapEnabled || false;
+                    }
+                } catch (e) {
+                    console.error('Failed to load auth config:', e);
+                }
+                configLoaded.value = true;
+            };
 
             onMounted(() => {
+                loadAuthConfig();
                 usernameInput.value?.focus();
             });
 
             const toggleMode = () => {
+                if (ldapEnabled.value) return; // Don't allow toggle in LDAP mode
                 isRegister.value = !isRegister.value;
                 error.value = '';
                 nextTick(() => {
@@ -49,7 +67,23 @@
                 }
             };
 
-            return { isRegister, username, password, error, toggleMode, handleSubmit, usernameInput };
+            // Computed labels
+            const usernameLabel = () => ldapEnabled.value ? 'AD 帳號' : 'Username';
+            const passwordLabel = () => ldapEnabled.value ? 'AD 密碼' : 'Password';
+
+            return {
+                isRegister,
+                username,
+                password,
+                error,
+                toggleMode,
+                handleSubmit,
+                usernameInput,
+                ldapEnabled,
+                configLoaded,
+                usernameLabel,
+                passwordLabel
+            };
         }
     };
 
