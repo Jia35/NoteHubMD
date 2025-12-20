@@ -36,6 +36,11 @@
     <!-- Mermaid -->
     <script src="/vendors/js/mermaid.min.js"></script>
 
+    <!-- Reveal.js -->
+    <link rel="stylesheet" href="/vendors/css/reveal/reveal.css">
+    <link rel="stylesheet" href="/vendors/css/reveal/theme/black.css" id="reveal-theme">
+    <script src="/vendors/js/reveal/reveal.js"></script>
+
     <link rel="stylesheet" href="/css/style.css">
 
     <!-- Apply theme immediately to prevent flash -->
@@ -81,7 +86,7 @@
             <!-- Content -->
             <template v-else>
                 <!-- Header -->
-                <div class="bg-gray-900 text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
+                <div v-show="!showPresentation" class="bg-gray-900 text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-3">
                         <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,6 +99,12 @@
                         </span>
                     </div>
                     <div class="flex items-center space-x-3">
+                        <!-- Presentation Mode Button -->
+                        <button @click="togglePresentation" 
+                                class="px-2 py-1 text-xs border border-gray-500 text-gray-400 rounded hover:bg-gray-700 hover:text-white transition"
+                                title="簡報模式">
+                            <i class="fa-solid fa-display mr-1"></i>簡報
+                        </button>
                         <!-- Edit Button (Outline Style, Smaller) -->
                         <a v-if="canEdit" :href="'/n/' + noteId" 
                            class="px-2 py-1 text-xs border border-blue-500 text-blue-400 rounded hover:bg-blue-500 hover:text-white transition">
@@ -103,7 +114,7 @@
                 </div>
 
                 <!-- Main Content with TOC -->
-                <div class="flex-1 flex overflow-hidden">
+                <div v-show="!showPresentation" class="flex-1 flex overflow-hidden">
                     <!-- Preview Content -->
                     <div class="flex-1 overflow-auto" ref="previewContainer" @scroll="handlePreviewScroll">
                         <!-- Preview Info Bar -->
@@ -165,8 +176,14 @@
                             </a>
                         </nav>
                     </div>
-                    </div>
+                </div>
 
+                <!-- Reveal.js Container -->
+                <div v-show="showPresentation" class="reveal absolute inset-0 z-50 bg-black">
+                    <div class="slides"></div>
+                    <button @click="togglePresentation" class="fixed top-4 right-4 z-[60] text-white/50 hover:text-white text-3xl transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </template>
 

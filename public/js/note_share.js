@@ -308,13 +308,92 @@
                 if (newId) loadNote();
             }, { immediate: true });
 
-            // Setup event listeners
+            // Presentation Mode
+            const showPresentation = ref(false);
+            let revealInstance = null;
+
+            const togglePresentation = async () => {
+                if (showPresentation.value) {
+                    // Close presentation
+                    showPresentation.value = false;
+                    if (revealInstance) {
+                        try {
+                            revealInstance.destroy();
+                            revealInstance = null;
+                        } catch (e) {
+                            console.warn('Failed to destroy Reveal instance', e);
+                        }
+                    }
+                    // Restore body overflow
+                    document.body.style.overflow = '';
+
+                    // Force re-render of normal view if needed (usually v-show handles it)
+                } else {
+                    // Open presentation
+                    showPresentation.value = true;
+                    // Hide overflow to prevent double scrollbars
+                    document.body.style.overflow = 'hidden';
+
+                    await nextTick();
+
+                    const slidesContainer = document.querySelector('.reveal .slides');
+                    if (!slidesContainer) return;
+
+                    // Split content into slides
+                    // Use regex to split by horizontal rule ---
+                    // Note: match newlines around it to be safe
+                    const sections = content.value.split(/\n---\n/);
+
+                    let slidesHtml = '';
+                    sections.forEach(section => {
+                        // Render markdown for each section
+                        const rendered = md.render(section);
+                        // Wrap in section tag
+                        slidesHtml += `<section>${rendered}</section>`;
+                    });
+
+                    slidesContainer.innerHTML = slidesHtml;
+
+                    // Initialize Reveal
+                    if (window.Reveal) {
+                        // If instance exists (shouldn't happen due to logic above), destroy it first
+                        if (revealInstance) revealInstance.destroy();
+
+                        revealInstance = new window.Reveal(document.querySelector('.reveal'), {
+                            embedded: true, // Use embedded mode since we are in a container (though container is full screen)
+                            hash: false,
+                            history: false,
+                            plugins: [], // we rendered markdown manually
+                            slideNumber: true,
+                            theme: 'black' // default
+                        });
+
+                        revealInstance.initialize().then(() => {
+                            // Fix Mermaid in slides if any
+                            if (window.mermaid) {
+                                window.mermaid.init(undefined, document.querySelectorAll('.reveal .mermaid'));
+                            }
+                        });
+                    }
+                }
+            };
+
+            // Handle ESC to close presentation
+            const handleEsc = (e) => {
+                if (e.key === 'Escape' && showPresentation.value) {
+                    togglePresentation();
+                }
+            };
+
             onMounted(() => {
                 document.addEventListener('click', handleImageClick);
+                document.addEventListener('keyup', handleEsc);
             });
 
             onUnmounted(() => {
                 document.removeEventListener('click', handleImageClick);
+                document.removeEventListener('keyup', handleEsc);
+                if (revealInstance) revealInstance.destroy();
             });
 
             return {
@@ -334,7 +413,10 @@
                 previewContent,
                 scrollToHeading,
                 handlePreviewScroll,
-                closeLightbox
+                closeLightbox,
+                // Presentation
+                showPresentation,
+                togglePresentation
             };
         }
     };

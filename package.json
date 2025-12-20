@@ -29,6 +29,7 @@
     "nanoid": "^5.1.6",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
+    "reveal.js": "^5.2.1",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1"
   },
