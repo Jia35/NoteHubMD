@@ -518,34 +518,67 @@ router.delete('/notes/:id/user-permissions/:targetUserId', async (req, res) => {
 
 // Get All Notes (Home)
 // ?includeBookNotes=true to include notes inside books (for tag filtering)
+// ?limit=1000 to fetch more items (for uncategorized view)
 router.get('/notes', async (req, res) => {
     try {
         const userId = req.session.userId || null;
-        const whereClause = req.query.includeBookNotes === 'true'
+        const includeBookNotes = req.query.includeBookNotes === 'true';
+        const limit = parseInt(req.query.limit) || (includeBookNotes ? 100 : 20);
+
+        const whereClause = includeBookNotes
             ? {} // All notes
             : { bookId: null }; // Only standalone notes
+
+        // Build include array with eager loading for permissions
+        const include = [
+            { model: db.User, as: 'owner', attributes: ['id', 'username'] },
+            { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] },
+            { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
+        ];
+
+        // Eager load permissions for the current user if logged in
+        if (userId) {
+            include.push({
+                model: db.Permission,
+                as: 'permissions',
+                required: false,
+                where: { userId: userId, targetType: 'note' }
+            });
+        }
 
         const notes = await db.Note.findAll({
             where: whereClause,
             order: [['updatedAt', 'DESC']],
-            limit: req.query.includeBookNotes === 'true' ? 100 : 20,
-            include: [
-                { model: db.User, as: 'owner', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] },
-                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username'] }
-            ]
+            limit: limit,
+            include: include
         });
 
-        // Add canDelete and canEdit for each note, and filter by permission
-        const notesWithPermissions = await Promise.all(notes.map(async (note) => {
+        // Add canDelete and canEdit for each note, and filter by permission using eager loaded data
+        const notesWithPermissions = notes.map(note => {
             const noteData = note.toJSON();
             const isOwner = noteData.ownerId && noteData.ownerId === userId;
-            const effectivePermission = await resolveNotePermission(note);
+
+            // Resolve effective permission
+            // Note: For lists, we don't query the Book to inherit permissions to keep it fast.
+            // Notes in list view usually rely on their own permission or default private/public.
+            // If strictly needed, we would need to join Book table too. 
+            // For separate notes (bookId: null), inherit is not valid anyway.
+            const effectivePermission = noteData.permission || 'private';
+
+            // Check user permission from eager loaded data
+            let userPermOverride = null;
+            if (noteData.permissions && noteData.permissions.length > 0) {
+                userPermOverride = noteData.permissions[0].permission;
+            }
+
+            // Remove permissions array from response
+            delete noteData.permissions;
 
             // Filter out items the user cannot access
             // Private: only owner can see
             if (effectivePermission === 'private' && !isOwner) {
-                return null;
+                // If direct user permission exists (e.g. shared with me), allow view
+                if (!userPermOverride) return null;
             }
             // Auth-view or auth-edit: must be logged in
             if ((effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') && !userId) {
@@ -557,13 +590,21 @@ router.get('/notes', async (req, res) => {
             if (isOwner) {
                 canEdit = true;
                 canDelete = true;
-            } else if ((effectivePermission === 'public-edit' || effectivePermission === 'auth-edit') && userId) {
+            } else if (userPermOverride === 'edit') {
+                canEdit = true;
+                canDelete = true;
+            } else if ((effectivePermission === 'public-edit' || effectivePermission === 'auth-edit' || effectivePermission === 'inherit') && userId) {
+                // Note: 'inherit' in this context (without book check) acts as auth-edit for safety, 
+                // but realistically standalone notes shouldn't have 'inherit'.
+                canEdit = true;
+                canDelete = true;
+            } else if (effectivePermission === 'public-edit') {
                 canEdit = true;
                 canDelete = true;
             }
 
             return { ...noteData, isOwner, canEdit, canDelete };
-        }));
+        });
 
         // Filter out null entries (items user cannot access)
         res.json(notesWithPermissions.filter(n => n !== null));

@@ -61,6 +61,14 @@ db.Note.belongsTo(db.User, { foreignKey: 'deletedById', as: 'deletedBy' });
 db.Permission.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 db.User.hasMany(db.Permission, { foreignKey: 'userId' });
 
+// Polymorphic association for Note permissions
+db.Note.hasMany(db.Permission, {
+    foreignKey: 'targetId',
+    constraints: false,
+    scope: { targetType: 'note' },
+    as: 'permissions'
+});
+
 // Comment associations
 db.Note.hasMany(db.Comment, { foreignKey: 'noteId' });
 db.Comment.belongsTo(db.Note, { foreignKey: 'noteId' });

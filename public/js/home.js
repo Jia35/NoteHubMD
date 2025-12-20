@@ -1632,26 +1632,58 @@
             const sortedNotes = computed(() => sortItems(filteredNotes.value));
 
             // Available books for move modal
-            const availableBooks = computed(() => {
-                return books.value.filter(b => b.isOwner || b.canEdit);
-            });
+            const availableBooks = ref([]);
+
+            // ========== Move Note Modal ==========
+            const showMoveNoteModal = ref(false);
+            const moveNoteTarget = ref(null);
+            const selectedBookId = ref('');
 
             const loadNotes = async () => {
                 loading.value = true;
                 try {
-                    const [allNotes, allBooks] = await Promise.all([
-                        api.getNotes(),
-                        api.getBooks()
-                    ]);
-                    notes.value = allNotes.filter(note => !note.bookId);
-                    books.value = allBooks;
+                    // Fetch all notes (limit 1000 to be safe for uncategorized view)
+                    // We don't filter by bookId=null on server yet because we need to support Move Note which might need book info?
+                    // Actually, for Uncategorized view, we only need notes where bookId is null.
+                    // But current API implementation for /notes filters purely by bookId unless includeBookNotes=true.
+                    // So calling getNotes() without includeBookNotes defaults to bookId: null (standalone notes).
+                    // We just increase the limit to ensure we get all of them.
+                    const fetchedNotes = await api.getNotes({ limit: 1000 });
+                    notes.value = fetchedNotes;
+
+                    // Load pinned items
+                    await loadPinnedItems();
+
                 } catch (e) {
-                    console.error('[Uncategorized] Failed to load notes:', e);
+                    console.error('Failed to load notes', e);
+                    globalModal.showAlert('無法載入筆記');
                 } finally {
                     loading.value = false;
                 }
             };
 
+            // Load books only when needed (for Move Note modal)
+            const loadBooksForMove = async () => {
+                if (availableBooks.value.length > 0) return; // Already loaded
+                try {
+                    const books = await api.getBooks();
+                    availableBooks.value = books;
+                } catch (e) {
+                    console.error('Failed to load books', e);
+                }
+            };
+
+            // Call this when opening move modal
+            watch(showMoveNoteModal, (newVal) => {
+                if (newVal) {
+                    loadBooksForMove();
+                }
+            });
+
+            // Also call when opening info modal (as it might have move option or just for consistent data if needed later)
+            // Actually, independent Move Modal handles books now. Info modal might not need books unless we add move there back.
+            // But we kept handleMoveNoteFromInfo just in case, so maybe safe to load.
+            // For now let's just load when needed.
             const deleteNote = async (noteId) => {
                 const confirmed = await globalModal.showConfirm('確定要將此筆記移至垃圾桶？');
                 if (!confirmed) return;
@@ -1818,10 +1850,7 @@
                 }
             };
 
-            // ========== Move Note Modal ==========
-            const showMoveNoteModal = ref(false);
-            const moveNoteTarget = ref(null);
-            const selectedBookId = ref('');
+            // [Moved to top to prevent ReferenceError]
 
             const openMoveNoteModal = (note) => {
                 moveNoteTarget.value = note;
@@ -1862,7 +1891,6 @@
 
             onMounted(() => {
                 loadNotes();
-                loadPinnedItems();
                 window.addEventListener('viewmode-changed', handleViewModeChanged);
                 document.addEventListener('click', handleClickOutside);
             });

@@ -242,8 +242,9 @@ const api = {
         });
         return res.json();
     },
-    async getNotes() {
-        const res = await fetch('/api/notes');
+    async getNotes(options = {}) {
+        const params = new URLSearchParams(options);
+        const res = await fetch('/api/notes?' + params.toString());
         return res.json();
     },
     async getAllNotesForTags() {
