@@ -1098,7 +1098,7 @@
                             </div>
                             <!-- Preview Content -->
                             <div class="markdown-body dark:text-gray-300"
-                                :class="{'flex justify-center': !showEditor}">
+                                :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}">
                                 <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent"></div>
                             </div>
 
@@ -1308,8 +1308,7 @@
                         
                         <!-- TOC Sidebar (only in view mode) - positioned relative to content -->
                         <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
-                            class="fixed w-56 overflow-y-auto p-3 hidden xl:block"
-                            style="top: 120px; margin-left: calc(50% + 420px); height: calc(100vh - 150px);">
+                            class="fixed w-56 overflow-y-auto p-3 hidden lg:block note-toc">
                             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">目錄</div>
                             <nav class="space-y-1">
                                 <a v-for="item in toc" :key="item.id" 
