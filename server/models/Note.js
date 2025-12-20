@@ -57,6 +57,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(7),
             allowNull: true,
             unique: true
+        },
+        shareAlias: {
+            type: DataTypes.STRING(64),
+            allowNull: true,
+            unique: true
         }
     }, {
         paranoid: true

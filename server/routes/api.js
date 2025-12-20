@@ -694,11 +694,92 @@ router.delete('/notes/:id/share', async (req, res) => {
     }
 });
 
-// Get note by share ID (permission check same as note view)
-router.get('/share/:shareId', async (req, res) => {
+// Set or clear share alias for a note (owner or editor only)
+router.put('/notes/:id/alias', async (req, res) => {
     try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Check if user can set alias (owner or has edit permission)
+        let canSetAlias = false;
+        if (isOwner) {
+            canSetAlias = true;
+        } else if (userPermOverride === 'edit') {
+            canSetAlias = true;
+        } else if (effectivePermission === 'public-edit' || effectivePermission === 'auth-edit') {
+            canSetAlias = true;
+        }
+
+        if (!canSetAlias) {
+            return res.status(403).json({ error: 'Permission denied. Only owner or editors can set alias.' });
+        }
+
+        const { alias } = req.body;
+
+        // If alias is null/empty, clear the alias
+        if (!alias || alias.trim() === '') {
+            await note.update({ shareAlias: null });
+            return res.json({ success: true, shareAlias: null });
+        }
+
+        const trimmedAlias = alias.trim().toLowerCase();
+
+        // Validate alias format: alphanumeric, hyphens, underscores, 1-64 chars
+        const aliasRegex = /^[a-z0-9][a-z0-9_-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
+        if (!aliasRegex.test(trimmedAlias)) {
+            return res.status(400).json({
+                error: '別名格式不正確。只能使用小寫英文、數字、連字號(-)和底線(_)，長度1-64字元，開頭結尾需為英數字。'
+            });
+        }
+
+        // Check uniqueness: must not conflict with any existing shareId OR shareAlias
+        const conflictNote = await db.Note.findOne({
+            where: {
+                [db.Sequelize.Op.or]: [
+                    { shareId: trimmedAlias },
+                    { shareAlias: trimmedAlias }
+                ],
+                id: { [db.Sequelize.Op.ne]: note.id } // Exclude current note
+            }
+        });
+
+        if (conflictNote) {
+            return res.status(409).json({ error: '此別名已被其他筆記使用，請選擇其他名稱。' });
+        }
+
+        await note.update({ shareAlias: trimmedAlias });
+        res.json({
+            success: true,
+            shareAlias: trimmedAlias,
+            aliasUrl: `/s/${trimmedAlias}`
+        });
+    } catch (e) {
+        if (e.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ error: '此別名已被其他筆記使用，請選擇其他名稱。' });
+        }
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get note by share ID or alias (permission check same as note view)
+router.get('/share/:shareIdOrAlias', async (req, res) => {
+    try {
+        const param = req.params.shareIdOrAlias;
+        // Find by shareId OR shareAlias using Sequelize Op.or
         const note = await db.Note.findOne({
-            where: { shareId: req.params.shareId },
+            where: {
+                [db.Sequelize.Op.or]: [
+                    { shareId: param },
+                    { shareAlias: param }
+                ]
+            },
             include: [
                 {
                     model: db.Book,

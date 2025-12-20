@@ -1383,6 +1383,44 @@
                         </div>
                     </div>
                     
+                    <!-- Alias Section -->
+                    <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">自訂別名</label>
+                            <button @click="toggleAlias" 
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
+                                :class="aliasEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'">
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                    :class="aliasEnabled ? 'translate-x-6' : 'translate-x-1'"></span>
+                            </button>
+                        </div>
+                        
+                        <div v-if="aliasEnabled" class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">/s/</span>
+                                <input type="text" v-model="aliasInput" 
+                                    @input="aliasError = ''"
+                                    placeholder="my-tutorial"
+                                    class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    :class="{'border-red-500 dark:border-red-500': aliasError}">
+                                <button @click="saveAlias" 
+                                    :disabled="aliasSaving"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm cursor-pointer disabled:opacity-50">
+                                    <i v-if="aliasSaving" class="fa-solid fa-spinner fa-spin"></i>
+                                    <span v-else>儲存</span>
+                                </button>
+                            </div>
+                            <p v-if="aliasError" class="text-xs text-red-500">{{ aliasError }}</p>
+                            <p v-if="currentAlias && !aliasError" class="text-xs text-green-600 dark:text-green-400">
+                                <i class="fa-solid fa-check mr-1"></i>
+                                別名網址可用: /s/{{ currentAlias }}
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                只能使用小寫英文、數字、連字號(-)和底線(_)
+                            </p>
+                        </div>
+                    </div>
+                    
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <div class="flex flex-col gap-2">
                             <p class="text-xs text-amber-600 dark:text-amber-500">

@@ -425,6 +425,9 @@
                     shareUrl.value = window.location.origin + result.shareUrl;
                     shareCopied.value = false;
                     showShareModal.value = true;
+
+                    // Load alias status when modal opens
+                    loadNoteAlias();
                 } catch (e) {
                     globalModal.showAlert('分享失敗：' + e.message);
                 }
@@ -470,6 +473,95 @@
                     globalModal.showAlert('分享連結已重設！', { type: 'success' });
                 } catch (e) {
                     globalModal.showAlert('重設失敗：' + e.message);
+                }
+            };
+
+
+            // Alias state for share modal
+            const aliasEnabled = ref(false);
+            const aliasInput = ref('');
+            const currentAlias = ref('');
+            const aliasError = ref('');
+            const aliasSaving = ref(false);
+
+            // Toggle alias on/off
+            const toggleAlias = async () => {
+                if (aliasEnabled.value) {
+                    // Turning off - clear the alias
+                    aliasSaving.value = true;
+                    try {
+                        const response = await fetch(`/api/notes/${noteId.value}/alias`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ alias: '' })
+                        });
+                        if (!response.ok) {
+                            const data = await response.json();
+                            throw new Error(data.error);
+                        }
+                        aliasEnabled.value = false;
+                        aliasInput.value = '';
+                        currentAlias.value = '';
+                        aliasError.value = '';
+                    } catch (e) {
+                        globalModal.showAlert('清除別名失敗：' + e.message);
+                    } finally {
+                        aliasSaving.value = false;
+                    }
+                } else {
+                    // Turning on - just show the input
+                    aliasEnabled.value = true;
+                }
+            };
+
+            // Save alias
+            const saveAlias = async () => {
+                if (!aliasInput.value.trim()) {
+                    aliasError.value = '請輸入別名';
+                    return;
+                }
+
+                aliasSaving.value = true;
+                aliasError.value = '';
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/alias`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ alias: aliasInput.value.trim() })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error);
+                    }
+
+                    currentAlias.value = data.shareAlias;
+                    aliasError.value = '';
+                } catch (e) {
+                    aliasError.value = e.message;
+                } finally {
+                    aliasSaving.value = false;
+                }
+            };
+
+            // Load alias when opening share modal
+            const loadNoteAlias = async () => {
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}`);
+                    if (response.ok) {
+                        const noteData = await response.json();
+                        if (noteData.shareAlias) {
+                            aliasEnabled.value = true;
+                            aliasInput.value = noteData.shareAlias;
+                            currentAlias.value = noteData.shareAlias;
+                        } else {
+                            aliasEnabled.value = false;
+                            aliasInput.value = '';
+                            currentAlias.value = '';
+                        }
+                    }
+                } catch (e) {
+                    console.error('[Note] Failed to load alias:', e);
                 }
             };
 
@@ -1879,6 +1971,9 @@
                 // Share modal
                 showShareModal, shareUrl, shareCopied,
                 copyShareLink, openSharePage, resetShareLink,
+                // Alias
+                aliasEnabled, aliasInput, currentAlias, aliasError, aliasSaving,
+                toggleAlias, saveAlias,
                 noteInfoItem
             };
         }
