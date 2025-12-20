@@ -1818,18 +1818,38 @@
                 }
             };
 
-            // ========== Move Note ==========
+            // ========== Move Note Modal ==========
+            const showMoveNoteModal = ref(false);
+            const moveNoteTarget = ref(null);
+            const selectedBookId = ref('');
+
             const openMoveNoteModal = (note) => {
-                infoModalItem.value = { ...note };
-                infoModalTab.value = 'info';
-                showInfoModal.value = true;
+                moveNoteTarget.value = note;
+                selectedBookId.value = note.bookId || '';
+                showMoveNoteModal.value = true;
                 openMenuId.value = null;
             };
 
-            const handleMoveNote = async (targetBookId) => {
+            const moveNote = async () => {
+                if (!moveNoteTarget.value) return;
+                try {
+                    const bookId = selectedBookId.value || null;
+                    await api.updateNote(moveNoteTarget.value.id, { bookId });
+                    // Note is being moved to a book, so remove from uncategorized list
+                    if (bookId) {
+                        notes.value = notes.value.filter(n => n.id !== moveNoteTarget.value.id);
+                    }
+                    showMoveNoteModal.value = false;
+                    globalModal.showAlert('移動成功', { type: 'success' });
+                } catch (e) {
+                    globalModal.showAlert('移動失敗: ' + e.message);
+                }
+            };
+
+            // Handle move from info modal
+            const handleMoveNoteFromInfo = async (targetBookId) => {
                 try {
                     await api.updateNote(infoModalItem.value.id, { bookId: targetBookId || null });
-                    // Note is being moved to a book, so remove from uncategorized list
                     if (targetBookId) {
                         notes.value = notes.value.filter(n => n.id !== infoModalItem.value.id);
                     }
@@ -1861,9 +1881,9 @@
                 showInfoModal, infoModalItem, infoModalTab, editablePermission, infoCommentsEnabled,
                 userPermissions, loadingUserPermissions, userSearchQuery, userSearchResults, newUserPermission,
                 openInfoModal, searchUsers, addUserPermission, removeUserPermission, updateUserPermissionLevel,
-                saveInfoChanges,
-                // Move
-                availableBooks, openMoveNoteModal, handleMoveNote
+                saveInfoChanges, handleMoveNoteFromInfo,
+                // Move Note Modal
+                showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote
             };
         }
     };
