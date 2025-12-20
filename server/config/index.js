@@ -50,8 +50,15 @@ const config = {
         secret: getEnv('SESSION_SECRET', 'notehubmd-default-secret-change-in-production')
     },
     database: {
-        dialect: getEnv('DB_DIALECT', 'sqlite'),
+        dialect: getEnv('DB_DIALECT', 'postgres'),
+        // SQLite options
         storage: getEnv('DB_STORAGE', './database/database.sqlite'),
+        // PostgreSQL options
+        host: getEnv('DB_HOST', 'localhost'),
+        port: getEnv('DB_PORT', 5432),
+        username: getEnv('DB_USERNAME', 'postgres'),
+        password: getEnv('DB_PASSWORD', ''),
+        name: getEnv('DB_NAME', 'notehubmd'),
         logging: getEnv('DB_LOGGING', false)
     },
     defaults: {

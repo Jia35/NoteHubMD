@@ -1,11 +1,29 @@
 const config = require('../config');
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize({
+// Build Sequelize options based on dialect
+let sequelizeOptions = {
     dialect: config.database.dialect,
-    storage: config.database.storage,
     logging: config.database.logging
-});
+};
+
+if (config.database.dialect === 'sqlite') {
+    // SQLite configuration
+    sequelizeOptions.storage = config.database.storage;
+} else {
+    // PostgreSQL / MySQL / other SQL databases
+    sequelizeOptions.host = config.database.host;
+    sequelizeOptions.port = config.database.port;
+}
+
+const sequelize = config.database.dialect === 'sqlite'
+    ? new Sequelize(sequelizeOptions)
+    : new Sequelize(
+        config.database.name,
+        config.database.username,
+        config.database.password,
+        sequelizeOptions
+    );
 
 const db = {};
 
