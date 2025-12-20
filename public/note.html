@@ -971,9 +971,9 @@
                         </a> -->
                         <template v-if="book">
                             <div class="relative group">
-                                <router-link :to="'/b/' + book.id" class="hover:text-blue-400 transition">
+                                <a :href="'/b/' + book.id" class="hover:text-blue-400 transition">
                                     <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
-                                </router-link>
+                                </a>
                                 <!-- Book Notes Tooltip -->
                                 <div v-if="book.Notes && book.Notes.length > 0" 
                                      class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
@@ -987,13 +987,13 @@
                                             </div>
                                             <ul class="space-y-1 max-h-64 overflow-y-auto">
                                                 <li v-for="bookNote in book.Notes" :key="bookNote.id">
-                                                    <router-link 
-                                                        :to="'/n/' + bookNote.id"
+                                                    <a 
+                                                        :href="'/n/' + bookNote.id"
                                                         class="flex items-center text-sm py-1.5 px-2 rounded transition"
                                                         :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
                                                         <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
                                                         <span class="truncate">{{ bookNote.title || 'Untitled' }}</span>
-                                                    </router-link>
+                                                    </a>
                                                 </li>
                                             </ul>
                                         </div>
