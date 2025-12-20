@@ -408,7 +408,7 @@
             const shareUrl = ref('');
             const shareCopied = ref(false);
 
-            // Share note - generate share link and show modal
+            // Share note - generate share link and open settings modal with share tab
             const shareNote = async () => {
                 try {
                     const response = await fetch(`/api/notes/${noteId.value}/share`, {
@@ -424,7 +424,10 @@
                     const result = await response.json();
                     shareUrl.value = window.location.origin + result.shareUrl;
                     shareCopied.value = false;
-                    showShareModal.value = true;
+
+                    // Open NoteInfo modal with share tab
+                    noteInfoModalTab.value = 'share';
+                    showNoteInfoModal.value = true;
 
                     // Load alias status when modal opens
                     loadNoteAlias();
