@@ -544,6 +544,22 @@
                 }
             };
 
+            // Copy alias URL to clipboard
+            const aliasCopied = ref(false);
+            const copyAliasUrl = async () => {
+                if (!currentAlias.value) return;
+                try {
+                    const aliasUrl = window.location.origin + '/s/' + currentAlias.value;
+                    await navigator.clipboard.writeText(aliasUrl);
+                    aliasCopied.value = true;
+                    setTimeout(() => {
+                        aliasCopied.value = false;
+                    }, 2000);
+                } catch (e) {
+                    globalModal.showAlert('複製失敗：' + e.message);
+                }
+            };
+
             // Load alias when opening share modal
             const loadNoteAlias = async () => {
                 try {
@@ -1973,7 +1989,7 @@
                 copyShareLink, openSharePage, resetShareLink,
                 // Alias
                 aliasEnabled, aliasInput, currentAlias, aliasError, aliasSaving,
-                toggleAlias, saveAlias,
+                toggleAlias, saveAlias, aliasCopied, copyAliasUrl,
                 noteInfoItem
             };
         }

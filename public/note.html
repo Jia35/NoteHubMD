@@ -1403,6 +1403,11 @@
                                     placeholder="my-tutorial"
                                     class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                     :class="{'border-red-500 dark:border-red-500': aliasError}">
+                                <button v-if="currentAlias" @click="copyAliasUrl" 
+                                    class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm cursor-pointer"
+                                    :title="aliasCopied ? '已複製' : '複製別名網址'">
+                                    <i :class="aliasCopied ? 'fa-solid fa-check text-green-500' : 'fa-regular fa-copy'"></i>
+                                </button>
                                 <button @click="saveAlias" 
                                     :disabled="aliasSaving"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm cursor-pointer disabled:opacity-50">
