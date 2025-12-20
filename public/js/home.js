@@ -1570,6 +1570,7 @@
                 window.location.href = '/n/' + note.id;
             };
             const notes = ref([]);
+            const books = ref([]);
             const loading = ref(true);
 
             // View mode sync with sidebar
@@ -1630,11 +1631,20 @@
             // Computed sorted notes (applies to filtered notes)
             const sortedNotes = computed(() => sortItems(filteredNotes.value));
 
+            // Available books for move modal
+            const availableBooks = computed(() => {
+                return books.value.filter(b => b.isOwner || b.canEdit);
+            });
+
             const loadNotes = async () => {
                 loading.value = true;
                 try {
-                    const allNotes = await api.getNotes();
+                    const [allNotes, allBooks] = await Promise.all([
+                        api.getNotes(),
+                        api.getBooks()
+                    ]);
                     notes.value = allNotes.filter(note => !note.bookId);
+                    books.value = allBooks;
                 } catch (e) {
                     console.error('[Uncategorized] Failed to load notes:', e);
                 } finally {
@@ -1669,8 +1679,170 @@
                 }
             };
 
+            // ========== Pinned Items ==========
+            const pinnedItems = ref([]);
+
+            const loadPinnedItems = async () => {
+                try {
+                    pinnedItems.value = await api.getPinnedItems();
+                } catch (e) {
+                    console.error('Failed to load pinned items:', e);
+                }
+            };
+
+            const isPinned = (type, id) => {
+                return pinnedItems.value.some(p => p.type === type && p.id === id);
+            };
+
+            const togglePin = async (type, id) => {
+                try {
+                    if (isPinned(type, id)) {
+                        await api.removePin(type, id);
+                        pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id));
+                    } else {
+                        await api.addPin(type, id);
+                        await loadPinnedItems();
+                    }
+                    openMenuId.value = null;
+                    window.dispatchEvent(new Event('pins-updated'));
+                } catch (e) {
+                    globalModal.showAlert('操作失敗: ' + e.message);
+                }
+            };
+
+            // ========== Info Modal ==========
+            const showInfoModal = ref(false);
+            const infoModalItem = ref({});
+            const infoModalTab = ref('info');
+            const editablePermission = ref('private');
+            const infoCommentsEnabled = ref(true);
+
+            // User permissions state
+            const userPermissions = ref([]);
+            const loadingUserPermissions = ref(false);
+            const userSearchQuery = ref('');
+            const userSearchResults = ref([]);
+            const newUserPermission = ref('view');
+
+            const openInfoModal = (note) => {
+                infoModalItem.value = { ...note };
+                editablePermission.value = note.permission || 'private';
+                infoCommentsEnabled.value = !note.commentsDisabled;
+                infoModalTab.value = 'info';
+                showInfoModal.value = true;
+                openMenuId.value = null;
+                loadUserPermissions();
+            };
+
+            const loadUserPermissions = async () => {
+                if (!infoModalItem.value?.isOwner) return;
+                loadingUserPermissions.value = true;
+                try {
+                    userPermissions.value = await api.getNoteUserPermissions(infoModalItem.value.id);
+                } catch (e) {
+                    console.error('Failed to load user permissions', e);
+                } finally {
+                    loadingUserPermissions.value = false;
+                }
+            };
+
+            const searchUsers = debounce(async () => {
+                if (userSearchQuery.value.length < 2) {
+                    userSearchResults.value = [];
+                    return;
+                }
+                try {
+                    const results = await api.searchUsers(userSearchQuery.value);
+                    userSearchResults.value = results.filter(u =>
+                        u.id !== infoModalItem.value?.owner?.id &&
+                        !userPermissions.value.find(p => p.userId === u.id)
+                    );
+                } catch (e) {
+                    console.error('Failed to search users', e);
+                }
+            }, 300);
+
+            const addUserPermission = async (user) => {
+                try {
+                    await api.addNoteUserPermission(infoModalItem.value.id, user.id, newUserPermission.value);
+                    await loadUserPermissions();
+                    userSearchQuery.value = '';
+                    userSearchResults.value = [];
+                } catch (e) {
+                    globalModal.showAlert('新增失敗：' + e.message);
+                }
+            };
+
+            const removeUserPermission = async (userId) => {
+                try {
+                    await api.removeNoteUserPermission(infoModalItem.value.id, userId);
+                    userPermissions.value = userPermissions.value.filter(p => p.userId !== userId);
+                } catch (e) {
+                    globalModal.showAlert('移除失敗：' + e.message);
+                }
+            };
+
+            const updateUserPermissionLevel = async (perm, newLevel) => {
+                try {
+                    await api.addNoteUserPermission(infoModalItem.value.id, perm.userId, newLevel);
+                    perm.permission = newLevel;
+                } catch (e) {
+                    globalModal.showAlert('更新失敗：' + e.message);
+                }
+            };
+
+            const saveInfoChanges = async () => {
+                try {
+                    const updateData = {
+                        commentsDisabled: !infoCommentsEnabled.value,
+                        isPublic: infoModalItem.value.isPublic
+                    };
+
+                    if (infoModalItem.value.isOwner && editablePermission.value !== infoModalItem.value.permission) {
+                        await api.updatePermission(infoModalItem.value.id, editablePermission.value);
+                    }
+
+                    await api.updateNote(infoModalItem.value.id, updateData);
+
+                    // Update local note data
+                    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (noteIndex !== -1) {
+                        notes.value[noteIndex].permission = editablePermission.value;
+                        notes.value[noteIndex].commentsDisabled = !infoCommentsEnabled.value;
+                        notes.value[noteIndex].isPublic = infoModalItem.value.isPublic;
+                    }
+
+                    showInfoModal.value = false;
+                } catch (e) {
+                    globalModal.showAlert('儲存失敗');
+                }
+            };
+
+            // ========== Move Note ==========
+            const openMoveNoteModal = (note) => {
+                infoModalItem.value = { ...note };
+                infoModalTab.value = 'info';
+                showInfoModal.value = true;
+                openMenuId.value = null;
+            };
+
+            const handleMoveNote = async (targetBookId) => {
+                try {
+                    await api.updateNote(infoModalItem.value.id, { bookId: targetBookId || null });
+                    // Note is being moved to a book, so remove from uncategorized list
+                    if (targetBookId) {
+                        notes.value = notes.value.filter(n => n.id !== infoModalItem.value.id);
+                    }
+                    showInfoModal.value = false;
+                    globalModal.showAlert('移動成功', { type: 'success' });
+                } catch (e) {
+                    globalModal.showAlert('移動失敗: ' + e.message);
+                }
+            };
+
             onMounted(() => {
                 loadNotes();
+                loadPinnedItems();
                 window.addEventListener('viewmode-changed', handleViewModeChanged);
                 document.addEventListener('click', handleClickOutside);
             });
@@ -1680,7 +1852,19 @@
                 document.removeEventListener('click', handleClickOutside);
             });
 
-            return { notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions, displayMode, setDisplayMode, openMenuId, toggleMenu, openNote };
+            return {
+                notes, sortedNotes, loading, deleteNote, dayjs, sortBy, sortOrder, sortOptions,
+                displayMode, setDisplayMode, openMenuId, toggleMenu, openNote,
+                // Pinned
+                pinnedItems, isPinned, togglePin,
+                // Info Modal
+                showInfoModal, infoModalItem, infoModalTab, editablePermission, infoCommentsEnabled,
+                userPermissions, loadingUserPermissions, userSearchQuery, userSearchResults, newUserPermission,
+                openInfoModal, searchUsers, addUserPermission, removeUserPermission, updateUserPermissionLevel,
+                saveInfoChanges,
+                // Move
+                availableBooks, openMoveNoteModal, handleMoveNote
+            };
         }
     };
 

@@ -1690,8 +1690,12 @@
                     :note="note"
                     mode="grid"
                     :show-menu="openMenuId === note.id"
-                    :show-move-option="false"
+                    :is-pinned="isPinned('note', note.id)"
+                    :show-move-option="true"
                     @toggle-menu="toggleMenu(note.id)"
+                    @open-info="openInfoModal(note)"
+                    @toggle-pin="togglePin('note', note.id)"
+                    @open-move="openMoveNoteModal(note)"
                     @delete="deleteNote(note.id)"
                     @click="openNote(note)"
                 />
@@ -1705,12 +1709,31 @@
                     :note="note"
                     mode="list"
                     :show-menu="openMenuId === note.id"
-                    :show-move-option="false"
+                    :is-pinned="isPinned('note', note.id)"
+                    :show-move-option="true"
                     @toggle-menu="toggleMenu(note.id)"
+                    @open-info="openInfoModal(note)"
+                    @toggle-pin="togglePin('note', note.id)"
+                    @open-move="openMoveNoteModal(note)"
                     @delete="deleteNote(note.id)"
                     @click="openNote(note)"
                 />
             </div>
+
+            <!-- Info Modal -->
+            <InfoModal :show="showInfoModal" type="note" :item="infoModalItem" :tab="infoModalTab"
+                :editable-permission="editablePermission" :comments-enabled="infoCommentsEnabled" 
+                :user-permissions="userPermissions" :loading-user-permissions="loadingUserPermissions"
+                :user-search-query="userSearchQuery" :user-search-results="userSearchResults" 
+                :new-user-permission="newUserPermission"
+                :books="availableBooks"
+                @close="showInfoModal = false" @save="saveInfoChanges"
+                @move-note="handleMoveNote"
+                @update:tab="infoModalTab = $event" @update:permission="editablePermission = $event"
+                @update:commentsEnabled="infoCommentsEnabled = $event" @update:isPublic="infoModalItem.isPublic = $event"
+                @update:newUserPermission="newUserPermission = $event"
+                @search-users="(q) => { userSearchQuery = q; searchUsers(); }" @add-user-permission="addUserPermission"
+                @remove-user-permission="removeUserPermission" @update-user-permission="updateUserPermissionLevel" />
         </div>
     </script>
 
