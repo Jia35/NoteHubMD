@@ -30,7 +30,7 @@
             books: { type: Array, default: () => [] }
         },
         emits: [
-            'close', 'save', 'update:tab', 'update:description', 'update:permission',
+            'close', 'save', 'update:tab', 'update:title', 'update:description', 'update:permission',
             'update:commentsEnabled', 'update:newTag', 'update:newUserPermission',
             'update:isPublic', 'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
             'remove-user-permission', 'update-user-permission', 'move-note'

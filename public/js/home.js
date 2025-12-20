@@ -1070,6 +1070,10 @@
 
                     if (infoModalType.value === 'book') {
                         updateData.description = editableDescription.value;
+                        // Add title if book and changed
+                        if (infoModalItem.value.canEdit && infoModalItem.value.title) {
+                            updateData.title = infoModalItem.value.title;
+                        }
                         await api.updateBook(infoModalItem.value.id, updateData);
                         // Update local book data
                         const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
@@ -1078,6 +1082,9 @@
                             books.value[bookIndex].description = editableDescription.value;
                             books.value[bookIndex].permission = editablePermission.value;
                             books.value[bookIndex].isPublic = infoModalItem.value.isPublic;
+                            if (infoModalItem.value.canEdit && infoModalItem.value.title) {
+                                books.value[bookIndex].title = infoModalItem.value.title;
+                            }
                         }
                     } else {
                         updateData.commentsDisabled = !infoCommentsEnabled.value;
@@ -1489,6 +1496,10 @@
                         description: editableDescription.value,
                         tags: editableTags.value
                     };
+                    // Add title if changed
+                    if (bookInfoItem.value.canEdit && bookInfoItem.value.title) {
+                        updateData.title = bookInfoItem.value.title;
+                    }
                     // Add isPublic if owner
                     if (isOwner.value) {
                         updateData.isPublic = book.value.isPublic;
@@ -1496,6 +1507,10 @@
                     await api.updateBook(book.value.id, updateData);
                     book.value.description = editableDescription.value;
                     book.value.tags = [...editableTags.value];
+                    // Update book title locally
+                    if (bookInfoItem.value.canEdit && bookInfoItem.value.title) {
+                        book.value.title = bookInfoItem.value.title;
+                    }
                     showInfoModal.value = false;
                 } catch (e) { globalModal.showAlert('儲存失敗'); }
             };

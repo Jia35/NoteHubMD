@@ -186,10 +186,27 @@
                     <div class="flex-1 overflow-y-auto">
                         <!-- Info Tab Content -->
                         <div v-show="tab === 'info'" class="p-4 space-y-4">
+                            <!-- Title Section (at top) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    <i :class="type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-1"></i> 標題
+                                </label>
+                                <!-- Editable title for books -->
+                                <input v-if="type === 'book' && item.canEdit"
+                                       :value="item.title || ''"
+                                       @input="$emit('update:title', $event.target.value)"
+                                       type="text"
+                                       placeholder="輸入標題..."
+                                       class="w-full px-3 py-2 text-lg font-bold border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- Read-only title for notes or non-editable books -->
+                                <div v-else class="px-3 py-2 text-lg font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded">
+                                    {{ item.title || 'Untitled' }}
+                                </div>
+                            </div>
+
                             <!-- Item Info -->
                             <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
                                 <div class="text-gray-500 dark:text-gray-400 mb-1">ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ item.id }}</span></div>
-                                <div class="text-gray-500 dark:text-gray-400 mb-1">標題：<span class="text-gray-700 dark:text-gray-300">{{ item.title || 'Untitled' }}</span></div>
                                 <div class="text-gray-500 dark:text-gray-400 mb-1">{{ type === 'book' ? '建立者' : '擁有者' }}：<span class="text-gray-700 dark:text-gray-300">{{ item.owner?.username || '(未知)' }}</span></div>
                                 <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">建立時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item.createdAt) }}</span></div>
                                 <!-- Book: 最後更新者, 最後更新時間 -->
