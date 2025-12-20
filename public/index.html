@@ -334,6 +334,11 @@
                                 class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
                             <i class="fa-solid fa-lock mr-2"></i>權限設定
                         </button>
+                        <button v-if="type === 'note'" @click="$emit('update:tab', 'share')" 
+                                :class="tab === 'share' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
+                            <i class="fa-solid fa-share-nodes mr-2"></i>分享筆記
+                        </button>
                     </div>
 
                     <!-- Right Content Area -->
@@ -556,6 +561,11 @@
                                     開啟後，此{{ type === 'book' ? '書本' : '筆記' }}將會顯示在首頁的「公開項目」列表中。
                                 </p>
                             </div>
+                        </div>
+
+                        <!-- Share Tab Content (for notes only) -->
+                        <div v-show="tab === 'share' && type === 'note'" class="p-4">
+                            <slot name="share-content"></slot>
                         </div>
                     </div>
                 </div>
@@ -1448,7 +1458,25 @@
                 @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }" @add-user-permission="addInfoUserPermission"
-                @remove-user-permission="removeInfoUserPermission" @update-user-permission="updateInfoUserPermissionLevel" />
+                @remove-user-permission="removeInfoUserPermission" @update-user-permission="updateInfoUserPermissionLevel">
+                
+                <!-- Share Tab Content -->
+                <template #share-content>
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fa-solid fa-share-nodes text-4xl"></i>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            請開啟筆記以使用分享功能
+                        </p>
+                        <a :href="'/n/' + infoModalItem.id" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>
+                            開啟筆記
+                        </a>
+                    </div>
+                </template>
+            </InfoModal>
 
             <!-- Create Book Modal -->
             <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
