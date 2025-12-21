@@ -310,7 +310,7 @@
         <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
             <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="height: 70vh;">
                 <!-- Modal Header -->
-                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+                <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
                     <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                         <i :class="type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-2"></i>
                         {{ type === 'book' ? '書本設定' : '筆記設定' }}
@@ -323,7 +323,7 @@
                 <!-- Modal Body with Tabs -->
                 <div class="flex flex-1 overflow-hidden">
                     <!-- Left Sidebar Tabs -->
-                    <div class="w-40 border-r dark:border-gray-700 shrink-0">
+                    <div class="w-40 border-r border-gray-300 dark:border-gray-700 shrink-0">
                         <button @click="$emit('update:tab', 'info')" 
                                 :class="tab === 'info' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
                                 class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center">
@@ -452,7 +452,7 @@
                             </div>
 
                             <!-- Comments Toggle (for notes, Owner only) -->
-                            <div v-if="type === 'note' && item.isOwner" class="border-t dark:border-gray-700 pt-4">
+                            <div v-if="type === 'note' && item.isOwner" class="border-t border-gray-300 dark:border-gray-700 pt-4">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
                                         <i class="fa-solid fa-comments text-gray-500 mr-2"></i>
@@ -497,7 +497,7 @@
                             </div>
                             
                             <template v-if="item.isOwner">
-                                <div class="border-t dark:border-gray-600 py-4">
+                                <div class="border-t border-gray-300 dark:border-gray-600 py-4">
                                     <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                                         <i class="fa-solid fa-user-plus mr-1"></i> 個別使用者權限
                                     </label>
@@ -563,7 +563,7 @@
                             </template>
 
                             <!-- Public Toggle (for Owner only) -->
-                            <div v-if="item.isOwner" class="border-t dark:border-gray-600 pt-4">
+                            <div v-if="item.isOwner" class="border-t border-gray-300 dark:border-gray-600 pt-4">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
                                         <i class="fa-solid fa-globe text-gray-500 mr-2"></i>
@@ -588,7 +588,7 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700 shrink-0">
+                <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700 shrink-0">
                     <button @click="$emit('close')" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                         {{ item.canEdit || item.isOwner ? '取消' : '關閉' }}
                     </button>
@@ -745,7 +745,7 @@
             <div v-if="showSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSearchModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="max-height: 80vh;">
                     <!-- Modal Header -->
-                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+                    <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                             <i class="fa-solid fa-search mr-2"></i>搜尋
                         </h2>
@@ -755,7 +755,7 @@
                     </div>
 
                     <!-- Search Input -->
-                    <div class="p-4 border-b dark:border-gray-700">
+                    <div class="p-4 border-b border-gray-300 dark:border-gray-700">
                         <div class="relative">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                             <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
@@ -987,11 +987,9 @@
     <!-- Settings Modal -->
     <div v-if="showSettings" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
         @click.self="showSettings = false">
-        <div
-            class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
+        <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
             <!-- Header -->
-            <div
-                class="flex justify-between items-center p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
                     <i class="fa-solid fa-gear mr-2 text-gray-500"></i> 設定
                 </h2>
@@ -1062,7 +1060,7 @@
 
             <!-- Footer -->
             <div
-                class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t dark:border-gray-700 flex justify-end items-center">
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-end items-center">
                 <button @click="logout"
                     class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
                     <i class="fa-solid fa-right-from-bracket mr-2"></i>
@@ -1076,7 +1074,7 @@
     <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
         @click.self="showCreateBookModal = false">
         <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+            <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                 <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                     <i class="fa-solid fa-book mr-2"></i> 新增書本
                 </h2>
@@ -1102,7 +1100,7 @@
                         class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
                 </div>
             </div>
-            <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+            <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
                 <button @click="showCreateBookModal = false"
                     class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                     取消
@@ -1121,7 +1119,7 @@
         <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col"
             style="max-height: 80vh;">
             <!-- Modal Header -->
-            <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 shrink-0">
+            <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
                 <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                     <i class="fa-solid fa-search mr-2"></i>搜尋
                 </h2>
@@ -1132,7 +1130,7 @@
             </div>
 
             <!-- Search Input -->
-            <div class="p-4 border-b dark:border-gray-700">
+            <div class="p-4 border-b border-gray-300 dark:border-gray-700">
                 <div class="relative">
                     <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
@@ -1499,7 +1497,7 @@
             <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
                 @click.self="showCreateBookModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
-                    <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                    <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                             <i class="fa-solid fa-book mr-2"></i> 新增書本
                         </h2>
@@ -1525,7 +1523,7 @@
                                 class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                    <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
                         <button @click="showCreateBookModal = false"
                             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                             取消
@@ -1542,7 +1540,7 @@
             <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
                 @click.self="showMoveNoteModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
-                     <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                     <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                             <i class="fa-solid fa-folder-open mr-2"></i> 移動筆記
                         </h2>
@@ -1568,7 +1566,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                    <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
                         <button @click="showMoveNoteModal = false"
                             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                             取消
@@ -1739,7 +1737,7 @@
             <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
                 @click.self="showMoveNoteModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
-                     <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                     <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                             <i class="fa-solid fa-folder-open mr-2"></i> 移動筆記
                         </h2>
@@ -1765,7 +1763,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                    <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
                         <button @click="showMoveNoteModal = false"
                             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                             取消
@@ -1800,7 +1798,7 @@
                     <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Books</h2>
                     <div v-if="books.length === 0" class="text-gray-400 italic">(無已刪除的 Book)</div>
                     <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div v-for="book in books" :key="book.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 flex justify-between items-center">
+                        <div v-for="book in books" :key="book.id" class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center">
                             <div class="flex-1 min-w-0 mr-4">
                                 <div class="flex items-center">
                                     <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-book"></i></span>
@@ -1828,7 +1826,7 @@
                     <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Notes</h2>
                     <div v-if="notes.length === 0" class="text-gray-400 italic">(無已刪除的 Note)</div>
                     <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div v-for="note in notes" :key="note.id" class="p-4 border-b dark:border-gray-700 last:border-b-0 flex justify-between items-center">
+                        <div v-for="note in notes" :key="note.id" class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center">
                             <div class="flex-1 min-w-0 mr-4">
                                 <div class="flex items-center">
                                     <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
@@ -2179,7 +2177,7 @@
                 <!-- Create Book Modal -->
                 <div v-if="showCreateBookModalLocal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModalLocal = false">
                     <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
-                        <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
+                        <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                             <h2 class="text-xl font-bold text-gray-800 dark:text-white">
                                 <i class="fa-solid fa-book mr-2"></i> 新增書本
                             </h2>
@@ -2209,7 +2207,7 @@
                                         class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
                             </div>
                         </div>
-                        <div class="flex justify-end gap-2 p-4 border-t dark:border-gray-700">
+                        <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
                             <button @click="showCreateBookModalLocal = false" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
                                 取消
                             </button>

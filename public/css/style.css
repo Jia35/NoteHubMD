@@ -1,15 +1,3 @@
-/* Zakka Theme Overrides (Light Mode) */
-body:not(.dark) {
-    background-color: #E6DCCA !important;
-    color: #5D4037 !important;
-}
-
-/* Force text colors to match the theme in light mode */
-body:not(.dark) .text-gray-900,
-body:not(.dark) .text-gray-800 {
-    color: #5D4037 !important;
-}
-
 .CodeMirror {
     height: 100%;
     font-family: 'Fira Code', monospace;
@@ -790,6 +778,7 @@ li.CodeMirror-hint-active {
 }
 
 @media (min-width: 1280px) {
+
     /* XL: Centered Layout with TOC to the right */
     .note-toc {
         left: 50%;
@@ -799,6 +788,7 @@ li.CodeMirror-hint-active {
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
+
     /* LG to XL: TOC pinned to right, Content shifted */
     .note-toc {
         left: auto;
@@ -810,12 +800,12 @@ li.CodeMirror-hint-active {
     /* Only apply when TOC is present and in view mode (has-toc class) */
     .markdown-body.has-toc.flex.justify-center {
         /* Reserve space for TOC (w-56 = 14rem + padding) */
-        padding-right: 15rem; 
+        padding-right: 15rem;
         /* justify-center aligns center in the remaining space (Total - PaddingRight).
            So the visual center shifts left. */
         transition: padding-right 0.2s ease;
     }
-    
+
     /* Also ensure we force the flex container to acknowledge this padding */
     .markdown-body.has-toc {
         box-sizing: border-box;
