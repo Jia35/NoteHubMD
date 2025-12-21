@@ -1,3 +1,15 @@
+/* Zakka Theme Overrides (Light Mode) */
+body:not(.dark) {
+    background-color: #E6DCCA !important;
+    color: #5D4037 !important;
+}
+
+/* Force text colors to match the theme in light mode */
+body:not(.dark) .text-gray-900,
+body:not(.dark) .text-gray-800 {
+    color: #5D4037 !important;
+}
+
 .CodeMirror {
     height: 100%;
     font-family: 'Fira Code', monospace;
