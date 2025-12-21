@@ -44,7 +44,7 @@ const config = {
         basePath: getEnv('APP_BASE_PATH', '/')
     },
     server: {
-        port: getEnv('PORT', 3001)
+        port: getEnv('PORT', 3000)
     },
     session: {
         secret: getEnv('SESSION_SECRET', 'notehubmd-default-secret-change-in-production')

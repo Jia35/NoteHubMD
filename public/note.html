@@ -873,8 +873,8 @@
                                 </div>
                             </div>
 
-                            <!-- Data Management -->
-                            <div>
+                            <!-- Data Management (only for logged in users) -->
+                            <div v-if="currentUser">
                                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">資料管理</h3>
                                 <button @click="exportNotes" :disabled="exportingNotes"
                                     class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
@@ -909,14 +909,20 @@
 
                         <!-- Footer -->
                         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
-                            <button @click="showSettingsModal = false; showAboutModal = true" class="text-xs text-gray-400 hover:text-blue-500 transition cursor-pointer flex items-center">
+                            <button @click="showSettingsModal = false; showAboutModal = true" title="關於 NoteHubMD"
+                                    class="text-xs text-gray-400 hover:text-blue-500 transition cursor-pointer flex items-center">
                                 v{{ appVersion }} <i class="fa-solid fa-circle-info ml-1 text-[10px]"></i>
                             </button>
-                            <button @click="logout"
+                            <button v-if="currentUser" @click="logout"
                                 class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
                                 <i class="fa-solid fa-right-from-bracket mr-2"></i>
                                 登出
                             </button>
+                            <a v-else href="/login"
+                                class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                                <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                                登入
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -937,7 +943,7 @@
                         </div>
                         <!-- Body -->
                         <div class="p-6 text-center">
-                            <img src="/images/logo.png" alt="NoteHubMD" class="w-20 h-20 mx-auto mb-4">
+                            <img src="/images/logo.png" alt="NoteHubMD" class="w-20 h-20 mx-auto mb-4 cursor-pointer hover:animate-bounce transition-transform">
                             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">NoteHubMD</h3>
                             <p class="text-xs text-gray-400 mb-3">v{{ appVersion }}</p>
                             <p class="text-sm text-gray-700 dark:text-gray-300 mb-10">

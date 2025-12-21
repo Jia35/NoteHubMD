@@ -37,7 +37,7 @@ cd docker
 docker-compose up -d
 ```
 
-3. Access the application at `http://localhost:3001`
+3. Access the application at `http://localhost:3000`
 
 ### Configuration
 
@@ -51,7 +51,7 @@ cp .env.example .env
 
 | Variable                  | Description                                    | Default                         |
 | ------------------------- | ---------------------------------------------- | ------------------------------- |
-| `PORT`                    | Server port                                    | `3001`                          |
+| `PORT`                    | Server port                                    | `3000`                          |
 | `SESSION_SECRET`          | Session encryption key (change in production!) | `your-secret-key-here`          |
 | **Database**              |                                                |                                 |
 | `DB_DIALECT`              | Database type (`postgres` or `sqlite`)         | `postgres`                      |

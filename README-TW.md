@@ -37,7 +37,7 @@ cd docker
 docker-compose up -d
 ```
 
-3. 開啟瀏覽器訪問 `http://localhost:3001`
+3. 開啟瀏覽器訪問 `http://localhost:3000`
 
 ### 自訂設定
 
@@ -51,7 +51,7 @@ cp .env.example .env
 
 | 變數                      | 說明                                     | 預設值                          |
 | ------------------------- | ---------------------------------------- | ------------------------------- |
-| `PORT`                    | 伺服器埠號                               | `3001`                          |
+| `PORT`                    | 伺服器埠號                               | `3000`                          |
 | `SESSION_SECRET`          | Session 加密金鑰（正式環境請務必修改！） | `your-secret-key-here`          |
 | **資料庫**                |                                          |                                 |
 | `DB_DIALECT`              | 資料庫類型（`postgres` 或 `sqlite`）     | `postgres`                      |

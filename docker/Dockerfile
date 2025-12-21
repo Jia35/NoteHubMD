@@ -18,7 +18,7 @@ RUN npm run build:css
 RUN npm prune --omit=dev
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3000
 
 # Start command
 CMD ["npm", "start"]
