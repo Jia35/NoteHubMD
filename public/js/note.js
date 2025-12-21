@@ -1074,39 +1074,36 @@
                 });
             };
 
-            // Generate TOC from content (h1, h2, h3)
+            // Generate TOC from rendered headings (h1, h2, h3)
             const generateToc = () => {
-                const headings = [];
-                const lines = content.value.split('\n');
-                let headingIndex = 0;
+                if (!previewContent.value) return;
 
-                lines.forEach((line) => {
-                    const match = line.match(/^(#{1,3})\s+(.+)$/);
-                    if (match) {
-                        const level = match[1].length;
-                        const text = match[2].trim();
-                        const id = 'heading-' + headingIndex++;
-                        headings.push({ id, level, text });
+                const headings = previewContent.value.querySelectorAll('h1, h2, h3');
+                const tocItems = [];
+
+                headings.forEach(heading => {
+                    if (heading.id) {
+                        tocItems.push({
+                            id: heading.id,
+                            text: heading.textContent.replace(/^#\s*/, ''),
+                            level: parseInt(heading.tagName.charAt(1))
+                        });
                     }
                 });
 
-                toc.value = headings;
-                
+                toc.value = tocItems;
+
                 // Set first heading as active by default
-                if (headings.length > 0) {
-                    activeTocId.value = headings[0].id;
+                if (tocItems.length > 0) {
+                    activeTocId.value = tocItems[0].id;
                 }
             };
 
             // Scroll to heading in preview
             const scrollToHeading = (id) => {
-                if (!previewContainer.value) return;
-
-                const index = parseInt(id.replace('heading-', ''));
-                const headings = previewContainer.value.querySelectorAll('h1, h2, h3');
-
-                if (headings[index]) {
-                    headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const element = document.getElementById(id);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             };
 
@@ -1155,19 +1152,21 @@
             const updateActiveTocItem = () => {
                 if (!previewContainer.value || toc.value.length === 0) return;
 
-                const headings = previewContainer.value.querySelectorAll('h1, h2, h3');
-                const containerTop = previewContainer.value.scrollTop;
-                const offset = 80; // offset from top
+                const container = previewContainer.value;
+                const containerTop = container.getBoundingClientRect().top;
 
                 let activeId = '';
-                headings.forEach((heading, index) => {
-                    const headingTop = heading.offsetTop - previewContainer.value.offsetTop;
-                    if (headingTop <= containerTop + offset) {
-                        activeId = 'heading-' + index;
+                for (const item of toc.value) {
+                    const element = document.getElementById(item.id);
+                    if (element) {
+                        const rect = element.getBoundingClientRect();
+                        if (rect.top <= containerTop + 100) {
+                            activeId = item.id;
+                        }
                     }
-                });
+                }
 
-                activeTocId.value = activeId;
+                activeTocId.value = activeId || (toc.value.length > 0 ? toc.value[0].id : '');
             };
 
             const saveContent = debounce(async (newContent, newTitle) => {

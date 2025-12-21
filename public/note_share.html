@@ -201,11 +201,14 @@
                                :key="item.id" 
                                :href="'#' + item.id"
                                @click.prevent="scrollToHeading(item.id)"
-                               class="block py-1 text-sm transition truncate"
-                               :class="[
-                                   activeTocId === item.id ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
-                                   { 'pl-0': item.level === 1, 'pl-3': item.level === 2, 'pl-6': item.level >= 3 }
-                               ]">
+                               class="block py-0.5 text-sm transition truncate border-l-2"
+                               :class="{
+                                    'pl-1': item.level === 1, 
+                                    'pl-4': item.level === 2, 
+                                    'pl-7': item.level === 3,
+                                    'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-black': activeTocId === item.id,
+                                    'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent': activeTocId !== item.id
+                                }">
                                 {{ item.text }}
                             </a>
                         </nav>
