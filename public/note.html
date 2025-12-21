@@ -748,7 +748,7 @@
             <Transition name="note-sidebar-slide">
                 <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
                     <!-- Backdrop with fade -->
-                    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                    <div class="absolute inset-0 bg-black/60"></div>
                     <!-- Sidebar Content using SidebarNav component -->
                     <div class="absolute top-0 h-full" @click.stop>
                         <SidebarNav 
