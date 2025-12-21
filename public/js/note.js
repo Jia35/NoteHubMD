@@ -789,6 +789,38 @@
                 } catch (e) { console.error('Logout failed', e); }
             };
 
+            // Export Notes
+            const exportingNotes = ref(false);
+
+            const exportNotes = async () => {
+                if (exportingNotes.value) return;
+                exportingNotes.value = true;
+                try {
+                    const response = await fetch('/api/export/my-notes');
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Export failed');
+                    }
+                    // Create blob from response and download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // Get filename from header or use default
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+                    a.download = filenameMatch ? filenameMatch[1] : 'notes_export.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } catch (e) {
+                    globalModal.showAlert('匯出失敗：' + e.message);
+                } finally {
+                    exportingNotes.value = false;
+                }
+            };
+
             // Load current user
             getCurrentUser().then(user => {
                 currentUser.value = user;
@@ -1924,6 +1956,8 @@
                 theme,
                 setTheme,
                 logout,
+                exportingNotes,
+                exportNotes,
                 charCount,
                 lineCount,
                 selectedLines,

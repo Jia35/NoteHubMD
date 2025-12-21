@@ -837,27 +837,83 @@
 
                 <!-- Settings Modal -->
                 <div v-if="showSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettingsModal = false">
-                    <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
-                        <h2 class="text-xl font-bold mb-4">設定</h2>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">Theme</label>
-                            <div class="flex space-x-2">
-                                <button @click="setTheme('light')" class="px-4 py-2 rounded border" :class="theme === 'light' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
-                                    <i class="fa-solid fa-sun"></i>
-                                </button>
-                                <button @click="setTheme('dark')" class="px-4 py-2 rounded border" :class="theme === 'dark' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'">
-                                    <i class="fa-solid fa-moon"></i>
+                    <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
+                        <!-- Header -->
+                        <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                                <i class="fa-solid fa-gear mr-2 text-gray-500"></i> 設定
+                            </h2>
+                            <button @click="showSettingsModal = false"
+                                class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="p-6 space-y-6">
+                            <!-- Appearance -->
+                            <div>
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">外觀</h3>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                                        <i class="fa-solid fa-palette mr-2 text-gray-400"></i>主題模式
+                                    </span>
+                                    <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                                        <button @click="setTheme('light')"
+                                            class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
+                                            :class="theme === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+                                            <i class="fa-solid fa-sun mr-1.5"></i> Light
+                                        </button>
+                                        <button @click="setTheme('dark')"
+                                            class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
+                                            :class="theme === 'dark' ? 'bg-gray-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+                                            <i class="fa-solid fa-moon mr-1.5"></i> Dark
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Admin (Conditional) -->
+                            <div v-if="currentUser && (currentUser.role === 'super-admin' || currentUser.role === 'admin')">
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">管理</h3>
+                                <a href="/admin" @click="showSettingsModal = false"
+                                    class="flex items-center w-full p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-100 dark:border-purple-800/30 group">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mr-3 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-user-shield text-lg"></i>
+                                    </div>
+                                    <div class="text-left flex-1">
+                                        <div class="font-bold text-sm">管理後台</div>
+                                        <div class="text-xs opacity-70">進入系統管理介面</div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right ml-2 text-sm opacity-30"></i>
+                                </a>
+                            </div>
+
+                            <!-- Data Management -->
+                            <div>
+                                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">資料管理</h3>
+                                <button @click="exportNotes" :disabled="exportingNotes"
+                                    class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform shrink-0">
+                                        <i :class="exportingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-export'"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 ZIP 檔案</div>
+                                    </div>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                            <button @click="logout" class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Logout</button>
-                        </div>
-
-                        <div class="flex justify-end mt-4">
-                            <button @click="showSettingsModal = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">Close</button>
+                        <!-- Footer -->
+                        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-end items-center">
+                            <button @click="logout"
+                                class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                                <i class="fa-solid fa-right-from-bracket mr-2"></i>
+                                登出
+                            </button>
                         </div>
                     </div>
                 </div>
