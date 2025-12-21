@@ -197,9 +197,9 @@
                                        @input="$emit('update:title', $event.target.value)"
                                        type="text"
                                        placeholder="輸入標題..."
-                                       class="w-full px-3 py-2 text-lg font-bold border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                       class="w-full px-3 py-2 text-sm font-bold border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <!-- Read-only title for notes or non-editable books -->
-                                <div v-else class="px-3 py-2 text-lg font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded">
+                                <div v-else class="px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded">
                                     {{ item.title || 'Untitled' }}
                                 </div>
                             </div>
@@ -247,7 +247,7 @@
                                          <option v-for="book in books" :key="book.id" :value="book.id">{{ book.title }}</option>
                                      </select>
                                      <button @click="moveNote" 
-                                             class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs whitespace-nowrap">
+                                             class="px-3 py-1.5 border border-blue-500 text-blue-500 rounded hover:text-white hover:bg-blue-600 transition text-xs whitespace-nowrap">
                                          移動
                                      </button>
                                 </div>
@@ -441,37 +441,38 @@
         </div>
     </script>
 
+    <!-- Shared Sidebar Navigation Component Template -->
     <script type="text/x-template" id="sidebar-nav-template">
-        <div class="w-56 bg-gray-900 text-white flex flex-col h-full border-r border-gray-800 shrink-0">
+        <div class="w-56 bg-gray-200 dark:bg-gray-900 dark:text-white flex flex-col h-full border-r border-gray-300 dark:border-gray-800 shrink-0">
             <!-- Header -->
-            <a href="/" class="p-4 flex items-center border-b border-gray-800 hover:bg-gray-800 transition">
-                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3 font-bold">N</div>
+            <a href="/" class="p-4 flex items-center border-b border-gray-300 hover:bg-gray-300 dark:border-gray-800 dark:hover:bg-gray-800 transition">
+                <div class="w-8 h-8 bg-blue-600 text-white dark:text-black rounded flex items-center justify-center mr-3 font-bold">N</div>
                 <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
             </a>
 
             <!-- View Mode Toggle -->
             <div class="px-3 pt-3 pb-1">
-                <div class="flex bg-gray-700 rounded-lg p-1">
+                <div class="flex bg-gray-300 dark:bg-gray-700 rounded-lg p-1">
                     <button @click="$emit('view-mode-change', 'my')" 
                             class="flex-1 px-2 py-1 text-sm rounded-md transition"
                             :class="globalViewMode === 'my' 
-                                ? 'bg-gray-600 text-blue-400 font-medium' 
-                                : 'text-gray-400 hover:text-white'">
+                                ? 'bg-gray-200 text-blue-600 dark:bg-gray-600 dark:text-blue-400 font-medium' 
+                                : 'text-gray-600 dark:text-gray-400 dark:hover:text-white'">
                         <i class="fa-solid fa-user mr-1"></i>我的項目
                     </button>
                     <button @click="$emit('view-mode-change', 'all')" 
                             class="flex-1 px-2 py-1 text-sm rounded-md transition"
                             :class="globalViewMode === 'all' 
-                                ? 'bg-gray-600 text-blue-400 font-medium' 
-                                : 'text-gray-400 hover:text-white'">
+                                ? 'bg-gray-200 text-blue-600 dark:bg-gray-600 dark:text-blue-400 font-medium' 
+                                : 'text-gray-600 dark:text-gray-400 dark:hover:text-white'">
                         <i class="fa-solid fa-globe mr-1"></i>公開項目
                     </button>
                 </div>
             </div>
 
             <!-- Search & Create Buttons -->
-            <div class="p-3 space-y-2 border-b border-gray-800">
-                <button @click="openSearchModal" class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition flex items-center justify-center text-sm">
+            <div class="p-3 space-y-2 border-b border-gray-200 dark:border-gray-800">
+                <button @click="openSearchModal" class="w-full bg-gray-300 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition flex items-center justify-center text-sm">
                     <i class="fa-solid fa-search mr-2"></i> 搜尋
                 </button>
                 <button @click="$emit('create-note')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm">
@@ -487,13 +488,13 @@
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Menu</div>
                 <a href="/" 
                              class="block p-2 py-1 rounded transition flex items-center"
-                             :class="currentRoute === '/' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
-                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney"></i></span> Home
+                             :class="currentRoute === '/' ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-house-chimney" :class="currentRoute === '/' ? 'dark:text-white' : 'text-gray-500 dark:text-gray-400'"></i></span> Home
                 </a>
                 <a href="/trash" 
                              class="block px-2 py-1 rounded transition flex items-center"
-                             :class="currentRoute === '/trash' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
-                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can"></i></span> 垃圾桶
+                             :class="currentRoute === '/trash' ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
+                    <span class="w-5 mr-3 text-center shrink-0"><i class="fa-solid fa-trash-can" :class="currentRoute === '/trash' ? 'dark:text-white' : 'text-gray-500 dark:text-gray-400'"></i></span> 垃圾桶
                 </a>
 
                 <!-- Pinned Items -->
@@ -502,12 +503,27 @@
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
                     </div>
                     <div v-for="item in pinnedItems" :key="item.type + '-' + item.id" class="group">
-                        <a :href="'/' + item.type + '/' + item.id" 
+                        <a v-if="item.type === 'note'" :href="'/n/' + item.id" 
                                      class="block px-3 py-1 rounded transition flex items-center justify-between"
-                                     :class="currentRoute === '/' + item.type + '/' + item.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                     :class="currentRoute === '/n/' + item.id ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
                             <div class="flex items-center min-w-0">
                                 <span class="w-5 mr-3 text-center shrink-0">
-                                    <i :class="item.type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'"></i>
+                                    <i class="fa-solid fa-note-sticky"></i>
+                                </span>
+                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                            </div>
+                            <button @click.prevent.stop="$emit('unpin', item.type, item.id)" 
+                                    class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
+                                    title="取消釘選">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </a>
+                        <a v-else :href="'/b/' + item.id" 
+                                     class="block px-3 py-1 rounded transition flex items-center justify-between"
+                                     :class="currentRoute === '/b/' + item.id ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
+                            <div class="flex items-center min-w-0">
+                                <span class="w-5 mr-3 text-center shrink-0">
+                                    <i class="fa-solid fa-book"></i>
                                 </span>
                                 <span class="truncate">{{ item.title || 'Untitled' }}</span>
                             </div>
@@ -529,14 +545,14 @@
                 </div>
                 <a href="/uncategorized" 
                              class="block px-2 py-1 rounded transition flex items-center"
-                             :class="currentRoute === '/uncategorized' ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
-                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox" :class="currentRoute === '/uncategorized' ? 'text-white' : 'text-gray-400'"></i></span>
+                             :class="currentRoute === '/uncategorized' ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
+                    <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-inbox" :class="currentRoute === '/uncategorized' ? 'dark:text-white' : 'text-gray-500 dark:text-gray-400'"></i></span>
                     <span class="truncate">未分類筆記</span>
                 </a>
                 <div v-for="book in books" :key="book.id">
                     <a :href="'/b/' + book.id" 
                                  class="block px-2 py-1 rounded transition flex items-center"
-                                 :class="currentRoute === '/b/' + book.id ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 text-gray-300 hover:text-white'">
+                                 :class="currentRoute === '/b/' + book.id ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-whit'">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
                         <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
                     </a>
@@ -549,7 +565,7 @@
             </div>
 
             <!-- User & Settings -->
-            <div class="p-4 border-t border-gray-800 bg-gray-900">
+            <div class="p-4 border-t border-gray-300 bg-gray-200 dark:border-gray-800 dark:bg-gray-900">
                 <div class="text-xs text-gray-500 text-center mb-2">NoteHubMD v{{ appVersion }}</div>
                 <div class="flex items-center justify-between">
                     <button @click="$emit('open-profile')" class="flex items-center overflow-hidden cursor-pointer hover:opacity-80 transition">
@@ -560,7 +576,7 @@
                         </div>
                         <span class="text-sm font-medium truncate">{{ user?.name || user?.username || 'Guest' }}</span>
                     </button>
-                    <button @click="$emit('open-settings')" class="text-gray-400 hover:text-white transition ml-2">
+                    <button @click="$emit('open-settings')" class="text-gray-700 hover:text-black text-gray-400 dark:hover:text-white transition ml-2">
                         <i class="fa-solid fa-gear"></i>
                     </button>
                 </div>
@@ -580,7 +596,7 @@
                     </div>
 
                     <!-- Search Input -->
-                    <div class="p-4 border-b dark:border-gray-700">
+                    <div class="p-4 border-b border-gray-300 dark:border-gray-700">
                         <div class="relative">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                             <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
@@ -709,7 +725,8 @@
         <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
             <!-- Collapsed Sidebar Strip (always visible) - click anywhere to expand -->
             <div @click="showSidebar = true" 
-                 class="w-12 bg-gray-900 text-white flex flex-col items-center py-3 border-r border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-800 transition-colors"
+                 class="w-12 bg-gray-200 dark:bg-gray-900 dark:text-white flex flex-col items-center py-3 
+                        border-r border-gray-300 dark:border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors"
                  title="展開選單">
                 <!-- LOGO at top - Click to go Home -->
                 <a href="/" @click.stop class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white hover:bg-blue-700 transition" title="">
@@ -979,7 +996,7 @@
                     </template>
                 </InfoModal>
                 
-                <div class="bg-gray-900 text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
+                <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-2">
                         <!-- <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -994,11 +1011,11 @@
                                 <!-- Book Notes Tooltip -->
                                 <div v-if="book.Notes && book.Notes.length > 0" 
                                      class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
-                                    <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700" style="min-width: 280px; max-width: 400px;">
+                                    <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 280px; max-width: 400px;">
                                         <!-- Arrow -->
-                                        <div class="absolute top-0 left-4 w-4 h-4 bg-gray-800 border-t border-l border-gray-700 transform rotate-45"></div>
+                                        <div class="absolute top-0 left-4 w-4 h-4 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
                                         <div class="relative z-10 p-3">
-                                            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                                            <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center">
                                                 <i class="fa-solid fa-list mr-2"></i>
                                                 書本筆記 ({{ book.Notes.length }})
                                             </div>
@@ -1007,7 +1024,7 @@
                                                     <a 
                                                         :href="'/n/' + bookNote.id"
                                                         class="flex items-center text-sm py-1.5 px-2 rounded transition"
-                                                        :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
+                                                        :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
                                                         <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
                                                         <span class="truncate">{{ bookNote.title || 'Untitled' }}</span>
                                                     </a>
@@ -1019,18 +1036,18 @@
                             </div>
                             <span class="text-gray-600">/</span>
                         </template>
-                        <span class="text-sm bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
+                        <span class="text-sm bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs"><i class="fa-solid fa-note-sticky mr-1"></i>{{ title || 'Untitled' }}</span>
                         <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
                         <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
                     </div>
-                    <div class="flex bg-gray-800 rounded-lg p-1 space-x-1">
-                        <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Edit">
+                    <div class="flex bg-gray-300 dark:bg-gray-800 rounded-lg p-1 space-x-1">
+                        <button @click="setMode('edit')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Edit">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
-                        <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="Both">
+                        <button @click="setMode('both')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Both">
                             <i class="fa-solid fa-columns"></i>
                         </button>
-                        <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'" title="View">
+                        <button @click="setMode('view')" class="w-8 h-8 flex items-center justify-center rounded transition" :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="View">
                             <i class="fa-solid fa-eye"></i>
                         </button>
                     </div>
@@ -1039,21 +1056,21 @@
                         <!-- Online Users Badge -->
                         <div class="relative">
                             <button @click="toggleOnlineUsersPopup" 
-                                    class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
+                                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition"
                                     title="在線人數">
                                 <i class="fa-solid fa-users text-xs"></i>
                                 <span class="font-medium">{{ onlineUsers.length }}</span>
                             </button>
                             <!-- Online Users Popup -->
                             <div v-if="showOnlineUsersPopup" 
-                                class="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+                                class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-50">
                                 <div class="p-3">
-                                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">
                                         <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
                                     </div>
                                     <ul class="space-y-1 max-h-48 overflow-y-auto">
                                         <li v-for="(user, index) in onlineUsers" :key="index" 
-                                            class="flex items-center text-sm text-gray-200 py-1">
+                                            class="flex items-center text-sm text-gray-800 dark:text-gray-200 py-1">
                                             <span class="w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0"
                                                   :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                                                 {{ user.username?.charAt(0).toUpperCase() || '?' }}
@@ -1069,7 +1086,7 @@
                         </div>
                         <!-- Permission Button (Owner only) / Display (Non-owner) -->
                         <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
-                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
                                 title="點擊設定權限">
                             <i class="fa-solid fa-lock text-xs"></i>
                             <span v-if="permission === 'inherit'">繼承書本</span>
@@ -1082,7 +1099,7 @@
                         </span>
                         <!-- Note Info Button -->
                         <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
-                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
                                 title="筆記設定">
                             <i class="fa-solid fa-cog text-xs"></i>
                             <span>筆記設定</span>
@@ -1124,7 +1141,7 @@
                     
                     <!-- Resizable Divider (only show in Both mode) -->
                     <div v-if="showEditor && showPreview" 
-                         class="w-0.5 bg-gray-400 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
+                         class="w-0.5 bg-gray-300 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
                          @mousedown="startResize"
                          title="拖曳調整寬度"></div>
                     
@@ -1424,7 +1441,7 @@
                                     'pl-1': item.level === 1, 
                                     'pl-4': item.level === 2, 
                                     'pl-7': item.level === 3,
-                                    'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-medium': activeTocId === item.id,
+                                    'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-black': activeTocId === item.id,
                                     'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent': activeTocId !== item.id
                                 }"
                                 :title="item.text">

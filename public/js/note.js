@@ -1091,7 +1091,7 @@
                 });
 
                 toc.value = headings;
-
+                
                 // Set first heading as active by default
                 if (headings.length > 0) {
                     activeTocId.value = headings[0].id;

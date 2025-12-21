@@ -86,7 +86,7 @@
             <!-- Content -->
             <template v-else>
                 <!-- Header -->
-                <div v-show="!showPresentation" class="bg-gray-900 text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
+                <div v-show="!showPresentation" class="bg-gray-200 dark:bg-gray-900 dark:text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-3">
                         <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,14 +94,14 @@
                             </svg>
                         </a>
                         <span class="text-gray-600">/</span>
-                        <span class="text-sm bg-gray-800 px-3 py-1 rounded truncate max-w-md">
+                        <span class="text-sm bg-gray-300 dark:bg-gray-800 px-3 py-1 rounded truncate max-w-md">
                             <i class="fa-solid fa-note-sticky mr-2 text-blue-500"></i>{{ title || 'Untitled' }}
                         </span>
                     </div>
                     <div class="flex items-center space-x-3">
                         <!-- Presentation Mode Button -->
                         <button @click="togglePresentation" 
-                                class="px-2 py-1 text-xs border border-gray-500 text-gray-400 rounded hover:bg-gray-700 hover:text-white transition"
+                                class="px-2 py-1 text-xs border border-gray-500 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-400 hover:text-white dark:hover:bg-gray-700 dark:hover:text-white transition"
                                 title="簡報模式">
                             <i class="fa-solid fa-display mr-1"></i>簡報
                         </button>
@@ -203,7 +203,7 @@
                                @click.prevent="scrollToHeading(item.id)"
                                class="block py-1 text-sm transition truncate"
                                :class="[
-                                   activeTocId === item.id ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
+                                   activeTocId === item.id ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
                                    { 'pl-0': item.level === 1, 'pl-3': item.level === 2, 'pl-6': item.level >= 3 }
                                ]">
                                 {{ item.text }}

@@ -203,7 +203,7 @@
             const extractToc = () => {
                 if (!previewContent.value) return;
 
-                const headings = previewContent.value.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                const headings = previewContent.value.querySelectorAll('h1, h2, h3');
                 const tocItems = [];
 
                 headings.forEach(heading => {
@@ -217,6 +217,11 @@
                 });
 
                 toc.value = tocItems;
+
+                // Set first heading as active by default
+                if (headings.length > 0) {
+                    activeTocId.value = tocItems[0].id;
+                }
             };
 
             const scrollToHeading = (id) => {
