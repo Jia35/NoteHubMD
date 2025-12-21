@@ -49,31 +49,31 @@ cp .env.example .env
 
 ## ⚙️ Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3001` |
-| `SESSION_SECRET` | Session encryption key (change in production!) | `your-secret-key-here` |
-| **Database** | | |
-| `DB_DIALECT` | Database type (`postgres` or `sqlite`) | `postgres` |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Database port | `5432` |
-| `DB_USERNAME` | Database username | `postgres` |
-| `DB_PASSWORD` | Database password | - |
-| `DB_NAME` | Database name | `notehubmd` |
-| `DB_STORAGE` | SQLite file path (when using SQLite) | `./database/database.sqlite` |
-| **Permissions** | | |
-| `DEFAULT_NOTE_PERMISSION` | Default permission for new notes | `private` |
-| `DEFAULT_BOOK_PERMISSION` | Default permission for new books | `private` |
-| **Features** | | |
-| `FEATURE_COMMENTS` | Enable comments feature | `true` |
-| `API_MASTER_KEY` | Master API key for external access | - |
-| **LDAP (Optional)** | | |
-| `LDAP_ENABLED` | Enable LDAP authentication | `false` |
-| `LDAP_URL` | LDAP server URL | - |
-| `LDAP_BIND_DN` | LDAP bind DN | - |
-| `LDAP_BIND_PASSWORD` | LDAP bind password | - |
-| `LDAP_SEARCH_BASE` | LDAP user search base | - |
-| `LDAP_SEARCH_FILTER` | LDAP search filter | `(sAMAccountName={{username}})` |
+| Variable                  | Description                                    | Default                         |
+| ------------------------- | ---------------------------------------------- | ------------------------------- |
+| `PORT`                    | Server port                                    | `3001`                          |
+| `SESSION_SECRET`          | Session encryption key (change in production!) | `your-secret-key-here`          |
+| **Database**              |                                                |                                 |
+| `DB_DIALECT`              | Database type (`postgres` or `sqlite`)         | `postgres`                      |
+| `DB_HOST`                 | Database host                                  | `localhost`                     |
+| `DB_PORT`                 | Database port                                  | `5432`                          |
+| `DB_USERNAME`             | Database username                              | `postgres`                      |
+| `DB_PASSWORD`             | Database password                              | -                               |
+| `DB_NAME`                 | Database name                                  | `notehubmd`                     |
+| `DB_STORAGE`              | SQLite file path (when using SQLite)           | `./database/database.sqlite`    |
+| **Permissions**           |                                                |                                 |
+| `DEFAULT_NOTE_PERMISSION` | Default permission for new notes               | `private`                       |
+| `DEFAULT_BOOK_PERMISSION` | Default permission for new books               | `private`                       |
+| **Features**              |                                                |                                 |
+| `FEATURE_COMMENTS`        | Enable comments feature                        | `true`                          |
+| `API_MASTER_KEY`          | Master API key for external access             | -                               |
+| **LDAP (Optional)**       |                                                |                                 |
+| `LDAP_ENABLED`            | Enable LDAP authentication                     | `false`                         |
+| `LDAP_URL`                | LDAP server URL                                | -                               |
+| `LDAP_BIND_DN`            | LDAP bind DN                                   | -                               |
+| `LDAP_BIND_PASSWORD`      | LDAP bind password                             | -                               |
+| `LDAP_SEARCH_BASE`        | LDAP user search base                          | -                               |
+| `LDAP_SEARCH_FILTER`      | LDAP search filter                             | `(sAMAccountName={{username}})` |
 
 ## 📄 License
 

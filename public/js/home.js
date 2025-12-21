@@ -23,6 +23,7 @@
             const currentRoute = computed(() => route.path);
 
             const showSettings = ref(false);
+            const showAboutModal = ref(false);
             const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
 
             // User Profile Modal
@@ -481,7 +482,7 @@
             });
 
             return {
-                showSettings, theme, setTheme, logout, exportingNotes, exportNotes,
+                showSettings, showAboutModal, theme, setTheme, logout, exportingNotes, exportNotes,
                 createNote,
                 showCreateBookModal, newBookTitle, newBookDescription,
                 // Create Book modal

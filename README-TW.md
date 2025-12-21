@@ -49,31 +49,31 @@ cp .env.example .env
 
 ## ⚙️ 環境變數
 
-| 變數 | 說明 | 預設值 |
-|------|------|--------|
-| `PORT` | 伺服器埠號 | `3001` |
-| `SESSION_SECRET` | Session 加密金鑰（正式環境請務必修改！） | `your-secret-key-here` |
-| **資料庫** | | |
-| `DB_DIALECT` | 資料庫類型（`postgres` 或 `sqlite`） | `postgres` |
-| `DB_HOST` | 資料庫主機 | `localhost` |
-| `DB_PORT` | 資料庫埠號 | `5432` |
-| `DB_USERNAME` | 資料庫使用者名稱 | `postgres` |
-| `DB_PASSWORD` | 資料庫密碼 | - |
-| `DB_NAME` | 資料庫名稱 | `notehubmd` |
-| `DB_STORAGE` | SQLite 檔案路徑（使用 SQLite 時） | `./database/database.sqlite` |
-| **權限** | | |
-| `DEFAULT_NOTE_PERMISSION` | 新筆記的預設權限 | `private` |
-| `DEFAULT_BOOK_PERMISSION` | 新書本的預設權限 | `private` |
-| **功能** | | |
-| `FEATURE_COMMENTS` | 啟用留言功能 | `true` |
-| `API_MASTER_KEY` | 外部存取用的 Master API Key | - |
-| **LDAP（選用）** | | |
-| `LDAP_ENABLED` | 啟用 LDAP 驗證 | `false` |
-| `LDAP_URL` | LDAP 伺服器 URL | - |
-| `LDAP_BIND_DN` | LDAP Bind DN | - |
-| `LDAP_BIND_PASSWORD` | LDAP Bind 密碼 | - |
-| `LDAP_SEARCH_BASE` | LDAP 使用者搜尋 Base | - |
-| `LDAP_SEARCH_FILTER` | LDAP 搜尋過濾器 | `(sAMAccountName={{username}})` |
+| 變數                      | 說明                                     | 預設值                          |
+| ------------------------- | ---------------------------------------- | ------------------------------- |
+| `PORT`                    | 伺服器埠號                               | `3001`                          |
+| `SESSION_SECRET`          | Session 加密金鑰（正式環境請務必修改！） | `your-secret-key-here`          |
+| **資料庫**                |                                          |                                 |
+| `DB_DIALECT`              | 資料庫類型（`postgres` 或 `sqlite`）     | `postgres`                      |
+| `DB_HOST`                 | 資料庫主機                               | `localhost`                     |
+| `DB_PORT`                 | 資料庫埠號                               | `5432`                          |
+| `DB_USERNAME`             | 資料庫使用者名稱                         | `postgres`                      |
+| `DB_PASSWORD`             | 資料庫密碼                               | -                               |
+| `DB_NAME`                 | 資料庫名稱                               | `notehubmd`                     |
+| `DB_STORAGE`              | SQLite 檔案路徑（使用 SQLite 時）        | `./database/database.sqlite`    |
+| **權限**                  |                                          |                                 |
+| `DEFAULT_NOTE_PERMISSION` | 新筆記的預設權限                         | `private`                       |
+| `DEFAULT_BOOK_PERMISSION` | 新書本的預設權限                         | `private`                       |
+| **功能**                  |                                          |                                 |
+| `FEATURE_COMMENTS`        | 啟用留言功能                             | `true`                          |
+| `API_MASTER_KEY`          | 外部存取用的 Master API Key              | -                               |
+| **LDAP（選用）**          |                                          |                                 |
+| `LDAP_ENABLED`            | 啟用 LDAP 驗證                           | `false`                         |
+| `LDAP_URL`                | LDAP 伺服器 URL                          | -                               |
+| `LDAP_BIND_DN`            | LDAP Bind DN                             | -                               |
+| `LDAP_BIND_PASSWORD`      | LDAP Bind 密碼                           | -                               |
+| `LDAP_SEARCH_BASE`        | LDAP 使用者搜尋 Base                     | -                               |
+| `LDAP_SEARCH_FILTER`      | LDAP 搜尋過濾器                          | `(sAMAccountName={{username}})` |
 
 ## 📄 授權
 

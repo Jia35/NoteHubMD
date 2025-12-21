@@ -5,14 +5,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (production only)
-RUN npm ci --only=production
+# Install all dependencies (including dev for build)
+RUN npm ci
 
 # Copy application code
 COPY . .
 
 # Build TailwindCSS
 RUN npm run build:css
+
+# Remove dev dependencies for production
+RUN npm prune --omit=dev
 
 # Expose port
 EXPOSE 3001

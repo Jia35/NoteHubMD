@@ -622,6 +622,7 @@
 
             // Settings modal state
             const showSettingsModal = ref(false);
+            const showAboutModal = ref(false);
             const showPermissionModal = ref(false);
             const currentUser = ref(null);
             const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'light');
@@ -1952,6 +1953,7 @@
                 unpinItem,
                 currentRoute,
                 showSettingsModal,
+                showAboutModal,
                 currentUser,
                 theme,
                 setTheme,
