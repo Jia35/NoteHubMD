@@ -30,6 +30,29 @@
             const previewContainer = ref(null);
             const previewContent = ref(null);
 
+            // Theme
+            const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
+
+            const toggleTheme = () => {
+                const newTheme = theme.value === 'dark' ? 'light' : 'dark';
+                theme.value = newTheme;
+                localStorage.setItem('NoteHubMD-theme', newTheme);
+
+                if (newTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+
+                // Update highlight.js themes
+                const hljsLight = document.getElementById('hljs-light-theme');
+                const hljsDark = document.getElementById('hljs-dark-theme');
+                if (hljsLight && hljsDark) {
+                    hljsLight.disabled = newTheme === 'dark';
+                    hljsDark.disabled = newTheme !== 'dark';
+                }
+            };
+
             // Format relative time
             const formatRelativeTime = (dateString) => {
                 if (!dateString) return '';
@@ -419,6 +442,9 @@
                 scrollToHeading,
                 handlePreviewScroll,
                 closeLightbox,
+                // Theme
+                theme,
+                toggleTheme,
                 // Presentation
                 showPresentation,
                 togglePresentation
