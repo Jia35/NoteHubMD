@@ -1005,6 +1005,8 @@
 
             if (window.markdownitMark) md.use(window.markdownitMark);
             if (window.markdownitSup) md.use(window.markdownitSup);
+            if (window.markdownitSub) md.use(window.markdownitSub);
+            if (window.markdownitIns) md.use(window.markdownitIns);
             if (window.markdownitEmoji) md.use(window.markdownitEmoji);
             if (window.markdownitTaskLists) md.use(window.markdownitTaskLists, { enabled: true });
 
