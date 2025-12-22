@@ -1314,6 +1314,10 @@
 
             // --- Lightbox for images ---
             const lightboxImage = ref(null);
+            const lightboxZoom = ref(1);
+            const MIN_ZOOM = 0.25;
+            const MAX_ZOOM = 5;
+            const ZOOM_STEP = 0.25;
 
             const handlePreviewClick = (event) => {
                 const target = event.target;
@@ -1327,11 +1331,38 @@
                 // Handle image clicks for lightbox
                 if (target.tagName === 'IMG' && !target.closest('.mermaid')) {
                     lightboxImage.value = target.src;
+                    lightboxZoom.value = 1; // Reset zoom when opening
                 }
             };
 
             const closeLightbox = () => {
                 lightboxImage.value = null;
+                lightboxZoom.value = 1;
+            };
+
+            const zoomIn = () => {
+                if (lightboxZoom.value < MAX_ZOOM) {
+                    lightboxZoom.value = Math.min(MAX_ZOOM, lightboxZoom.value + ZOOM_STEP);
+                }
+            };
+
+            const zoomOut = () => {
+                if (lightboxZoom.value > MIN_ZOOM) {
+                    lightboxZoom.value = Math.max(MIN_ZOOM, lightboxZoom.value - ZOOM_STEP);
+                }
+            };
+
+            const resetZoom = () => {
+                lightboxZoom.value = 1;
+            };
+
+            const handleLightboxWheel = (event) => {
+                event.preventDefault();
+                if (event.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
             };
 
             // --- Image Upload ---
@@ -1962,7 +1993,12 @@
                 handleTaskListClick,
                 handlePreviewClick,
                 lightboxImage,
+                lightboxZoom,
                 closeLightbox,
+                zoomIn,
+                zoomOut,
+                resetZoom,
+                handleLightboxWheel,
                 showSidebar,
                 showCreateBookModalLocal,
                 newBookTitle,

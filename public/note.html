@@ -87,9 +87,8 @@
         <!-- Global Modal (replaces alert/confirm) -->
         <Teleport to="body">
             <Transition name="fade">
-                <div v-if="$root.modal.show"
-                    class="fixed inset-0 flex items-center justify-center bg-black/60" style="z-index: 200;"
-                    @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
+                <div v-if="$root.modal.show" class="fixed inset-0 flex items-center justify-center bg-black/60"
+                    style="z-index: 200;" @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
                     <Transition name="modal-scale">
                         <div v-if="$root.modal.show"
                             class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
@@ -1562,18 +1561,46 @@
         <!-- Image Lightbox Modal -->
         <Transition name="fade">
             <div v-if="lightboxImage" 
-                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 cursor-zoom-out"
+                 class="fixed inset-0 flex items-center justify-center bg-black/80 cursor-zoom-out"
                  style="z-index: 100;"
-                 @click="closeLightbox">
-                <!-- Close button -->
-                <button @click="closeLightbox" 
-                        class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white text-2xl hover:bg-white hover:bg-opacity-20 rounded-full transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                 @click="closeLightbox"
+                 @wheel.prevent="handleLightboxWheel">
+                <!-- Control buttons (top right) -->
+                <div class="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                    <!-- Close button -->
+                    <button @click="closeLightbox" 
+                            class="w-10 h-10 flex items-center justify-center text-white text-2xl hover:bg-white/30 rounded-full transition"
+                            title="關閉">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <!-- Zoom in button -->
+                    <button @click.stop="zoomIn" 
+                            class="w-10 h-10 flex items-center justify-center text-white text-lg hover:bg-white/30 rounded-full transition"
+                            :class="{ 'opacity-40 cursor-not-allowed': lightboxZoom >= 5 }"
+                            :disabled="lightboxZoom >= 5"
+                            title="放大">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    </button>
+                    <!-- Zoom out button -->
+                    <button @click.stop="zoomOut" 
+                            class="w-10 h-10 flex items-center justify-center text-white text-lg hover:bg-white/30 rounded-full transition"
+                            :class="{ 'opacity-40 cursor-not-allowed': lightboxZoom <= 0.25 }"
+                            :disabled="lightboxZoom <= 0.25"
+                            title="縮小">
+                        <i class="fa-solid fa-magnifying-glass-minus"></i>
+                    </button>
+                    <!-- Reset zoom button (only show when zoomed) -->
+                    <button v-if="lightboxZoom !== 1" 
+                            @click.stop="resetZoom" 
+                            class="w-10 h-10 flex items-center justify-center text-white text-xs hover:bg-white/30 rounded-full transition font-medium"
+                            title="重設縮放">
+                        {{ Math.round(lightboxZoom * 100) }}%
+                    </button>
+                </div>
                 <!-- Image -->
                 <img :src="lightboxImage" 
-                     class="object-contain cursor-default shadow-2xl"
-                     style="max-width: 90vw; max-height: 90vh;"
+                     class="object-contain cursor-default shadow-2xl transition-transform duration-150"
+                     :style="{ transform: 'scale(' + lightboxZoom + ')', maxWidth: '90vw', maxHeight: '90vh' }"
                      @click.stop />
             </div>
         </Transition>
