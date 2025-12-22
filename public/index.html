@@ -89,7 +89,7 @@
         <Teleport to="body">
             <Transition name="fade">
                 <div v-if="$root.modal.show"
-                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 200;"
+                    class="fixed inset-0 flex items-center justify-center bg-black/60" style="z-index: 200;"
                     @click.self="$root.modal.type === 'alert' ? $root.closeModal() : null">
                     <Transition name="modal-scale">
                         <div v-if="$root.modal.show"
@@ -270,8 +270,7 @@
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">
                 <span>{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</span>
-                <span v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username
-                    }}</span>
+                <span v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username}}</span>
             </div>
         </div>
 
@@ -308,7 +307,7 @@
 
 
     <script type="text/x-template" id="info-modal-template">
-        <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="$emit('close')">
+        <div v-if="show" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="$emit('close')">
             <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col" style="height: 70vh;">
                 <!-- Modal Header -->
                 <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
@@ -742,7 +741,7 @@
             </div>
 
             <!-- Search Modal (inside SidebarNav) -->
-            <div v-if="showSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSearchModal = false">
+            <div v-if="showSearchModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showSearchModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="max-height: 80vh;">
                     <!-- Modal Header -->
                     <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
@@ -921,7 +920,7 @@
         @create-book="openCreateBookModal" @open-profile="openUserProfileModal" @open-settings="showSettings = true" />
 
     <!-- User Profile Modal -->
-    <div v-if="showUserProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="showUserProfileModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
         @click.self="showUserProfileModal = false">
         <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
             <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user mr-2"></i>個人資料</h2>
@@ -936,7 +935,7 @@
                             }}</span>
                         <!-- Hover overlay -->
                         <div
-                            class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                            class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                             <i class="fa-solid fa-camera text-white text-xl"></i>
                         </div>
                     </div>
@@ -985,7 +984,7 @@
     </div>
 
     <!-- Settings Modal -->
-    <div v-if="showSettings" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="showSettings" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
         @click.self="showSettings = false">
         <div
             class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
@@ -1064,7 +1063,7 @@
             <div
                 class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
                 <button @click="showSettings = false; showAboutModal = true" title="關於 NoteHubMD"
-                    class="text-xs text-gray-400 hover:text-blue-500 transition cursor-pointer flex items-center">
+                    class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center">
                     v{{ appVersion }} <i class="fa-solid fa-circle-info ml-1 text-[10px]"></i>
                 </button>
                 <button v-if="user" @click="logout"
@@ -1082,7 +1081,7 @@
     </div>
 
     <!-- About Modal -->
-    <div v-if="showAboutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="showAboutModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
         @click.self="showAboutModal = false">
         <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <!-- Header -->
@@ -1122,7 +1121,7 @@
     </div>
 
     <!-- Create Book Modal -->
-    <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="showCreateBookModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
         @click.self="showCreateBookModal = false">
         <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
             <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
@@ -1165,7 +1164,7 @@
     </div>
 
     <!-- Search Modal -->
-    <div v-if="showSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div v-if="showSearchModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
         @click.self="showSearchModal = false">
         <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col"
             style="max-height: 80vh;">
@@ -1377,7 +1376,7 @@
 
             <div class="mb-6">
                 <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
-                <div class="flex gap-6 pb-4" style="overflow-x: auto;">
+                <div class="flex gap-4 pb-4" style="overflow-x: auto;">
                     <div v-if="filteredBooks.length == 0" @click="openCreateBookModal" class="w-64 shrink-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6">
                         <i class="fa-solid fa-plus text-3xl text-green-500 mb-3"></i>
                         <p class="text-gray-600 dark:text-gray-300 font-medium">新增書本</p>
@@ -1413,7 +1412,7 @@
                             <span class="text-gray-500 dark:text-gray-400">每頁：</span>
                             <button v-for="opt in perPageOptions" :key="opt" @click="setNotesPerPage(opt)"
                                 :class="notesPerPage === opt ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                class="px-2 py-1 rounded transition cursor-pointer">
+                                class="px-2 py-1 rounded transition">
                                 {{ opt }}
                             </button>
                         </div>
@@ -1429,7 +1428,7 @@
                     </div>
                 </div>
                 
-                <div v-if="notesDisplayMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div v-if="notesDisplayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                     <div v-if="filteredNotes.length == 0" @click="createNote" class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]">
                         <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
                         <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
@@ -1478,7 +1477,7 @@
                     <div class="flex items-center gap-1">
                         <!-- Previous Button -->
                         <button @click="goToNotesPage(currentNotesPage - 1)" :disabled="currentNotesPage === 1"
-                            :class="currentNotesPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer'"
+                            :class="currentNotesPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
                             class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded transition">
                             <i class="fa-solid fa-chevron-left"></i>
                         </button>
@@ -1488,14 +1487,14 @@
                             <span v-if="page === '...'" class="px-2 py-1 text-gray-400">...</span>
                             <button v-else @click="goToNotesPage(page)"
                                 :class="page === currentNotesPage ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
-                                class="px-3 py-1.5 text-sm rounded transition cursor-pointer">
+                                class="px-3 py-1.5 text-sm rounded transition">
                                 {{ page }}
                             </button>
                         </template>
                         
                         <!-- Next Button -->
                         <button @click="goToNotesPage(currentNotesPage + 1)" :disabled="currentNotesPage === totalNotesPages"
-                            :class="currentNotesPage === totalNotesPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer'"
+                            :class="currentNotesPage === totalNotesPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
                             class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded transition">
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>
@@ -1545,7 +1544,7 @@
             </InfoModal>
 
             <!-- Create Book Modal -->
-            <div v-if="showCreateBookModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            <div v-if="showCreateBookModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
                 @click.self="showCreateBookModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
                     <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
@@ -1588,7 +1587,7 @@
             </div>
 
             <!-- Move Note Modal -->
-            <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
                 @click.self="showMoveNoteModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
                      <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
@@ -1785,7 +1784,7 @@
                 @remove-user-permission="removeUserPermission" @update-user-permission="updateUserPermissionLevel" />
 
             <!-- Move Note Modal -->
-            <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            <div v-if="showMoveNoteModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
                 @click.self="showMoveNoteModal = false">
                 <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-sm mx-4">
                      <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
@@ -2009,7 +2008,7 @@
                     </button>
                     <!-- Permission Button (Owner only) / Display (Non-owner) -->
                     <button v-if="isOwner" @click="infoModalTab = 'permission'; showInfoModal = true; initInfoModal()" 
-                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition"
                             title="點擊設定權限">
                         <i class="fa-solid fa-lock text-xs"></i>
                         <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
@@ -2020,7 +2019,7 @@
                     </span>
                     <!-- Book Info Button -->
                     <button @click="infoModalTab = 'info'; showInfoModal = true; initInfoModal()" 
-                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                            class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition"
                             title="書本設定">
                         <i class="fa-solid fa-cog text-xs"></i>
                         <span>書本設定</span>
@@ -2111,7 +2110,7 @@
             <Transition name="note-sidebar-slide">
                 <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
                     <!-- Backdrop with fade -->
-                    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                    <div class="absolute inset-0 bg-black/60"></div>
                     <!-- Sidebar Content using SidebarNav component -->
                     <div class="absolute top-0 h-full" @click.stop>
                         <SidebarNav 
@@ -2138,7 +2137,7 @@
             <div class="flex-1 flex flex-col overflow-hidden">
 
                 <!-- User Profile Modal -->
-                <div v-if="showUserProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showUserProfileModal = false">
+                <div v-if="showUserProfileModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showUserProfileModal = false">
                     <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
                         <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user mr-2"></i>個人資料</h2>
                         
@@ -2150,7 +2149,7 @@
                                     <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
                                     <span v-else class="text-3xl text-white">{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
                                     <!-- Hover overlay -->
-                                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                         <i class="fa-solid fa-camera text-white text-xl"></i>
                                     </div>
                                 </div>
@@ -2199,7 +2198,7 @@
                 </div>
 
                 <!-- Settings Modal -->
-                <div v-if="showSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showSettingsModal = false">
+                <div v-if="showSettingsModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showSettingsModal = false">
                     <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
                         <h2 class="text-xl font-bold mb-4">設定</h2>
                         
@@ -2226,7 +2225,7 @@
                 </div>
 
                 <!-- Create Book Modal -->
-                <div v-if="showCreateBookModalLocal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateBookModalLocal = false">
+                <div v-if="showCreateBookModalLocal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showCreateBookModalLocal = false">
                     <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
                         <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
                             <h2 class="text-xl font-bold text-gray-800 dark:text-white">
@@ -2371,7 +2370,7 @@
                         </div>
                         <!-- Permission Button (Owner only) / Display (Non-owner) -->
                         <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
-                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
                                 title="點擊設定權限">
                             <i class="fa-solid fa-lock text-xs"></i>
                             <span v-if="permission === 'inherit'">繼承書本</span>
@@ -2384,7 +2383,7 @@
                         </span>
                         <!-- Note Info Button -->
                         <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
-                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition cursor-pointer"
+                                class="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-300 transition"
                                 title="筆記設定">
                             <i class="fa-solid fa-cog text-xs"></i>
                             <span>筆記設定</span>

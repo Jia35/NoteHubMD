@@ -1,3 +1,7 @@
+button {
+    cursor: pointer;
+}
+
 .CodeMirror {
     height: 100%;
     font-family: 'Fira Code', monospace;
@@ -204,6 +208,10 @@
 .markdown-body h5,
 .markdown-body h6 {
     position: relative;
+}
+
+.markdown-body h6 code {
+    padding: .2em .3em;
 }
 
 .markdown-body .header-anchor {

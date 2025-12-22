@@ -21,7 +21,7 @@ services:
       - "3000:3000"
     environment:
       - DB_DIALECT=postgres
-      - DB_HOST=db
+      - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=notehubmd
       - DB_PASSWORD=notehubmd_password
