@@ -439,7 +439,19 @@
             // Copy share link to clipboard
             const copyShareLink = async () => {
                 try {
-                    await navigator.clipboard.writeText(shareUrl.value);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(shareUrl.value);
+                    } else {
+                        // Fallback for non-secure contexts
+                        const textArea = document.createElement('textarea');
+                        textArea.value = shareUrl.value;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-9999px';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                    }
                     shareCopied.value = true;
                     setTimeout(() => {
                         shareCopied.value = false;
@@ -553,7 +565,19 @@
                 if (!currentAlias.value) return;
                 try {
                     const aliasUrl = window.location.origin + '/s/' + currentAlias.value;
-                    await navigator.clipboard.writeText(aliasUrl);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(aliasUrl);
+                    } else {
+                        // Fallback for non-secure contexts
+                        const textArea = document.createElement('textarea');
+                        textArea.value = aliasUrl;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-9999px';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                    }
                     aliasCopied.value = true;
                     setTimeout(() => {
                         aliasCopied.value = false;
