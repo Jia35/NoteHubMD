@@ -1723,12 +1723,14 @@ router.get('/export/my-notes', async (req, res) => {
             let filename;
 
             if (note.Book) {
-                // Note is in a book: {bookTitle}__{noteTitle} [NoteID].md
+                // Note is in a book: {{bookTitle}}__{{order}}__{{noteTitle}}.md
                 const bookTitle = sanitizeFilename(note.Book.title);
-                filename = `${bookTitle}__${noteTitle} [${note.id}]`;
+                // Zero-pad order to 2 digits for proper sorting (e.g., 01, 02, 10)
+                const orderNum = String(note.order + 1).padStart(2, '0');
+                filename = `${bookTitle}__${orderNum}__${noteTitle}`;
             } else {
-                // Standalone note: {noteTitle} [NoteID].md
-                filename = `${noteTitle} [${note.id}]`;
+                // Standalone note: {{noteTitle}}.md
+                filename = `${noteTitle}`;
             }
 
             // Handle duplicate filenames (shouldn't happen with ID, but just in case)
