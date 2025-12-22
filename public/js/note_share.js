@@ -210,10 +210,12 @@
                     if (previewContent.value) {
                         previewContent.value.innerHTML = rendered;
 
-                        // Init mermaid
+                        // Render mermaid diagrams
                         if (window.mermaid) {
                             try {
-                                window.mermaid.init(undefined, previewContent.value.querySelectorAll('.mermaid'));
+                                window.mermaid.run({
+                                    nodes: previewContent.value.querySelectorAll('.mermaid')
+                                });
                             } catch (e) {
                                 console.error('Mermaid error:', e);
                             }
@@ -416,6 +418,16 @@
             };
 
             onMounted(() => {
+                // Initialize Mermaid with theme based on current mode
+                if (window.mermaid) {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    window.mermaid.initialize({
+                        startOnLoad: false,
+                        theme: isDark ? 'dark' : 'default',
+                        securityLevel: 'loose'
+                    });
+                }
+
                 document.addEventListener('click', handleImageClick);
                 document.addEventListener('keyup', handleEsc);
             });
