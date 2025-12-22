@@ -26,9 +26,9 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const now = new Date();
         const yyyyMM = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const random5 = generateId(5); // 5-character Base32 string
+        const random10 = generateId(10); // 10-character Base32 string
         const ext = path.extname(file.originalname).toLowerCase();
-        const filename = `${yyyyMM}_${random5}${ext}`;
+        const filename = `${yyyyMM}_${random10}${ext}`;
         cb(null, filename);
     }
 });
