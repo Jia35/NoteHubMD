@@ -1772,13 +1772,13 @@
                     // Handle access errors
                     if (e.message.includes('Login required')) {
                         globalModal.showAlert('需要登入才能存取此筆記');
-                        // Use window.location to get the actual current URL
+                        // Use window.location to redirect to actual login page
                         const currentPath = window.location.pathname + window.location.search;
-                        router.push({ path: '/login', query: { redirect: currentPath } });
+                        window.location.href = '/login?redirect=' + encodeURIComponent(currentPath);
                         return;
                     } else if (e.message.includes('Access denied')) {
                         globalModal.showAlert('您沒有權限存取此筆記');
-                        router.push('/');
+                        window.location.href = '/';
                         return;
                     } else if (e.message.includes('not found') || e.message.includes('Not found')) {
                         // Note doesn't exist - redirect to 404
@@ -1979,10 +1979,10 @@
                         console.error('Failed to load note', e);
                         if (e.message.includes('Login required')) {
                             globalModal.showAlert('需要登入才能存取此筆記');
-                            router.push({ path: '/login', query: { redirect: '/n/' + newNoteId } });
+                            window.location.href = '/login?redirect=' + encodeURIComponent('/n/' + newNoteId);
                         } else if (e.message.includes('Access denied')) {
                             globalModal.showAlert('您沒有權限存取此筆記');
-                            router.push('/');
+                            window.location.href = '/';
                         }
                     }
                 }
