@@ -846,6 +846,88 @@
                 }
             };
 
+            // Import Notes
+            const importingNotes = ref(false);
+            const importFileInput = ref(null);
+            const importFolderInput = ref(null);
+            const showImportMenu = ref(false);
+
+            const handleImportFile = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                importingNotes.value = true;
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch('/api/import/notes', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Import failed');
+                    }
+
+                    globalModal.showAlert(
+                        `匯入成功！\n建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`,
+                        'success'
+                    );
+                } catch (e) {
+                    globalModal.showAlert('匯入失敗：' + e.message);
+                } finally {
+                    importingNotes.value = false;
+                    // Reset file input
+                    event.target.value = '';
+                }
+            };
+
+            // Handle folder import
+            const handleImportFolder = async (event) => {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+
+                // Filter only .md files
+                const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.md'));
+                if (mdFiles.length === 0) {
+                    globalModal.showAlert('資料夾中沒有找到 .md 檔案');
+                    event.target.value = '';
+                    return;
+                }
+
+                importingNotes.value = true;
+                try {
+                    const formData = new FormData();
+                    mdFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+
+                    const response = await fetch('/api/import/notes-folder', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Import failed');
+                    }
+
+                    globalModal.showAlert(
+                        `匯入成功！\n建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`,
+                        'success'
+                    );
+                } catch (e) {
+                    globalModal.showAlert('匯入失敗：' + e.message);
+                } finally {
+                    importingNotes.value = false;
+                    event.target.value = '';
+                }
+            };
+
             // Load current user
             getCurrentUser().then(user => {
                 currentUser.value = user;
@@ -2022,6 +2104,12 @@
                 logout,
                 exportingNotes,
                 exportNotes,
+                importingNotes,
+                importFileInput,
+                importFolderInput,
+                handleImportFile,
+                handleImportFolder,
+                showImportMenu,
                 charCount,
                 lineCount,
                 selectedLines,

@@ -1005,9 +1005,43 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 ZIP 檔案</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 .zip 檔案</div>
                         </div>
                     </button>
+                    <!-- Import Notes -->
+                    <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip"
+                        class="hidden">
+                    <input type="file" ref="importFolderInput" @change="handleImportFolder" webkitdirectory
+                        class="hidden">
+                    <div class="relative mt-2">
+                        <button @click="showImportMenu = !showImportMenu" :disabled="importingNotes"
+                            class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
+                            <div
+                                class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
+                                <i
+                                    :class="importingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-import'"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
+                            </div>
+                            <i class="fa-solid fa-chevron-down text-gray-400 ml-2"></i>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div v-show="showImportMenu"
+                            class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
+                            <button @click="$refs.importFileInput.click(); showImportMenu = false"
+                                class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
+                                <i class="fa-solid fa-file text-blue-500 mr-3"></i>
+                                <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md 或 .zip)</span>
+                            </button>
+                            <button @click="$refs.importFolderInput.click(); showImportMenu = false"
+                                class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-t border-gray-100 dark:border-gray-700">
+                                <i class="fa-solid fa-folder text-yellow-500 mr-3"></i>
+                                <span class="text-sm text-gray-700 dark:text-gray-200">上傳資料夾</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Admin (Conditional) -->

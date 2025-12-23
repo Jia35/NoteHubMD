@@ -1759,4 +1759,413 @@ router.get('/export/my-notes', async (req, res) => {
     }
 });
 
+// --- Import ---
+
+// Import notes from .md or .zip file
+const AdmZip = require('adm-zip');
+
+// Configure multer storage for import (temp file)
+const importStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const importTempDir = path.join(__dirname, '../../_uploads/import_temp');
+        if (!fs.existsSync(importTempDir)) {
+            fs.mkdirSync(importTempDir, { recursive: true });
+        }
+        cb(null, importTempDir);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `import_${timestamp}${ext}`);
+    }
+});
+
+const importUpload = multer({
+    storage: importStorage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (ext === '.md' || ext === '.zip') {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only .md and .zip are allowed.'));
+        }
+    }
+});
+
+// Parse filename to determine if it's a book note or standalone
+// Book note format: {{bookTitle}}__{{order}}__{{noteTitle}}.md
+function parseImportFilename(filename) {
+    // Remove .md extension
+    const nameWithoutExt = filename.replace(/\.md$/i, '');
+
+    // Check for book format: bookTitle__order__noteTitle
+    const bookMatch = nameWithoutExt.match(/^(.+?)__(\d+)__(.+)$/);
+
+    if (bookMatch) {
+        return {
+            isBookNote: true,
+            bookTitle: bookMatch[1].trim(),
+            order: parseInt(bookMatch[2], 10),
+            noteTitle: bookMatch[3].trim()
+        };
+    }
+
+    // Standalone note - just use the filename as title
+    return {
+        isBookNote: false,
+        noteTitle: nameWithoutExt.trim() || 'Untitled'
+    };
+}
+
+router.post('/import/notes', importUpload.single('file'), async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId && !req.isMasterApiKey) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const userId = req.session.userId;
+        const filePath = req.file.path;
+        const ext = path.extname(req.file.originalname).toLowerCase();
+
+        let mdFiles = []; // Array of { filename, content }
+
+        if (ext === '.zip') {
+            // Extract .md files from zip
+            const zip = new AdmZip(filePath);
+            const entries = zip.getEntries();
+
+            for (const entry of entries) {
+                if (!entry.isDirectory && entry.entryName.toLowerCase().endsWith('.md')) {
+                    // Get just the filename (without directory path)
+                    const filename = path.basename(entry.entryName);
+                    const content = entry.getData().toString('utf8');
+                    mdFiles.push({ filename, content });
+                }
+            }
+        } else {
+            // Single .md file
+            const content = fs.readFileSync(filePath, 'utf8');
+            mdFiles.push({ filename: req.file.originalname, content });
+        }
+
+        // Clean up temp file
+        fs.unlinkSync(filePath);
+
+        if (mdFiles.length === 0) {
+            return res.status(400).json({ error: 'No .md files found' });
+        }
+
+        // Group notes by book
+        const bookNotes = {}; // { bookTitle: [{ order, noteTitle, content }] }
+        const standaloneNotes = []; // [{ noteTitle, content }]
+
+        for (const { filename, content } of mdFiles) {
+            const parsed = parseImportFilename(filename);
+
+            if (parsed.isBookNote) {
+                if (!bookNotes[parsed.bookTitle]) {
+                    bookNotes[parsed.bookTitle] = [];
+                }
+                bookNotes[parsed.bookTitle].push({
+                    order: parsed.order,
+                    noteTitle: parsed.noteTitle,
+                    content
+                });
+            } else {
+                standaloneNotes.push({
+                    noteTitle: parsed.noteTitle,
+                    content
+                });
+            }
+        }
+
+        // Create books and notes
+        const createdBooks = [];
+        const createdNotes = [];
+
+        // Create books
+        for (const bookTitle of Object.keys(bookNotes)) {
+            // Always create new book
+            let bookId = generateId();
+            let retry = 0;
+            let book = null;
+
+            while (retry < 5) {
+                try {
+                    book = await db.Book.create({
+                        id: bookId,
+                        title: bookTitle,
+                        ownerId: userId
+                    });
+                    break;
+                } catch (e) {
+                    if (e.name === 'SequelizeUniqueConstraintError') {
+                        bookId = generateId();
+                        retry++;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            if (!book) {
+                console.error(`Failed to create book: ${bookTitle}`);
+                continue;
+            }
+
+            createdBooks.push({ id: book.id, title: book.title });
+
+            // Sort notes by order and create them
+            const notesToCreate = bookNotes[bookTitle].sort((a, b) => a.order - b.order);
+
+            for (let i = 0; i < notesToCreate.length; i++) {
+                const noteData = notesToCreate[i];
+                let noteId = generateId();
+                retry = 0;
+
+                while (retry < 5) {
+                    try {
+                        const note = await db.Note.create({
+                            id: noteId,
+                            title: noteData.noteTitle,
+                            content: noteData.content,
+                            tags: parseTags(noteData.content),
+                            bookId: book.id,
+                            order: i,
+                            ownerId: userId
+                        });
+                        createdNotes.push({ id: note.id, title: note.title, bookId: book.id });
+                        break;
+                    } catch (e) {
+                        if (e.name === 'SequelizeUniqueConstraintError') {
+                            noteId = generateId();
+                            retry++;
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Create standalone notes
+        for (const noteData of standaloneNotes) {
+            let noteId = generateId();
+            let retry = 0;
+
+            while (retry < 5) {
+                try {
+                    const note = await db.Note.create({
+                        id: noteId,
+                        title: noteData.noteTitle,
+                        content: noteData.content,
+                        tags: parseTags(noteData.content),
+                        ownerId: userId
+                    });
+                    createdNotes.push({ id: note.id, title: note.title });
+                    break;
+                } catch (e) {
+                    if (e.name === 'SequelizeUniqueConstraintError') {
+                        noteId = generateId();
+                        retry++;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            stats: {
+                books: createdBooks.length,
+                notes: createdNotes.length
+            },
+            created: {
+                books: createdBooks,
+                notes: createdNotes
+            }
+        });
+
+    } catch (e) {
+        console.error('Import error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Import notes from folder (multiple .md files)
+const importFolderUpload = multer({
+    storage: multer.memoryStorage(), // Use memory storage for folder uploads
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max total
+    fileFilter: (req, file, cb) => {
+        if (file.originalname.toLowerCase().endsWith('.md')) {
+            cb(null, true);
+        } else {
+            cb(null, false); // Silently skip non-.md files
+        }
+    }
+});
+
+router.post('/import/notes-folder', importFolderUpload.array('files', 500), async (req, res) => {
+    try {
+        // Check login
+        if (!req.session.userId && !req.isMasterApiKey) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No .md files found' });
+        }
+
+        const userId = req.session.userId;
+
+        // Convert files to mdFiles array
+        // Fix encoding: browser sends filename as Latin-1, need to decode as UTF-8
+        const mdFiles = req.files.map(file => ({
+            filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
+            content: file.buffer.toString('utf8')
+        }));
+
+        // Group notes by book (same logic as single file import)
+        const bookNotes = {};
+        const standaloneNotes = [];
+
+        for (const { filename, content } of mdFiles) {
+            const parsed = parseImportFilename(filename);
+
+            if (parsed.isBookNote) {
+                if (!bookNotes[parsed.bookTitle]) {
+                    bookNotes[parsed.bookTitle] = [];
+                }
+                bookNotes[parsed.bookTitle].push({
+                    order: parsed.order,
+                    noteTitle: parsed.noteTitle,
+                    content
+                });
+            } else {
+                standaloneNotes.push({
+                    noteTitle: parsed.noteTitle,
+                    content
+                });
+            }
+        }
+
+        // Create books and notes
+        const createdBooks = [];
+        const createdNotes = [];
+
+        // Create books
+        for (const bookTitle of Object.keys(bookNotes)) {
+            let bookId = generateId();
+            let retry = 0;
+            let book = null;
+
+            while (retry < 5) {
+                try {
+                    book = await db.Book.create({
+                        id: bookId,
+                        title: bookTitle,
+                        ownerId: userId
+                    });
+                    break;
+                } catch (e) {
+                    if (e.name === 'SequelizeUniqueConstraintError') {
+                        bookId = generateId();
+                        retry++;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            if (!book) {
+                console.error(`Failed to create book: ${bookTitle}`);
+                continue;
+            }
+
+            createdBooks.push({ id: book.id, title: book.title });
+
+            const notesToCreate = bookNotes[bookTitle].sort((a, b) => a.order - b.order);
+
+            for (let i = 0; i < notesToCreate.length; i++) {
+                const noteData = notesToCreate[i];
+                let noteId = generateId();
+                retry = 0;
+
+                while (retry < 5) {
+                    try {
+                        const note = await db.Note.create({
+                            id: noteId,
+                            title: noteData.noteTitle,
+                            content: noteData.content,
+                            tags: parseTags(noteData.content),
+                            bookId: book.id,
+                            order: i,
+                            ownerId: userId
+                        });
+                        createdNotes.push({ id: note.id, title: note.title, bookId: book.id });
+                        break;
+                    } catch (e) {
+                        if (e.name === 'SequelizeUniqueConstraintError') {
+                            noteId = generateId();
+                            retry++;
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Create standalone notes
+        for (const noteData of standaloneNotes) {
+            let noteId = generateId();
+            let retry = 0;
+
+            while (retry < 5) {
+                try {
+                    const note = await db.Note.create({
+                        id: noteId,
+                        title: noteData.noteTitle,
+                        content: noteData.content,
+                        tags: parseTags(noteData.content),
+                        ownerId: userId
+                    });
+                    createdNotes.push({ id: note.id, title: note.title });
+                    break;
+                } catch (e) {
+                    if (e.name === 'SequelizeUniqueConstraintError') {
+                        noteId = generateId();
+                        retry++;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            stats: {
+                books: createdBooks.length,
+                notes: createdNotes.length
+            },
+            created: {
+                books: createdBooks,
+                notes: createdNotes
+            }
+        });
+
+    } catch (e) {
+        console.error('Import folder error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
