@@ -5,7 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const db = require('../models');
 const config = require('../config');
-const { generateId, generateShareId } = require('../utils/idGenerator');
+const { generateId, generateShareId, generateImageId } = require('../utils/idGenerator');
 
 // --- App Info ---
 router.get('/version', (req, res) => {
@@ -26,9 +26,9 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const now = new Date();
         const yyyyMM = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const random10 = generateId(10); // 10-character Base32 string
+        const imageId = generateImageId(); // 8-character Base62 string
         const ext = path.extname(file.originalname).toLowerCase();
-        const filename = `${yyyyMM}_${random10}${ext}`;
+        const filename = `${yyyyMM}_${imageId}${ext}`;
         cb(null, filename);
     }
 });
