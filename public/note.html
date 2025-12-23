@@ -1268,6 +1268,54 @@
                     <!-- Editor -->
                     <div v-show="showEditor" class="h-full flex flex-col border-r border-gray-700" 
                          :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
+                        <!-- Markdown Toolbar -->
+                        <div v-if="canEdit" class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-2 py-1 flex items-center gap-1 shrink-0 sticky top-0 z-20">
+                            <button @click="toggleBold" class="toolbar-btn" title="粗體 (Ctrl+B)">
+                                <i class="fa-solid fa-bold"></i>
+                            </button>
+                            <button @click="toggleItalic" class="toolbar-btn" title="斜體 (Ctrl+I)">
+                                <i class="fa-solid fa-italic"></i>
+                            </button>
+                            <button @click="toggleStrikethrough" class="toolbar-btn" title="刪除線">
+                                <i class="fa-solid fa-strikethrough"></i>
+                            </button>
+                            <button @click="toggleUnderline" class="toolbar-btn" title="底線">
+                                <i class="fa-solid fa-underline"></i>
+                            </button>
+                            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                            <button @click="cycleHeading" class="toolbar-btn" title="標題 (循環 H1-H6)">
+                                <i class="fa-solid fa-heading"></i>
+                            </button>
+                            <button @click="toggleBlockquote" class="toolbar-btn" title="引用">
+                                <i class="fa-solid fa-quote-left"></i>
+                            </button>
+                            <button @click="toggleUnorderedList" class="toolbar-btn" title="無序清單">
+                                <i class="fa-solid fa-list-ul"></i>
+                            </button>
+                            <button @click="toggleOrderedList" class="toolbar-btn" title="有序清單">
+                                <i class="fa-solid fa-list-ol"></i>
+                            </button>
+                            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                            <button @click="toggleInlineCode" class="toolbar-btn" title="行內程式碼">
+                                <i class="fa-solid fa-code"></i>
+                            </button>
+                            <button @click="insertCodeBlock" class="toolbar-btn" title="程式碼區塊">
+                                <i class="fa-solid fa-file-code"></i>
+                            </button>
+                            <button @click="insertTable" class="toolbar-btn" title="表格">
+                                <i class="fa-solid fa-table"></i>
+                            </button>
+                            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                            <button @click="toggleLink" class="toolbar-btn" title="連結">
+                                <i class="fa-solid fa-link"></i>
+                            </button>
+                            <button @click="toggleImage" class="toolbar-btn" title="圖片">
+                                <i class="fa-solid fa-image"></i>
+                            </button>
+                            <button @click="toggleHorizontalRule" class="toolbar-btn" title="水平線">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                        </div>
                         <div class="flex-1 overflow-hidden relative">
                             <textarea ref="editorTextarea"></textarea>
                         </div>

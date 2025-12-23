@@ -2,6 +2,42 @@ button {
     cursor: pointer;
 }
 
+/* Markdown Toolbar Buttons */
+.toolbar-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: #4b5563;
+    background: transparent;
+    border: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.toolbar-btn:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.toolbar-btn:active {
+    background-color: #d1d5db;
+}
+
+.dark .toolbar-btn {
+    color: #9ca3af;
+}
+
+.dark .toolbar-btn:hover {
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+.dark .toolbar-btn:active {
+    background-color: #4b5563;
+}
+
 /* Markdown Lists - restore bullet points and numbering (reset by TailwindCSS) */
 .markdown-body ul {
     list-style-type: disc;

@@ -1137,6 +1137,192 @@
 
             let cmInstance = null;
 
+            // --- Markdown Toolbar Functions ---
+            // Helper: Toggle wrap around selection (e.g., **bold**, *italic*)
+            const toggleWrap = (prefix, suffix = prefix) => {
+                if (!cmInstance) return;
+                const selection = cmInstance.getSelection();
+                const cursor = cmInstance.getCursor();
+
+                if (selection) {
+                    // Check if already wrapped
+                    if (selection.startsWith(prefix) && selection.endsWith(suffix)) {
+                        // Remove wrap
+                        cmInstance.replaceSelection(selection.slice(prefix.length, -suffix.length));
+                    } else {
+                        // Add wrap
+                        cmInstance.replaceSelection(prefix + selection + suffix);
+                    }
+                } else {
+                    // No selection, insert placeholder
+                    cmInstance.replaceRange(prefix + suffix, cursor);
+                    cmInstance.setCursor({ line: cursor.line, ch: cursor.ch + prefix.length });
+                }
+                cmInstance.focus();
+            };
+
+            // Helper: Toggle line prefix (e.g., > quote, - list)
+            const toggleLinePrefix = (prefix) => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                const line = cmInstance.getLine(cursor.line);
+
+                if (line.startsWith(prefix)) {
+                    // Remove prefix
+                    cmInstance.replaceRange(
+                        line.slice(prefix.length),
+                        { line: cursor.line, ch: 0 },
+                        { line: cursor.line, ch: line.length }
+                    );
+                } else {
+                    // Add prefix
+                    cmInstance.replaceRange(
+                        prefix + line,
+                        { line: cursor.line, ch: 0 },
+                        { line: cursor.line, ch: line.length }
+                    );
+                }
+                cmInstance.focus();
+            };
+
+            const toggleBold = () => toggleWrap('**');
+            const toggleItalic = () => toggleWrap('*');
+            const toggleStrikethrough = () => toggleWrap('~~');
+            const toggleUnderline = () => toggleWrap('++');
+            const toggleInlineCode = () => toggleWrap('`');
+
+            const cycleHeading = () => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                const line = cmInstance.getLine(cursor.line);
+
+                // Match existing heading
+                const match = line.match(/^(#{1,6})\s/);
+                let newLine;
+
+                if (!match) {
+                    // No heading, add H1
+                    newLine = '# ' + line;
+                } else if (match[1].length < 6) {
+                    // Increase heading level
+                    newLine = '#' + line;
+                } else {
+                    // H6 -> remove heading
+                    newLine = line.replace(/^#{1,6}\s/, '');
+                }
+
+                cmInstance.replaceRange(
+                    newLine,
+                    { line: cursor.line, ch: 0 },
+                    { line: cursor.line, ch: line.length }
+                );
+                cmInstance.focus();
+            };
+
+            const toggleBlockquote = () => toggleLinePrefix('> ');
+            const toggleUnorderedList = () => toggleLinePrefix('- ');
+
+            const toggleOrderedList = () => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                const line = cmInstance.getLine(cursor.line);
+
+                // Check if line starts with numbered list
+                const match = line.match(/^\d+\.\s/);
+                if (match) {
+                    // Remove numbered list prefix
+                    cmInstance.replaceRange(
+                        line.slice(match[0].length),
+                        { line: cursor.line, ch: 0 },
+                        { line: cursor.line, ch: line.length }
+                    );
+                } else {
+                    // Add numbered list prefix
+                    cmInstance.replaceRange(
+                        '1. ' + line,
+                        { line: cursor.line, ch: 0 },
+                        { line: cursor.line, ch: line.length }
+                    );
+                }
+                cmInstance.focus();
+            };
+
+            const insertCodeBlock = () => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                cmInstance.replaceRange('\n```\n\n```\n', cursor);
+                cmInstance.setCursor({ line: cursor.line + 2, ch: 0 });
+                cmInstance.focus();
+            };
+
+            const insertTable = () => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                const table = '\n| 標題 1 | 標題 2 | 標題 3 |\n| --- | --- | --- |\n| 內容 | 內容 | 內容 |\n';
+                cmInstance.replaceRange(table, cursor);
+                cmInstance.setCursor({ line: cursor.line + 1, ch: 2 });
+                cmInstance.focus();
+            };
+
+            const toggleLink = () => {
+                if (!cmInstance) return;
+                const selection = cmInstance.getSelection();
+                const cursor = cmInstance.getCursor();
+
+                // Check if selection is already a link
+                const linkMatch = selection.match(/^\[(.+)\]\((.+)\)$/);
+                if (linkMatch) {
+                    // Remove link formatting, keep text
+                    cmInstance.replaceSelection(linkMatch[1]);
+                } else if (selection) {
+                    cmInstance.replaceSelection('[' + selection + '](網址)');
+                } else {
+                    cmInstance.replaceRange('[連結文字](網址)', cursor);
+                    cmInstance.setCursor({ line: cursor.line, ch: cursor.ch + 1 });
+                }
+                cmInstance.focus();
+            };
+
+            const toggleImage = () => {
+                if (!cmInstance) return;
+                const selection = cmInstance.getSelection();
+                const cursor = cmInstance.getCursor();
+
+                // Check if selection is already an image
+                const imgMatch = selection.match(/^!\[(.+)\]\((.+)\)$/);
+                if (imgMatch) {
+                    // Remove image formatting, keep alt text
+                    cmInstance.replaceSelection(imgMatch[1]);
+                } else if (selection) {
+                    cmInstance.replaceSelection('![' + selection + '](圖片網址)');
+                } else {
+                    cmInstance.replaceRange('![描述](圖片網址)', cursor);
+                    cmInstance.setCursor({ line: cursor.line, ch: cursor.ch + 2 });
+                }
+                cmInstance.focus();
+            };
+
+            const toggleHorizontalRule = () => {
+                if (!cmInstance) return;
+                const cursor = cmInstance.getCursor();
+                const line = cmInstance.getLine(cursor.line);
+
+                if (line.trim() === '---') {
+                    // Remove horizontal rule
+                    cmInstance.replaceRange(
+                        '',
+                        { line: cursor.line, ch: 0 },
+                        { line: cursor.line, ch: line.length }
+                    );
+                } else {
+                    // Insert horizontal rule
+                    cmInstance.replaceRange('\n---\n', cursor);
+                    cmInstance.setCursor({ line: cursor.line + 2, ch: 0 });
+                }
+                cmInstance.focus();
+            };
+
+
             // Mode handling - read mode from URL query keys (e.g., ?edit, ?both, ?view)
             const getModeFromQuery = (query) => {
                 if ('edit' in query) return 'edit';
@@ -2199,7 +2385,12 @@
                 // Alias
                 aliasEnabled, aliasInput, currentAlias, aliasError, aliasSaving,
                 toggleAlias, saveAlias, aliasCopied, copyAliasUrl,
-                noteInfoItem
+                noteInfoItem,
+                // Markdown Toolbar
+                toggleBold, toggleItalic, toggleStrikethrough, toggleUnderline,
+                cycleHeading, toggleBlockquote, toggleUnorderedList, toggleOrderedList,
+                toggleInlineCode, insertCodeBlock, insertTable,
+                toggleLink, toggleImage, toggleHorizontalRule
             };
         }
     };
