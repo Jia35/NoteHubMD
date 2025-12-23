@@ -1126,7 +1126,7 @@
                 openMenuId.value = null;
             };
 
-            const addEditableTag = () => {
+            const addEditableTag = async () => {
                 const tag = newTag.value.trim();
                 if (!tag) return;
                 if (editableTags.value.includes(tag)) {
@@ -1135,68 +1135,103 @@
                 }
                 editableTags.value.push(tag);
                 newTag.value = '';
+                // Auto-save tags immediately
+                await autoSaveTags();
             };
 
-            const removeEditableTag = (tagToRemove) => {
+            const removeEditableTag = async (tagToRemove) => {
                 editableTags.value = editableTags.value.filter(t => t !== tagToRemove);
+                // Auto-save tags immediately
+                await autoSaveTags();
             };
 
-            const saveInfoChanges = async () => {
+            // Auto-save functions
+            const autoSaveTags = async () => {
                 try {
-                    const updateData = { tags: editableTags.value };
-
-                    // Save permission change if owner changed it
-                    if (infoModalItem.value.isOwner && editablePermission.value !== infoModalItem.value.permission) {
-                        if (infoModalType.value === 'book') {
-                            await api.updateBookPermission(infoModalItem.value.id, editablePermission.value);
-                        } else {
-                            await api.updatePermission(infoModalItem.value.id, editablePermission.value);
-                        }
-                    }
-
-                    // Add isPublic to updateData if owner
-                    if (infoModalItem.value.isOwner) {
-                        updateData.isPublic = infoModalItem.value.isPublic;
-                    }
-
                     if (infoModalType.value === 'book') {
-                        updateData.description = editableDescription.value;
-                        // Add title if book and changed
-                        if (infoModalItem.value.canEdit && infoModalItem.value.title) {
-                            updateData.title = infoModalItem.value.title;
-                        }
-                        await api.updateBook(infoModalItem.value.id, updateData);
-                        // Update local book data
+                        await api.updateBook(infoModalItem.value.id, { tags: editableTags.value });
                         const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
-                        if (bookIndex !== -1) {
-                            books.value[bookIndex].tags = [...editableTags.value];
-                            books.value[bookIndex].description = editableDescription.value;
-                            books.value[bookIndex].permission = editablePermission.value;
-                            books.value[bookIndex].isPublic = infoModalItem.value.isPublic;
-                            if (infoModalItem.value.canEdit && infoModalItem.value.title) {
-                                books.value[bookIndex].title = infoModalItem.value.title;
-                            }
-                        }
+                        if (bookIndex !== -1) books.value[bookIndex].tags = [...editableTags.value];
                     } else {
-                        updateData.commentsDisabled = !infoCommentsEnabled.value;
-                        await api.updateNote(infoModalItem.value.id, updateData);
-                        // Update local note data
+                        await api.updateNote(infoModalItem.value.id, { tags: editableTags.value });
                         const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
-                        if (noteIndex !== -1) {
-                            notes.value[noteIndex].tags = [...editableTags.value];
-                            notes.value[noteIndex].permission = editablePermission.value;
-                            notes.value[noteIndex].commentsDisabled = !infoCommentsEnabled.value;
-                            notes.value[noteIndex].isPublic = infoModalItem.value.isPublic;
-                        }
-                        // Also update in allNotesForTags
-                        const allNoteIndex = allNotesForTags.value.findIndex(n => n.id === infoModalItem.value.id);
-                        if (allNoteIndex !== -1) {
-                            allNotesForTags.value[allNoteIndex].tags = [...editableTags.value];
-                            allNotesForTags.value[allNoteIndex].isPublic = infoModalItem.value.isPublic;
-                        }
+                        if (noteIndex !== -1) notes.value[noteIndex].tags = [...editableTags.value];
                     }
-                    showInfoModal.value = false;
-                } catch (e) { globalModal.showAlert('儲存失敗'); }
+                } catch (e) {
+                    globalModal.showAlert('標籤儲存失敗');
+                }
+            };
+
+            const autoSaveTitle = async (newTitle) => {
+                infoModalItem.value.title = newTitle;
+                if (infoModalType.value !== 'book' || !infoModalItem.value.canEdit) return;
+                try {
+                    await api.updateBook(infoModalItem.value.id, { title: newTitle });
+                    const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
+                    if (bookIndex !== -1) books.value[bookIndex].title = newTitle;
+                } catch (e) {
+                    globalModal.showAlert('標題儲存失敗');
+                }
+            };
+
+            const autoSaveDescription = async (newDesc) => {
+                editableDescription.value = newDesc;
+                if (infoModalType.value !== 'book' || !infoModalItem.value.canEdit) return;
+                try {
+                    await api.updateBook(infoModalItem.value.id, { description: newDesc });
+                    const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
+                    if (bookIndex !== -1) books.value[bookIndex].description = newDesc;
+                } catch (e) {
+                    globalModal.showAlert('描述儲存失敗');
+                }
+            };
+
+            const autoSavePermission = async (newPermission) => {
+                editablePermission.value = newPermission;
+                if (!infoModalItem.value.isOwner) return;
+                try {
+                    if (infoModalType.value === 'book') {
+                        await api.updateBookPermission(infoModalItem.value.id, newPermission);
+                        const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
+                        if (bookIndex !== -1) books.value[bookIndex].permission = newPermission;
+                    } else {
+                        await api.updatePermission(infoModalItem.value.id, newPermission);
+                        const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                        if (noteIndex !== -1) notes.value[noteIndex].permission = newPermission;
+                    }
+                } catch (e) {
+                    globalModal.showAlert('權限儲存失敗');
+                }
+            };
+
+            const autoSaveCommentsEnabled = async (enabled) => {
+                infoCommentsEnabled.value = enabled;
+                if (infoModalType.value !== 'note' || !infoModalItem.value.isOwner) return;
+                try {
+                    await api.updateNote(infoModalItem.value.id, { commentsDisabled: !enabled });
+                    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (noteIndex !== -1) notes.value[noteIndex].commentsDisabled = !enabled;
+                } catch (e) {
+                    globalModal.showAlert('留言設定儲存失敗');
+                }
+            };
+
+            const autoSaveIsPublic = async (isPublic) => {
+                infoModalItem.value.isPublic = isPublic;
+                if (!infoModalItem.value.isOwner) return;
+                try {
+                    if (infoModalType.value === 'book') {
+                        await api.updateBook(infoModalItem.value.id, { isPublic });
+                        const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id);
+                        if (bookIndex !== -1) books.value[bookIndex].isPublic = isPublic;
+                    } else {
+                        await api.updateNote(infoModalItem.value.id, { isPublic });
+                        const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                        if (noteIndex !== -1) notes.value[noteIndex].isPublic = isPublic;
+                    }
+                } catch (e) {
+                    globalModal.showAlert('公開設定儲存失敗');
+                }
             };
 
             // User permissions state for Home info modal
@@ -1341,7 +1376,8 @@
                 openMenuId, toggleMenu, closeMenu,
                 showInfoModal, infoModalType, infoModalItem, infoModalTab,
                 editableDescription, editableTags, newTag, editablePermission, infoCommentsEnabled,
-                openInfoModal, addEditableTag, removeEditableTag, saveInfoChanges, getPermissionLabel,
+                openInfoModal, addEditableTag, removeEditableTag, getPermissionLabel,
+                autoSaveTitle, autoSaveDescription, autoSavePermission, autoSaveCommentsEnabled, autoSaveIsPublic,
                 showCreateBookModal, newBookTitle, newBookDescription, openCreateBookModal,
                 // User permissions for info modal
                 infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
@@ -1914,30 +1950,40 @@
                 }
             };
 
-            const saveInfoChanges = async () => {
+            // Auto-save functions for Uncategorized InfoModal
+            const autoSavePermission = async (newPermission) => {
+                editablePermission.value = newPermission;
+                if (!infoModalItem.value.isOwner) return;
                 try {
-                    const updateData = {
-                        commentsDisabled: !infoCommentsEnabled.value,
-                        isPublic: infoModalItem.value.isPublic
-                    };
-
-                    if (infoModalItem.value.isOwner && editablePermission.value !== infoModalItem.value.permission) {
-                        await api.updatePermission(infoModalItem.value.id, editablePermission.value);
-                    }
-
-                    await api.updateNote(infoModalItem.value.id, updateData);
-
-                    // Update local note data
+                    await api.updatePermission(infoModalItem.value.id, newPermission);
                     const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
-                    if (noteIndex !== -1) {
-                        notes.value[noteIndex].permission = editablePermission.value;
-                        notes.value[noteIndex].commentsDisabled = !infoCommentsEnabled.value;
-                        notes.value[noteIndex].isPublic = infoModalItem.value.isPublic;
-                    }
-
-                    showInfoModal.value = false;
+                    if (noteIndex !== -1) notes.value[noteIndex].permission = newPermission;
                 } catch (e) {
-                    globalModal.showAlert('儲存失敗');
+                    globalModal.showAlert('權限儲存失敗');
+                }
+            };
+
+            const autoSaveCommentsEnabled = async (enabled) => {
+                infoCommentsEnabled.value = enabled;
+                if (!infoModalItem.value.isOwner) return;
+                try {
+                    await api.updateNote(infoModalItem.value.id, { commentsDisabled: !enabled });
+                    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (noteIndex !== -1) notes.value[noteIndex].commentsDisabled = !enabled;
+                } catch (e) {
+                    globalModal.showAlert('留言設定儲存失敗');
+                }
+            };
+
+            const autoSaveIsPublic = async (isPublic) => {
+                infoModalItem.value.isPublic = isPublic;
+                if (!infoModalItem.value.isOwner) return;
+                try {
+                    await api.updateNote(infoModalItem.value.id, { isPublic });
+                    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id);
+                    if (noteIndex !== -1) notes.value[noteIndex].isPublic = isPublic;
+                } catch (e) {
+                    globalModal.showAlert('公開設定儲存失敗');
                 }
             };
 
@@ -2000,7 +2046,7 @@
                 showInfoModal, infoModalItem, infoModalTab, editablePermission, infoCommentsEnabled,
                 userPermissions, loadingUserPermissions, userSearchQuery, userSearchResults, newUserPermission,
                 openInfoModal, searchUsers, addUserPermission, removeUserPermission, updateUserPermissionLevel,
-                saveInfoChanges, handleMoveNoteFromInfo,
+                autoSavePermission, autoSaveCommentsEnabled, autoSaveIsPublic, handleMoveNoteFromInfo,
                 // Move Note Modal
                 showMoveNoteModal, moveNoteTarget, selectedBookId, availableBooks, openMoveNoteModal, moveNote
             };

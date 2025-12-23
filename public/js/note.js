@@ -386,20 +386,24 @@
                 return html;
             };
 
-            // Save note settings (commentsDisabled toggle & isPublic)
-            const saveNoteSettings = async () => {
+            // Auto-save functions for note settings
+            const autoSaveCommentsEnabled = async (enabled) => {
+                noteCommentsEnabled.value = enabled;
+                if (!isOwner.value) return;
                 try {
-                    const updateData = {
-                        commentsDisabled: !noteCommentsEnabled.value
-                    };
-                    // Add isPublic if owner
-                    if (isOwner.value) {
-                        updateData.isPublic = noteIsPublic.value;
-                    }
-                    await api.updateNote(noteId.value, updateData);
-                    showNoteInfoModal.value = false;
+                    await api.updateNote(noteId.value, { commentsDisabled: !enabled });
                 } catch (e) {
-                    globalModal.showAlert('儲存失敗：' + e.message);
+                    globalModal.showAlert('留言設定儲存失敗：' + e.message);
+                }
+            };
+
+            const autoSaveIsPublic = async (isPublic) => {
+                noteIsPublic.value = isPublic;
+                if (!isOwner.value) return;
+                try {
+                    await api.updateNote(noteId.value, { isPublic });
+                } catch (e) {
+                    globalModal.showAlert('公開設定儲存失敗：' + e.message);
                 }
             };
 
@@ -2170,7 +2174,8 @@
                 noteInfoModalTab,
                 noteCommentsEnabled,
                 noteIsPublic,
-                saveNoteSettings,
+                autoSaveCommentsEnabled,
+                autoSaveIsPublic,
                 shareNote,
                 // Share modal
                 showShareModal, shareUrl, shareCopied,

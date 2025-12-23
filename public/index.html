@@ -355,7 +355,7 @@
                                 <!-- Editable title for books -->
                                 <input v-if="type === 'book' && item.canEdit"
                                        :value="item.title || ''"
-                                       @input="$emit('update:title', $event.target.value)"
+                                       @blur="$emit('update:title', $event.target.value)"
                                        type="text"
                                        placeholder="輸入標題..."
                                        class="w-full px-3 py-2 text-sm font-bold border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -389,7 +389,7 @@
                                 </label>
                                 <textarea v-if="item.canEdit"
                                           :value="editableDescription"
-                                          @input="$emit('update:description', $event.target.value)"
+                                          @blur="$emit('update:description', $event.target.value)"
                                           rows="3"
                                           placeholder="輸入描述..."
                                           class="w-full px-3 py-2 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
@@ -590,12 +590,9 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700 shrink-0">
+                <div class="flex justify-end p-4 border-t border-gray-300 dark:border-gray-700 shrink-0">
                     <button @click="$emit('close')" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                        {{ item.canEdit || item.isOwner ? '取消' : '關閉' }}
-                    </button>
-                    <button v-if="item.canEdit || item.isOwner" @click="$emit('save')" class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                        <i class="fa-solid fa-save mr-1"></i> 儲存
+                        關閉
                     </button>
                 </div>
             </div>
@@ -883,466 +880,466 @@
 
     <script type="text/x-template" id="sidebar-template">
         <!-- Main Sidebar using SidebarNav component -->
-        <SidebarNav :user="user" :books="limitedSidebarBooks" :pinned-items="pinnedItems" :show-pinned="true"
-            :show-more-books="hasMoreBooks" :current-route="currentRoute" :global-view-mode="globalViewMode"
-            :app-version="appVersion" @unpin="unpinItem" @view-mode-change="setGlobalViewMode" @create-note="createNote"
-            @create-book="openCreateBookModal" @open-profile="openUserProfileModal" @open-settings="showSettings = true" />
+    <SidebarNav :user="user" :books="limitedSidebarBooks" :pinned-items="pinnedItems" :show-pinned="true"
+        :show-more-books="hasMoreBooks" :current-route="currentRoute" :global-view-mode="globalViewMode"
+        :app-version="appVersion" @unpin="unpinItem" @view-mode-change="setGlobalViewMode" @create-note="createNote"
+        @create-book="openCreateBookModal" @open-profile="openUserProfileModal" @open-settings="showSettings = true" />
 
-        <!-- User Profile Modal -->
-        <div v-if="showUserProfileModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            @click.self="showUserProfileModal = false">
-            <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
-                <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user mr-2"></i>個人資料</h2>
+    <!-- User Profile Modal -->
+    <div v-if="showUserProfileModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        @click.self="showUserProfileModal = false">
+        <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-96 text-gray-900 dark:text-gray-100">
+            <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user mr-2"></i>個人資料</h2>
 
-                <!-- Avatar Section -->
-                <div class="flex flex-col items-center mb-6">
-                    <label class="cursor-pointer group">
-                        <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3 relative"
-                            :class="user ? 'bg-blue-600' : 'bg-gray-500'">
-                            <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
-                            <span v-else class="text-3xl text-white">{{ user?.username?.charAt(0).toUpperCase() || '?'
-                                }}</span>
-                            <!-- Hover overlay -->
-                            <div
-                                class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                                <i class="fa-solid fa-camera text-white text-xl"></i>
-                            </div>
+            <!-- Avatar Section -->
+            <div class="flex flex-col items-center mb-6">
+                <label class="cursor-pointer group">
+                    <div class="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden mb-3 relative"
+                        :class="user ? 'bg-blue-600' : 'bg-gray-500'">
+                        <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" alt="Avatar">
+                        <span v-else class="text-3xl text-white">{{ user?.username?.charAt(0).toUpperCase() || '?'
+                            }}</span>
+                        <!-- Hover overlay -->
+                        <div
+                            class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                            <i class="fa-solid fa-camera text-white text-xl"></i>
                         </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
+                </label>
+                <div class="flex gap-3">
+                    <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
+                        <i class="fa-solid fa-camera mr-1"></i>變更頭像
                         <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
                     </label>
-                    <div class="flex gap-3">
-                        <label class="cursor-pointer text-blue-600 hover:text-blue-700 text-sm">
-                            <i class="fa-solid fa-camera mr-1"></i>變更頭像
-                            <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
-                        </label>
-                        <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
-                            <i class="fa-solid fa-trash mr-1"></i>移除頭像
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Username (read-only) -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">帳號 (Username)</label>
-                    <div class="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-sm">
-                        {{ user?.username }}
-                    </div>
-                </div>
-
-                <!-- Name (editable) -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">顯示名稱 (Name)</label>
-                    <input v-model="editableName" type="text" placeholder="輸入顯示名稱..."
-                        class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <!-- Actions -->
-                <div class="flex justify-end gap-2">
-                    <button @click="showUserProfileModal = false"
-                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                        取消
-                    </button>
-                    <button @click="saveProfile" :disabled="savingProfile"
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50">
-                        <i v-if="savingProfile" class="fa-solid fa-spinner fa-spin mr-1"></i>
-                        <i v-else class="fa-solid fa-save mr-1"></i>
-                        儲存
+                    <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
+                        <i class="fa-solid fa-trash mr-1"></i>移除頭像
                     </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Settings Modal -->
-        <div v-if="showSettings" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            @click.self="showSettings = false">
-            <div
-                class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
-                <!-- Header -->
-                <div
-                    class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                    <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
-                        <i class="fa-solid fa-gear mr-2 text-gray-200"></i> 設定
-                    </h2>
-                    <button @click="showSettings = false"
-                        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
+            <!-- Username (read-only) -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">帳號 (Username)</label>
+                <div class="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-sm">
+                    {{ user?.username }}
                 </div>
+            </div>
 
-                <!-- Body -->
-                <div class="p-6 space-y-6">
-                    <!-- Appearance -->
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">外觀</h3>
-                        <div
-                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                                <i class="fa-solid fa-palette mr-2 text-gray-400"></i>主題模式
-                            </span>
-                            <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-                                <button @click="setTheme('light')"
-                                    class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
-                                    :class="theme === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
-                                    <i class="fa-solid fa-sun mr-1.5"></i> Light
-                                </button>
-                                <button @click="setTheme('dark')"
-                                    class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
-                                    :class="theme === 'dark' ? 'bg-gray-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
-                                    <i class="fa-solid fa-moon mr-1.5"></i> Dark
-                                </button>
-                            </div>
+            <!-- Name (editable) -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">顯示名稱 (Name)</label>
+                <input v-model="editableName" type="text" placeholder="輸入顯示名稱..."
+                    class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-2">
+                <button @click="showUserProfileModal = false"
+                    class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    取消
+                </button>
+                <button @click="saveProfile" :disabled="savingProfile"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50">
+                    <i v-if="savingProfile" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                    <i v-else class="fa-solid fa-save mr-1"></i>
+                    儲存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div v-if="showSettings" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        @click.self="showSettings = false">
+        <div
+            class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col transform transition-all scale-100">
+            <!-- Header -->
+            <div
+                class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                    <i class="fa-solid fa-gear mr-2 text-gray-200"></i> 設定
+                </h2>
+                <button @click="showSettings = false"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-6">
+                <!-- Appearance -->
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">外觀</h3>
+                    <div
+                        class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                            <i class="fa-solid fa-palette mr-2 text-gray-400"></i>主題模式
+                        </span>
+                        <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                            <button @click="setTheme('light')"
+                                class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
+                                :class="theme === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+                                <i class="fa-solid fa-sun mr-1.5"></i> Light
+                            </button>
+                            <button @click="setTheme('dark')"
+                                class="px-3 py-1.5 rounded-md text-sm transition flex items-center"
+                                :class="theme === 'dark' ? 'bg-gray-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'">
+                                <i class="fa-solid fa-moon mr-1.5"></i> Dark
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Data Management (only for logged in users) -->
-                    <div v-if="user">
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">資料管理</h3>
-                        <button @click="exportNotes" :disabled="exportingNotes"
+                <!-- Data Management (only for logged in users) -->
+                <div v-if="user">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">資料管理</h3>
+                    <button @click="exportNotes" :disabled="exportingNotes"
+                        class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
+                        <div
+                            class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform shrink-0">
+                            <i :class="exportingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-export'"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 .zip 檔案</div>
+                        </div>
+                    </button>
+                    <!-- Import Notes -->
+                    <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip"
+                        class="hidden">
+                    <input type="file" ref="importFolderInput" @change="handleImportFolder" webkitdirectory
+                        class="hidden">
+                    <div class="relative mt-2">
+                        <button @click="showImportMenu = !showImportMenu" :disabled="importingNotes"
                             class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
                             <div
-                                class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform shrink-0">
-                                <i :class="exportingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-export'"></i>
+                                class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
+                                <i
+                                    :class="importingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-import'"></i>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 .zip 檔案</div>
+                                <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
                             </div>
+                            <i class="fa-solid fa-chevron-down text-gray-400 ml-2"></i>
                         </button>
-                        <!-- Import Notes -->
-                        <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip"
-                            class="hidden">
-                        <input type="file" ref="importFolderInput" @change="handleImportFolder" webkitdirectory
-                            class="hidden">
-                        <div class="relative mt-2">
-                            <button @click="showImportMenu = !showImportMenu" :disabled="importingNotes"
-                                class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
-                                    <i
-                                        :class="importingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-import'"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
-                                </div>
-                                <i class="fa-solid fa-chevron-down text-gray-400 ml-2"></i>
+                        <!-- Dropdown Menu -->
+                        <div v-show="showImportMenu"
+                            class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
+                            <button @click="$refs.importFileInput.click(); showImportMenu = false"
+                                class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
+                                <i class="fa-solid fa-file text-blue-500 mr-3"></i>
+                                <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md 或 .zip)</span>
                             </button>
-                            <!-- Dropdown Menu -->
-                            <div v-show="showImportMenu"
-                                class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
-                                <button @click="$refs.importFileInput.click(); showImportMenu = false"
-                                    class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left">
-                                    <i class="fa-solid fa-file text-blue-500 mr-3"></i>
-                                    <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md 或 .zip)</span>
-                                </button>
-                                <button @click="$refs.importFolderInput.click(); showImportMenu = false"
-                                    class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-t border-gray-100 dark:border-gray-700">
-                                    <i class="fa-solid fa-folder text-yellow-500 mr-3"></i>
-                                    <span class="text-sm text-gray-700 dark:text-gray-200">上傳資料夾</span>
-                                </button>
-                            </div>
+                            <button @click="$refs.importFolderInput.click(); showImportMenu = false"
+                                class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-t border-gray-100 dark:border-gray-700">
+                                <i class="fa-solid fa-folder text-yellow-500 mr-3"></i>
+                                <span class="text-sm text-gray-700 dark:text-gray-200">上傳資料夾</span>
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Admin (Conditional) -->
-                    <div v-if="user && (user.role === 'super-admin' || user.role === 'admin')">
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">管理者</h3>
-                        <router-link to="/admin" @click="showSettings = false"
-                            class="flex items-center w-full p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-100 dark:border-purple-800/30 group">
-                            <div
-                                class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mr-3 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-user-shield text-lg"></i>
-                            </div>
-                            <div class="text-left flex-1">
-                                <div class="font-bold text-sm">管理後台</div>
-                                <div class="text-xs opacity-70">進入系統管理介面</div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right ml-2 text-sm opacity-30"></i>
-                        </router-link>
-                    </div>
                 </div>
 
-                <!-- Footer -->
-                <div
-                    class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
-                    <button @click="showSettings = false; showAboutModal = true" title="關於 NoteHubMD"
-                        class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center">
-                        v{{ appVersion }} <i class="fa-solid fa-circle-info ml-1 text-[10px]"></i>
-                    </button>
-                    <button v-if="user" @click="logout"
-                        class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
-                        <i class="fa-solid fa-right-from-bracket mr-2"></i>
-                        登出
-                    </button>
-                    <a v-else href="/login"
-                        class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
-                        <i class="fa-solid fa-right-to-bracket mr-2"></i>
-                        登入
-                    </a>
+                <!-- Admin (Conditional) -->
+                <div v-if="user && (user.role === 'super-admin' || user.role === 'admin')">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">管理者</h3>
+                    <router-link to="/admin" @click="showSettings = false"
+                        class="flex items-center w-full p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-100 dark:border-purple-800/30 group">
+                        <div
+                            class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mr-3 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-shield text-lg"></i>
+                        </div>
+                        <div class="text-left flex-1">
+                            <div class="font-bold text-sm">管理後台</div>
+                            <div class="text-xs opacity-70">進入系統管理介面</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right ml-2 text-sm opacity-30"></i>
+                    </router-link>
                 </div>
             </div>
-        </div>
 
-        <!-- About Modal -->
-        <div v-if="showAboutModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            @click.self="showAboutModal = false">
-            <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-                <!-- Header -->
-                <div
-                    class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                    <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
-                        <i class="fa-solid fa-circle-info mr-2 text-blue-500"></i> 關於 NoteHubMD
-                    </h2>
-                    <button @click="showAboutModal = false"
-                        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-                <!-- Body -->
-                <div class="p-6 text-center">
-                    <img src="/images/logo.png" alt="NoteHubMD"
-                        class="w-20 h-20 mx-auto mb-4 cursor-pointer hover:animate-bounce transition-transform">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">NoteHubMD</h3>
-                    <p class="text-xs text-gray-400 mb-3">v{{ appVersion }}</p>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-10">
-                        現代化、可自架的 Markdown 筆記平台，支援即時協作。
+            <!-- Footer -->
+            <div
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
+                <button @click="showSettings = false; showAboutModal = true" title="關於 NoteHubMD"
+                    class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center">
+                    v{{ appVersion }} <i class="fa-solid fa-circle-info ml-1 text-[10px]"></i>
+                </button>
+                <button v-if="user" @click="logout"
+                    class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i>
+                    登出
+                </button>
+                <a v-else href="/login"
+                    class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                    登入
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div v-if="showAboutModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        @click.self="showAboutModal = false">
+        <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <!-- Header -->
+            <div
+                class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                    <i class="fa-solid fa-circle-info mr-2 text-blue-500"></i> 關於 NoteHubMD
+                </h2>
+                <button @click="showAboutModal = false"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <!-- Body -->
+            <div class="p-6 text-center">
+                <img src="/images/logo.png" alt="NoteHubMD"
+                    class="w-20 h-20 mx-auto mb-4 cursor-pointer hover:animate-bounce transition-transform">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">NoteHubMD</h3>
+                <p class="text-xs text-gray-400 mb-3">v{{ appVersion }}</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-10">
+                    現代化、可自架的 Markdown 筆記平台，支援即時協作。
+                </p>
+                <hr class="border-gray-200 dark:border-gray-700 mb-6">
+                <div class="text-left text-gray-600 dark:text-gray-400">
+                    <h4 class="text-sm font-bold mb-2">
+                        ❄️ 雪之妖精——「北長尾山雀」
+                    </h4>
+                    <p class="text-sm leading-relaxed mb-3">
+                        外型像一顆長尾巴的棉花糖，圓滾滾又呆萌，卻是觀察力滿點的小鳥。牠們行動安靜、習慣群聚，總在枝頭默默記錄季節的變化。
                     </p>
-                    <hr class="border-gray-200 dark:border-gray-700 mb-6">
-                    <div class="text-left text-gray-600 dark:text-gray-400">
-                        <h4 class="text-sm font-bold mb-2">
-                            ❄️ 雪之妖精——「北長尾山雀」
-                        </h4>
-                        <p class="text-sm leading-relaxed mb-3">
-                            外型像一顆長尾巴的棉花糖，圓滾滾又呆萌，卻是觀察力滿點的小鳥。牠們行動安靜、習慣群聚，總在枝頭默默記錄季節的變化。
-                        </p>
-                        <p class="text-sm leading-relaxed">
-                            靈感就像牠們一樣，靈動可愛卻又稍縱即逝，不趕快記下來就會咻——地飛走，快把它們「抓」進筆記裡吧！
-                        </p>
-                    </div>
+                    <p class="text-sm leading-relaxed">
+                        靈感就像牠們一樣，靈動可愛卻又稍縱即逝，不趕快記下來就會咻——地飛走，快把它們「抓」進筆記裡吧！
+                    </p>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Create Book Modal -->
-        <div v-if="showCreateBookModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            @click.self="showCreateBookModal = false">
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-                        <i class="fa-solid fa-book mr-2"></i> 新增書本
-                    </h2>
-                    <button @click="showCreateBookModal = false"
-                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
+    <!-- Create Book Modal -->
+    <div v-if="showCreateBookModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        @click.self="showCreateBookModal = false">
+        <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                    <i class="fa-solid fa-book mr-2"></i> 新增書本
+                </h2>
+                <button @click="showCreateBookModal = false"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        標題 <span class="text-red-500">*</span>
+                    </label>
+                    <input v-model="newBookTitle" ref="newBookTitleInput" type="text" placeholder="輸入書本標題..."
+                        class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        @keyup.enter="createBook">
                 </div>
-                <div class="p-4 space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                            標題 <span class="text-red-500">*</span>
-                        </label>
-                        <input v-model="newBookTitle" ref="newBookTitleInput" type="text" placeholder="輸入書本標題..."
-                            class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            @keyup.enter="createBook">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                            描述
-                        </label>
-                        <textarea v-model="newBookDescription" rows="3" placeholder="輸入描述..."
-                            class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
-                    <button @click="showCreateBookModal = false"
-                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                        取消
-                    </button>
-                    <button @click="createBook"
-                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        <i class="fa-solid fa-plus mr-1"></i> 新增
-                    </button>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        描述
+                    </label>
+                    <textarea v-model="newBookDescription" rows="3" placeholder="輸入描述..."
+                        class="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
                 </div>
             </div>
+            <div class="flex justify-end gap-2 p-4 border-t border-gray-300 dark:border-gray-700">
+                <button @click="showCreateBookModal = false"
+                    class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    取消
+                </button>
+                <button @click="createBook"
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                    <i class="fa-solid fa-plus mr-1"></i> 新增
+                </button>
+            </div>
         </div>
+    </div>
 
-        <!-- Search Modal -->
-        <div v-if="showSearchModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            @click.self="showSearchModal = false">
-            <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col"
-                style="max-height: 80vh;">
-                <!-- Modal Header -->
-                <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-                        <i class="fa-solid fa-search mr-2"></i>搜尋
-                    </h2>
-                    <button @click="showSearchModal = false"
-                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
+    <!-- Search Modal -->
+    <div v-if="showSearchModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        @click.self="showSearchModal = false">
+        <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col"
+            style="max-height: 80vh;">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                    <i class="fa-solid fa-search mr-2"></i>搜尋
+                </h2>
+                <button @click="showSearchModal = false"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Search Input -->
+            <div class="p-4 border-b border-gray-300 dark:border-gray-700">
+                <div class="relative">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
+                        class="w-full pl-10 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
+                <div class="flex flex-wrap items-center gap-4 mt-3">
+                    <label
+                        class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                        <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600">
+                        包含內文
+                    </label>
 
-                <!-- Search Input -->
-                <div class="p-4 border-b border-gray-300 dark:border-gray-700">
-                    <div class="relative">
-                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input v-model="searchQuery" ref="searchInput" type="text" placeholder="搜尋筆記和書本..."
-                            class="w-full pl-10 pr-4 py-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="flex flex-wrap items-center gap-4 mt-3">
-                        <label
-                            class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                            <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600">
-                            包含內文
-                        </label>
-
-                        <!-- Owner Filter -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-sm text-gray-500 dark:text-gray-400"><i
-                                    class="fa-solid fa-globe mr-1"></i>範圍：</span>
-                            <select v-model="searchOwnerFilter"
-                                class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                <option value="all">全部</option>
-                                <option value="my">我的</option>
-                                <option value="public">公開</option>
-                            </select>
-                        </div>
-
-                        <!-- Date Range Filter -->
-                        <div class="flex items-center gap-1">
-                            <span class="text-sm text-gray-500 dark:text-gray-400"><i
-                                    class="fa-solid fa-calendar mr-1"></i>日期：</span>
-                            <select v-model="searchDateRange"
-                                class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                <option value="all">全部</option>
-                                <option value="today">今天</option>
-                                <option value="week">一週內</option>
-                                <option value="month">一個月內</option>
-                                <option value="year">一年內</option>
-                                <option value="custom">自訂</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Custom Date Range Inputs -->
-                    <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
-                        <div class="flex items-center gap-1">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
-                            <input type="date" v-model="searchDateStart"
-                                class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
-                            <input type="date" v-model="searchDateEnd"
-                                class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        </div>
-                        <button v-if="searchDateStart || searchDateEnd" @click="searchDateStart = ''; searchDateEnd = ''"
-                            class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <i class="fa-solid fa-xmark"></i> 清除
-                        </button>
-                    </div>
-
-                    <!-- Tag Filter -->
-                    <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-1 items-center">
+                    <!-- Owner Filter -->
+                    <div class="flex items-center gap-1">
                         <span class="text-sm text-gray-500 dark:text-gray-400"><i
-                                class="fa-solid fa-tags mr-1"></i>標籤：</span>
-                        <button v-for="tag in allTags" :key="tag" @click="toggleTag(tag)"
-                            class="px-2 py-0.5 text-xs rounded-full transition"
-                            :class="selectedTag === tag 
+                                class="fa-solid fa-globe mr-1"></i>範圍：</span>
+                        <select v-model="searchOwnerFilter"
+                            class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="all">全部</option>
+                            <option value="my">我的</option>
+                            <option value="public">公開</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range Filter -->
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm text-gray-500 dark:text-gray-400"><i
+                                class="fa-solid fa-calendar mr-1"></i>日期：</span>
+                        <select v-model="searchDateRange"
+                            class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="all">全部</option>
+                            <option value="today">今天</option>
+                            <option value="week">一週內</option>
+                            <option value="month">一個月內</option>
+                            <option value="year">一年內</option>
+                            <option value="custom">自訂</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Custom Date Range Inputs -->
+                <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
+                        <input type="date" v-model="searchDateStart"
+                            class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
+                        <input type="date" v-model="searchDateEnd"
+                            class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <button v-if="searchDateStart || searchDateEnd" @click="searchDateStart = ''; searchDateEnd = ''"
+                        class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fa-solid fa-xmark"></i> 清除
+                    </button>
+                </div>
+
+                <!-- Tag Filter -->
+                <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-1 items-center">
+                    <span class="text-sm text-gray-500 dark:text-gray-400"><i
+                            class="fa-solid fa-tags mr-1"></i>標籤：</span>
+                    <button v-for="tag in allTags" :key="tag" @click="toggleTag(tag)"
+                        class="px-2 py-0.5 text-xs rounded-full transition"
+                        :class="selectedTag === tag 
                                                 ? 'bg-blue-600 text-white' 
                                                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-600'">
-                            {{ tag }}
-                        </button>
-                        <button v-if="selectedTag" @click="selectedTag = ''"
-                            class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <i class="fa-solid fa-xmark"></i> 清除
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Search Results -->
-                <div class="flex-1 overflow-y-auto p-4">
-                    <!-- Loading state -->
-                    <div v-if="searchLoading" class="text-center text-gray-500 py-8">
-                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>搜尋中...
-                    </div>
-
-                    <!-- No query or filter selected -->
-                    <div v-else-if="!searchQuery.trim() && !selectedTag && searchOwnerFilter === 'all' && (searchDateRange === 'all' || (searchDateRange === 'custom' && !searchDateStart && !searchDateEnd))"
-                        class="text-center text-gray-400 py-8">
-                        輸入關鍵字或設定篩選條件開始搜尋
-                    </div>
-
-                    <!-- No results -->
-                    <div v-else-if="searchResults.books.length === 0 && searchResults.notes.length === 0"
-                        class="text-center text-gray-400 py-8">
-                        找不到符合的結果
-                    </div>
-
-                    <!-- Results -->
-                    <template v-else>
-                        <!-- Books -->
-                        <div v-if="searchResults.books.length > 0" class="mb-6">
-                            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{
-                                searchResults.books.length }})</h3>
-                            <div class="space-y-2">
-                                <router-link v-for="book in searchResults.books" :key="book.id" :to="'/b/' + book.id"
-                                    @click="showSearchModal = false"
-                                    class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center">
-                                                <i class="fa-solid fa-book text-green-500 mr-3 shrink-0"></i>
-                                                <span class="font-medium text-gray-800 dark:text-white truncate">{{
-                                                    book.title }}</span>
-                                            </div>
-                                            <p v-if="book.description"
-                                                class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7 truncate">{{
-                                                book.description }}</p>
-                                        </div>
-                                        <span
-                                            class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap">
-                                            {{ dayjs(book.lastEditedAt || book.updatedAt).format('YYYY/MM/DD HH:mm') }}
-                                        </span>
-                                    </div>
-                                </router-link>
-                            </div>
-                        </div>
-
-                        <!-- Notes -->
-                        <div v-if="searchResults.notes.length > 0">
-                            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{
-                                searchResults.notes.length }})</h3>
-                            <div class="space-y-2">
-                                <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/n/' + note.id"
-                                    @click="showSearchModal = false"
-                                    class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center">
-                                                <i class="fa-solid fa-note-sticky text-blue-500 mr-3 shrink-0"></i>
-                                                <span class="font-medium text-gray-800 dark:text-white truncate">{{
-                                                    note.title || 'Untitled' }}</span>
-                                            </div>
-                                            <p class="text-xs text-gray-400 mt-1 ml-7">
-                                                <i class="fa-solid fa-book mr-1"></i>
-                                                <span v-if="note.book">{{note.book.title}}</span>
-                                                <span v-else><i>未分類</i></span>
-                                            </p>
-                                        </div>
-                                        <span
-                                            class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap"
-                                            title="上次編輯">
-                                            {{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}
-                                        </span>
-                                    </div>
-                                </router-link>
-                            </div>
-                        </div>
-                    </template>
+                        {{ tag }}
+                    </button>
+                    <button v-if="selectedTag" @click="selectedTag = ''"
+                        class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fa-solid fa-xmark"></i> 清除
+                    </button>
                 </div>
             </div>
+
+            <!-- Search Results -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Loading state -->
+                <div v-if="searchLoading" class="text-center text-gray-500 py-8">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i>搜尋中...
+                </div>
+
+                <!-- No query or filter selected -->
+                <div v-else-if="!searchQuery.trim() && !selectedTag && searchOwnerFilter === 'all' && (searchDateRange === 'all' || (searchDateRange === 'custom' && !searchDateStart && !searchDateEnd))"
+                    class="text-center text-gray-400 py-8">
+                    輸入關鍵字或設定篩選條件開始搜尋
+                </div>
+
+                <!-- No results -->
+                <div v-else-if="searchResults.books.length === 0 && searchResults.notes.length === 0"
+                    class="text-center text-gray-400 py-8">
+                    找不到符合的結果
+                </div>
+
+                <!-- Results -->
+                <template v-else>
+                    <!-- Books -->
+                    <div v-if="searchResults.books.length > 0" class="mb-6">
+                        <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">書本 ({{
+                            searchResults.books.length }})</h3>
+                        <div class="space-y-2">
+                            <router-link v-for="book in searchResults.books" :key="book.id" :to="'/b/' + book.id"
+                                @click="showSearchModal = false"
+                                class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center">
+                                            <i class="fa-solid fa-book text-green-500 mr-3 shrink-0"></i>
+                                            <span class="font-medium text-gray-800 dark:text-white truncate">{{
+                                                book.title }}</span>
+                                        </div>
+                                        <p v-if="book.description"
+                                            class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7 truncate">{{
+                                            book.description }}</p>
+                                    </div>
+                                    <span
+                                        class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap">
+                                        {{ dayjs(book.lastEditedAt || book.updatedAt).format('YYYY/MM/DD HH:mm') }}
+                                    </span>
+                                </div>
+                            </router-link>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div v-if="searchResults.notes.length > 0">
+                        <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">筆記 ({{
+                            searchResults.notes.length }})</h3>
+                        <div class="space-y-2">
+                            <router-link v-for="note in searchResults.notes" :key="note.id" :to="'/n/' + note.id"
+                                @click="showSearchModal = false"
+                                class="block p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center">
+                                            <i class="fa-solid fa-note-sticky text-blue-500 mr-3 shrink-0"></i>
+                                            <span class="font-medium text-gray-800 dark:text-white truncate">{{
+                                                note.title || 'Untitled' }}</span>
+                                        </div>
+                                        <p class="text-xs text-gray-400 mt-1 ml-7">
+                                            <i class="fa-solid fa-book mr-1"></i>
+                                            <span v-if="note.book">{{note.book.title}}</span>
+                                            <span v-else><i>未分類</i></span>
+                                        </p>
+                                    </div>
+                                    <span
+                                        class="text-xs text-gray-400 dark:text-gray-500 ml-3 shrink-0 whitespace-nowrap"
+                                        title="上次編輯">
+                                        {{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}
+                                    </span>
+                                </div>
+                            </router-link>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
+    </div>
     </script>
 
     <script type="text/x-template" id="layout-template">
@@ -1518,11 +1515,14 @@
                 :user-search-query="infoUserSearchQuery" :user-search-results="infoUserSearchResults"
                 :new-user-permission="infoNewUserPermission" 
                 :books="availableBooks"
-                @close="showInfoModal = false" @save="saveInfoChanges"
+                @close="showInfoModal = false"
                 @move-note="handleMoveNoteFromInfo"
-                @update:tab="infoModalTab = $event" @update:title="infoModalItem.title = $event" @update:description="editableDescription = $event"
-                @update:permission="editablePermission = $event" @update:commentsEnabled="infoCommentsEnabled = $event"
-                @update:isPublic="infoModalItem.isPublic = $event"
+                @update:tab="infoModalTab = $event" 
+                @update:title="autoSaveTitle" 
+                @update:description="autoSaveDescription"
+                @update:permission="autoSavePermission" 
+                @update:commentsEnabled="autoSaveCommentsEnabled"
+                @update:isPublic="autoSaveIsPublic"
                 @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"
                 @search-users="(q) => { infoUserSearchQuery = q; infoSearchUsers(); }" @add-user-permission="addInfoUserPermission"
@@ -1778,10 +1778,12 @@
                 :user-search-query="userSearchQuery" :user-search-results="userSearchResults" 
                 :new-user-permission="newUserPermission"
                 :books="availableBooks"
-                @close="showInfoModal = false" @save="saveInfoChanges"
+                @close="showInfoModal = false"
                 @move-note="handleMoveNoteFromInfo"
-                @update:tab="infoModalTab = $event" @update:permission="editablePermission = $event"
-                @update:commentsEnabled="infoCommentsEnabled = $event" @update:isPublic="infoModalItem.isPublic = $event"
+                @update:tab="infoModalTab = $event" 
+                @update:permission="autoSavePermission"
+                @update:commentsEnabled="autoSaveCommentsEnabled" 
+                @update:isPublic="autoSaveIsPublic"
                 @update:newUserPermission="newUserPermission = $event"
                 @search-users="(q) => { userSearchQuery = q; searchUsers(); }" @add-user-permission="addUserPermission"
                 @remove-user-permission="removeUserPermission" @update-user-permission="updateUserPermissionLevel" />
