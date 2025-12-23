@@ -1053,19 +1053,36 @@
                     <template #share-content>
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">分享連結</label>
-                            <div class="flex items-center gap-2 mb-2">
-                                <input type="text" :value="shareUrl" readonly
-                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            
+                            <div v-if="shareUrl">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input type="text" :value="shareUrl" readonly
+                                        class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                        <i :class="shareCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
+                                        {{ shareCopied ? '已複製' : '複製連結' }}
+                                    </button>
+                                    <button @click="openSharePage" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        開啟分享頁面
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div class="flex gap-2">
-                                <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                                    <i :class="shareCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
-                                    {{ shareCopied ? '已複製' : '複製連結' }}
-                                </button>
-                                <button @click="openSharePage" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                    開啟分享頁面
+                            <div v-else class="flex flex-col items-center justify-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 text-2xl">
+                                    <i class="fa-solid fa-share-nodes"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-2">尚未建立分享連結</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6 max-w-xs">
+                                    透過分享連結進入的頁面，更適合閱讀。
+                                </p>
+                                <button @click="shareNote" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex items-center">
+                                    <i class="fa-solid fa-link mr-2"></i>
+                                    建立分享連結
                                 </button>
                             </div>
                         </div>

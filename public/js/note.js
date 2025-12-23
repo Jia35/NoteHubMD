@@ -433,8 +433,8 @@
                     noteInfoModalTab.value = 'share';
                     showNoteInfoModal.value = true;
 
-                    // Load alias status when modal opens
-                    loadNoteAlias();
+                    // Load share info when modal opens
+                    loadShareInfo();
                 } catch (e) {
                     globalModal.showAlert('分享失敗：' + e.message);
                 }
@@ -591,12 +591,14 @@
                 }
             };
 
-            // Load alias when opening share modal
-            const loadNoteAlias = async () => {
+            // Load share info (alias + shareId) when opening share modal
+            const loadShareInfo = async () => {
                 try {
                     const response = await fetch(`/api/notes/${noteId.value}`);
                     if (response.ok) {
                         const noteData = await response.json();
+
+                        // Populate Alias
                         if (noteData.shareAlias) {
                             aliasEnabled.value = true;
                             aliasInput.value = noteData.shareAlias;
@@ -606,11 +608,25 @@
                             aliasInput.value = '';
                             currentAlias.value = '';
                         }
+
+                        // Populate Share URL if exists
+                        if (noteData.shareId) {
+                            shareUrl.value = window.location.origin + '/s/' + noteData.shareId;
+                        } else {
+                            shareUrl.value = '';
+                        }
                     }
                 } catch (e) {
-                    console.error('[Note] Failed to load alias:', e);
+                    console.error('[Note] Failed to load share info:', e);
                 }
             };
+
+            // Watch for tab change to share to load info
+            watch(noteInfoModalTab, (val) => {
+                if (val === 'share' && showNoteInfoModal.value) {
+                    loadShareInfo();
+                }
+            });
 
 
             const createNewNote = async () => {
