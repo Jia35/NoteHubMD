@@ -14,50 +14,11 @@
     <script src="/vendors/js/vue.global.prod.js"></script>
     <script src="/vendors/js/vue-router.global.prod.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/vendors/js/morphdom.min.js"></script>
-
-    <!-- CodeMirror 5 (CSS bundled) -->
-    <link rel="stylesheet" href="/vendors/css/codemirror.bundle.css">
-    <script src="/vendors/js/codemirror/codemirror.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/markdown.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/xml.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/javascript.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/css.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/htmlmixed.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/clike.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/python.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/shell.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/sql.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/go.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/yaml.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/powershell.min.js"></script>
-    <script src="/vendors/js/codemirror/mode/vbscript.min.js"></script>
-    <script src="/vendors/js/codemirror/addon/placeholder.min.js"></script>
-    <script src="/vendors/js/codemirror/addon/show-hint.min.js"></script>
-
-    <!-- Markdown-it -->
-    <script src="/vendors/js/markdown-it/markdown-it.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-container.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-anchor.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-imsize.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-mark.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-sup.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-sub.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-ins.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-emoji.min.js"></script>
-    <script src="/vendors/js/markdown-it/markdown-it-task-lists.min.js"></script>
-    <link rel="stylesheet" href="/vendors/css/github-markdown.min.css">
-
-    <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="/vendors/css/highlight/github.min.css" id="hljs-light-theme">
-    <link rel="stylesheet" href="/vendors/css/highlight/github-dark.min.css" id="hljs-dark-theme" disabled>
-    <script src="/vendors/js/highlight.min.js"></script>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/vendors/css/fontawesome/all.min.css">
 
-    <!-- Mermaid & Sortable -->
-    <script src="/vendors/js/mermaid.min.js"></script>
+    <!-- Sortable (for drag-drop) -->
     <script src="/vendors/js/sortable.min.js"></script>
 
     <!-- Day.js for date/time manipulation -->
@@ -179,7 +140,7 @@
             </Teleport>
             <div class="flex items-center mb-1">
                 <span class="w-6 mr-2 text-center shrink-0 text-lg"><i class="fa-solid fa-book text-green-500"></i></span>
-                <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</h3>
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate " :title="book.title + ' (' + (book.noteCount ?? 0) + ')'">{{ book.title }} ({{ book.noteCount ?? 0 }})</h3>
             </div>
             <div class="mb-2">
                 <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ dayjs(book.updatedAt).format('YYYY/MM/DD HH:mm') }}</p>
@@ -232,7 +193,8 @@
         <div class="flex items-center mb-1">
             <span class="w-6 mr-2 text-center shrink-0 text-lg"><i
                     class="fa-solid fa-note-sticky text-blue-500"></i></span>
-            <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">{{ note.title || 'Untitled' }}</h3>
+            <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate "
+                :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</h3>
         </div>
         <div class="mb-2">
             <p class="text-gray-500 dark:text-gray-400 text-sm" title="最後編輯時間">{{ dayjs(note.lastEditedAt ||
@@ -260,8 +222,8 @@
         <!-- Main Info -->
         <div class="flex-1 min-w-0 mr-4">
             <div class="flex items-center gap-2 mb-1">
-                <h3 class="font-bold text-gray-800 dark:text-white truncate text-base">{{ note.title || 'Untitled' }}
-                </h3>
+                <h3 class="font-bold text-gray-800 dark:text-white truncate text-base "
+                    :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</h3>
                 <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
                     <span v-for="tag in note.tags" :key="tag"
                         class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex-shrink-0">
@@ -668,7 +630,7 @@
                                 <span class="w-5 mr-3 text-center shrink-0">
                                     <i class="fa-solid fa-note-sticky"></i>
                                 </span>
-                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                                <span class="truncate " :title="item.title || 'Untitled'">{{ item.title || 'Untitled' }}</span>
                             </div>
                             <button @click.prevent.stop="$emit('unpin', item.type, item.id)" 
                                     class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
@@ -683,7 +645,7 @@
                                 <span class="w-5 mr-3 text-center shrink-0">
                                     <i class="fa-solid fa-book"></i>
                                 </span>
-                                <span class="truncate">{{ item.title || 'Untitled' }}</span>
+                                <span class="truncate " :title="item.title || 'Untitled'">{{ item.title || 'Untitled' }}</span>
                             </div>
                             <button @click.prevent.stop="$emit('unpin', item.type, item.id)" 
                                     class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition ml-2 shrink-0"
@@ -712,7 +674,7 @@
                                  class="block px-2 py-1 mb-1 rounded transition flex items-center"
                                  :class="currentRoute === '/b/' + book.id ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-white'">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
-                        <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
+                        <span class="truncate " :title="book.title + ' (' + (book.noteCount ?? 0) + ')'">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
                     </router-link>
                 </div>
                 <router-link v-if="showMoreBooks" to="/books" 
@@ -835,7 +797,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center">
                                                     <i class="fa-solid fa-book text-green-500 mr-3 shrink-0"></i>
-                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ book.title }}</span>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate " :title="book.title">{{ book.title }}</span>
                                                 </div>
                                                 <p v-if="book.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7 truncate">{{ book.description }}</p>
                                             </div>
@@ -856,7 +818,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center">
                                                     <i class="fa-solid fa-note-sticky text-blue-500 mr-3 shrink-0"></i>
-                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ note.title || 'Untitled' }}</span>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate " :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</span>
                                                 </div>
                                                 <p class="text-xs text-gray-400 mt-1 ml-7">
                                                     <i class="fa-solid fa-book mr-1"></i>

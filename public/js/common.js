@@ -10,8 +10,8 @@ window.NoteHubMD = window.NoteHubMD || {};
 const { createApp, ref, reactive, onMounted, onUnmounted, computed, watch, nextTick, getCurrentInstance } = Vue;
 const { createRouter, createWebHistory, useRoute } = VueRouter;
 
-// Socket.io
-const socket = io();
+// Socket.io (optional - only initialize if io is available)
+const socket = (typeof io !== 'undefined') ? io() : null;
 
 // Get current user from API (cached)
 let currentUserCache = null;

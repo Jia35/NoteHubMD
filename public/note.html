@@ -553,7 +553,7 @@
                                  class="block px-2 py-1 mb-1 rounded transition flex items-center"
                                  :class="currentRoute === '/b/' + book.id ? 'bg-gray-300 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-200 text-gray-700 dark:hover:bg-gray-800 dark:text-gray-300 dark:hover:text-whit'">
                         <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-book text-green-500"></i></span>
-                        <span class="truncate">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
+                        <span class="truncate " :title="book.title + ' (' + (book.noteCount ?? 0) + ')'">{{ book.title }} ({{ book.noteCount ?? 0 }})</span>
                     </a>
                 </div>
                 <a v-if="showMoreBooks" href="/books" 
@@ -676,7 +676,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center">
                                                     <i class="fa-solid fa-book text-green-500 mr-3 shrink-0"></i>
-                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ book.title }}</span>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate " :title="book.title">{{ book.title }}</span>
                                                 </div>
                                                 <p v-if="book.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7 truncate">{{ book.description }}</p>
                                             </div>
@@ -697,7 +697,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center">
                                                     <i class="fa-solid fa-note-sticky text-blue-500 mr-3 shrink-0"></i>
-                                                    <span class="font-medium text-gray-800 dark:text-white truncate">{{ note.title || 'Untitled' }}</span>
+                                                    <span class="font-medium text-gray-800 dark:text-white truncate " :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</span>
                                                 </div>
                                                 <p class="text-xs text-gray-400 mt-1 ml-7">
                                                     <i class="fa-solid fa-book mr-1"></i>
@@ -1175,7 +1175,7 @@
                                                         class="flex items-center text-sm py-1.5 px-2 rounded transition"
                                                         :class="bookNote.id === noteId ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
                                                         <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === noteId ? 'text-white' : 'text-gray-500'"></i>
-                                                        <span class="truncate">{{ bookNote.title || 'Untitled' }}</span>
+                                                        <span class="truncate " :title="bookNote.title || 'Untitled'">{{ bookNote.title || 'Untitled' }}</span>
                                                     </a>
                                                 </li>
                                             </ul>
