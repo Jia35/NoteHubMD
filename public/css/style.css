@@ -13,6 +13,7 @@ button {
     color: #4b5563;
     background: transparent;
     border: none;
+    font-size: 14px;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 

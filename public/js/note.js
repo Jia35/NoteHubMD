@@ -1189,6 +1189,8 @@
             const toggleItalic = () => toggleWrap('*');
             const toggleStrikethrough = () => toggleWrap('~~');
             const toggleUnderline = () => toggleWrap('++');
+            const toggleSuperscript = () => toggleWrap('^');
+            const toggleSubscript = () => toggleWrap('~');
             const toggleInlineCode = () => toggleWrap('`');
 
             const cycleHeading = () => {
@@ -2388,6 +2390,7 @@
                 noteInfoItem,
                 // Markdown Toolbar
                 toggleBold, toggleItalic, toggleStrikethrough, toggleUnderline,
+                toggleSuperscript, toggleSubscript,
                 cycleHeading, toggleBlockquote, toggleUnorderedList, toggleOrderedList,
                 toggleInlineCode, insertCodeBlock, insertTable,
                 toggleLink, toggleImage, toggleHorizontalRule
