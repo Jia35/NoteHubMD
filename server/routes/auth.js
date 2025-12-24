@@ -225,7 +225,7 @@ router.get('/me', async (req, res) => {
     }
     try {
         const user = await db.User.findByPk(req.session.userId, {
-            attributes: ['id', 'username', 'name', 'avatar', 'pinnedItems', 'role']
+            attributes: ['id', 'username', 'name', 'avatar', 'avatarOriginal', 'avatarCropData', 'pinnedItems', 'role']
         });
         if (!user) {
             req.session.destroy();
@@ -250,7 +250,7 @@ router.put('/profile', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const { name, avatar } = req.body;
+        const { name, avatar, avatarOriginal, avatarCropData } = req.body;
         const updateData = {};
 
         if (name !== undefined) {
@@ -259,13 +259,21 @@ router.put('/profile', async (req, res) => {
         if (avatar !== undefined) {
             updateData.avatar = avatar;
         }
+        if (avatarOriginal !== undefined) {
+            updateData.avatarOriginal = avatarOriginal;
+        }
+        if (avatarCropData !== undefined) {
+            updateData.avatarCropData = avatarCropData;
+        }
 
         await user.update(updateData);
         res.json({
             id: user.id,
             username: user.username,
             name: user.name,
-            avatar: user.avatar
+            avatar: user.avatar,
+            avatarOriginal: user.avatarOriginal,
+            avatarCropData: user.avatarCropData
         });
     } catch (e) {
         res.status(500).json({ error: e.message });

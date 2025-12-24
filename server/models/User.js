@@ -15,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
         avatar: {
             type: DataTypes.STRING
         },
+        avatarOriginal: {
+            type: DataTypes.STRING
+        },
+        avatarCropData: {
+            type: DataTypes.TEXT
+        },
         role: {
             type: DataTypes.STRING,
             defaultValue: 'user',

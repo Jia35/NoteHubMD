@@ -30,6 +30,10 @@
         dayjs.locale('zh-tw');
     </script>
 
+    <!-- Cropper.js for avatar cropping -->
+    <link rel="stylesheet" href="/vendors/css/cropper.min.css">
+    <script src="/vendors/js/cropper.min.js"></script>
+
     <link rel="stylesheet" href="/css/style.css">
 
     <!-- Apply theme immediately to prevent flash -->
@@ -874,9 +878,64 @@
                         <i class="fa-solid fa-camera mr-1"></i>變更頭像
                         <input type="file" accept="image/*" class="hidden" @change="handleAvatarChange">
                     </label>
-                    <button v-if="avatarPreview" @click="removeAvatar" class="text-red-500 hover:text-red-600 text-sm">
+                    <button v-if="user?.avatarOriginal" @click="openReCropModal"
+                        class="text-purple-500 hover:text-purple-600 text-sm cursor-pointer">
+                        <i class="fa-solid fa-crop mr-1"></i>重新裁切
+                    </button>
+                    <button v-else-if="avatarPreview" @click="openEditAvatarModal"
+                        class="text-purple-500 hover:text-purple-600 text-sm cursor-pointer">
+                        <i class="fa-solid fa-pen mr-1"></i>編輯頭像
+                    </button>
+                    <button v-if="avatarPreview" @click="removeAvatar"
+                        class="text-red-500 hover:text-red-600 text-sm cursor-pointer">
                         <i class="fa-solid fa-trash mr-1"></i>移除頭像
                     </button>
+                </div>
+            </div>
+
+            <!-- Avatar Cropper Modal -->
+            <div v-if="showCropperModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60]">
+                <div
+                    class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow-xl w-full max-w-lg mx-4 text-gray-900 dark:text-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold"><i class="fa-solid fa-crop mr-2"></i>裁切頭像</h2>
+                        <button @click="closeCropperModal"
+                            class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Cropper Container -->
+                    <div class="relative w-full h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden mb-4">
+                        <img ref="cropperImageRef" :src="cropperImageSrc" class="max-w-full"
+                            style="display: block; max-width: 100%;">
+                    </div>
+
+                    <!-- Cropper Actions -->
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-2">
+                            <button @click="rotateCropper(-90)"
+                                class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                                title="向左旋轉">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            <button @click="rotateCropper(90)"
+                                class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                                title="向右旋轉">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="closeCropperModal"
+                                class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                取消
+                            </button>
+                            <button @click="applyCrop"
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                <i class="fa-solid fa-check mr-1"></i>確定裁切
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

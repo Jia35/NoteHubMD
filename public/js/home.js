@@ -34,6 +34,13 @@
             const savingProfile = ref(false);
             const avatarRemoved = ref(false);
 
+            // Cropper state
+            const showCropperModal = ref(false);
+            const cropperImageSrc = ref('');
+            const cropperImageRef = ref(null);
+            const originalImageFile = ref(null);  // Store original file for upload
+            let cropperInstance = null;
+
             // Pinned items
             const pinnedItems = ref([]);
 
@@ -90,20 +97,134 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
+                // Store original file
+                originalImageFile.value = file;
+
+                // Read file and open cropper modal
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    cropperImageSrc.value = e.target.result;
+                    showCropperModal.value = true;
+
+                    // Wait for DOM update then init cropper
+                    await nextTick();
+                    setTimeout(() => initCropper(), 100);
+                };
+                reader.readAsDataURL(file);
+
+                // Clear file input to allow re-selecting same file
+                event.target.value = '';
+            };
+
+            const openReCropModal = async () => {
+                if (!props.user?.avatarOriginal) return;
+
+                cropperImageSrc.value = props.user.avatarOriginal;
+                showCropperModal.value = true;
+
+                // Wait for DOM update then init cropper with saved crop data
+                await nextTick();
+                setTimeout(() => {
+                    initCropper();
+                    // Apply saved crop data if available
+                    if (props.user.avatarCropData && cropperInstance) {
+                        try {
+                            const cropData = typeof props.user.avatarCropData === 'string'
+                                ? JSON.parse(props.user.avatarCropData)
+                                : props.user.avatarCropData;
+                            cropperInstance.setData(cropData);
+                        } catch (e) {
+                            console.warn('Failed to restore crop data:', e);
+                        }
+                    }
+                }, 100);
+            };
+
+            // Open cropper for existing avatar (legacy - no original stored)
+            const openEditAvatarModal = async () => {
+                if (!avatarPreview.value) return;
+
+                cropperImageSrc.value = avatarPreview.value;
+                showCropperModal.value = true;
+
+                await nextTick();
+                setTimeout(() => initCropper(), 100);
+            };
+
+            const initCropper = () => {
+                const imageElement = cropperImageRef.value;
+                if (!imageElement) return;
+
+                // Destroy existing instance
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+
+                // Initialize Cropper.js
+                cropperInstance = new Cropper(imageElement, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.9,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    background: true,
+                    responsive: true,
+                });
+            };
+
+            const rotateCropper = (degree) => {
+                if (cropperInstance) {
+                    cropperInstance.rotate(degree);
+                }
+            };
+
+            const closeCropperModal = () => {
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+                showCropperModal.value = false;
+                cropperImageSrc.value = '';
+            };
+
+            const applyCrop = async () => {
+                if (!cropperInstance) return;
+
                 try {
-                    // Compress image before storing
-                    const compressedFile = await compressImage(file);
-                    avatarFile.value = compressedFile;
+                    // Get crop data for saving
+                    const cropData = cropperInstance.getData();
+
+                    // Get cropped canvas
+                    const canvas = cropperInstance.getCroppedCanvas({
+                        width: 256,
+                        height: 256,
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high',
+                    });
+
+                    // Convert canvas to blob
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+                    const croppedFile = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+
+                    // Store for save operation
+                    avatarFile.value = {
+                        cropped: croppedFile,
+                        original: originalImageFile.value,
+                        cropData: cropData
+                    };
                     avatarRemoved.value = false;
 
-                    // Preview compressed image
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        avatarPreview.value = e.target.result;
-                    };
-                    reader.readAsDataURL(compressedFile);
+                    // Update preview
+                    avatarPreview.value = canvas.toDataURL('image/jpeg', 0.9);
+
+                    closeCropperModal();
                 } catch (e) {
-                    globalModal.showAlert('圖片處理失敗：' + e.message);
+                    globalModal.showAlert('裁切失敗：' + e.message);
                 }
             };
 
@@ -117,26 +238,53 @@
                 savingProfile.value = true;
                 try {
                     let avatarUrl = props.user.avatar;
+                    let avatarOriginalUrl = props.user.avatarOriginal;
+                    let avatarCropDataJson = props.user.avatarCropData;
 
                     if (avatarRemoved.value) {
                         avatarUrl = null;
+                        avatarOriginalUrl = null;
+                        avatarCropDataJson = null;
                     } else if (avatarFile.value) {
-                        const uploadResult = await api.uploadAvatar(avatarFile.value);
-                        avatarUrl = uploadResult.url;
+                        // New avatar with cropping
+                        if (avatarFile.value.cropped) {
+                            // Upload cropped image
+                            const croppedResult = await api.uploadAvatar(avatarFile.value.cropped);
+                            avatarUrl = croppedResult.url;
+
+                            // Upload original image if available
+                            if (avatarFile.value.original) {
+                                const originalResult = await api.uploadAvatar(avatarFile.value.original);
+                                avatarOriginalUrl = originalResult.url;
+                            }
+
+                            // Save crop data
+                            avatarCropDataJson = JSON.stringify(avatarFile.value.cropData);
+                        } else {
+                            // Legacy: direct file upload (fallback)
+                            const uploadResult = await api.uploadAvatar(avatarFile.value);
+                            avatarUrl = uploadResult.url;
+                        }
                     }
 
                     const result = await api.updateProfile({
                         name: editableName.value,
-                        avatar: avatarUrl
+                        avatar: avatarUrl,
+                        avatarOriginal: avatarOriginalUrl,
+                        avatarCropData: avatarCropDataJson
                     });
 
                     if (props.user) {
                         props.user.name = result.name;
                         props.user.avatar = result.avatar;
+                        props.user.avatarOriginal = result.avatarOriginal;
+                        props.user.avatarCropData = result.avatarCropData;
                     }
 
                     currentUserCache = null;
                     avatarRemoved.value = false;
+                    avatarFile.value = null;
+                    originalImageFile.value = null;
                     showUserProfileModal.value = false;
                 } catch (e) {
                     globalModal.showAlert('儲存失敗：' + e.message);
@@ -580,6 +728,8 @@
                 // Profile modal
                 showUserProfileModal, editableName, avatarPreview,
                 openUserProfileModal, handleAvatarChange, removeAvatar, saveProfile, savingProfile,
+                // Avatar cropper
+                showCropperModal, cropperImageSrc, cropperImageRef, openReCropModal, openEditAvatarModal, rotateCropper, closeCropperModal, applyCrop,
                 // Pinned items
                 pinnedItems, unpinItem,
                 // App version
