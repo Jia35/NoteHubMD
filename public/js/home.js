@@ -2063,6 +2063,7 @@
                 router.push('/b/' + book.id);
             };
             const books = ref([]);
+            const uncategorizedCount = ref(0);
             const loading = ref(true);
 
             // View mode sync with sidebar
@@ -2163,6 +2164,10 @@
                 try {
                     books.value = await api.getBooks();
                     await loadPinnedItems();
+
+                    // Load uncategorized notes count
+                    const uncategorizedNotes = await api.getNotes({ limit: 1000 });
+                    uncategorizedCount.value = uncategorizedNotes.length;
                 } catch (e) {
                     console.error('[AllBooks] Failed to load books:', e);
                 } finally {
@@ -2194,7 +2199,7 @@
             });
 
             return {
-                books, sortedBooks, loading,
+                books, sortedBooks, loading, uncategorizedCount,
                 dayjs, sortBy, sortOrder, sortOptions,
                 openMenuId, toggleMenu,
                 isPinned, togglePin, deleteBook, openBook
