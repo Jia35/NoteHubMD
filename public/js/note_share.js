@@ -323,6 +323,13 @@
                     // Wait for DOM to update after loading state changes, then render
                     nextTick(() => {
                         renderContent();
+
+                        // Check URL for slide mode
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('view') === 'slide') {
+                            // Small delay to ensure content is fully rendered
+                            setTimeout(() => toggleSlide(), 100);
+                        }
                     });
                 } catch (e) {
                     // Redirect to 404 if note not found
@@ -340,14 +347,14 @@
                 if (newId) loadNote();
             }, { immediate: true });
 
-            // Presentation Mode
-            const showPresentation = ref(false);
+            // Slide Mode
+            const showSlide = ref(false);
             let revealInstance = null;
 
-            const togglePresentation = async () => {
-                if (showPresentation.value) {
-                    // Close presentation
-                    showPresentation.value = false;
+            const toggleSlide = async () => {
+                if (showSlide.value) {
+                    // Close slide
+                    showSlide.value = false;
                     if (revealInstance) {
                         try {
                             revealInstance.destroy();
@@ -359,12 +366,20 @@
                     // Restore body overflow
                     document.body.style.overflow = '';
 
-                    // Force re-render of normal view if needed (usually v-show handles it)
+                    // Update URL - remove slide parameter
+                    const url = new URL(window.location);
+                    url.searchParams.delete('view');
+                    window.history.replaceState({}, '', url);
                 } else {
-                    // Open presentation
-                    showPresentation.value = true;
+                    // Open slide
+                    showSlide.value = true;
                     // Hide overflow to prevent double scrollbars
                     document.body.style.overflow = 'hidden';
+
+                    // Update URL - add slide parameter
+                    const url = new URL(window.location);
+                    url.searchParams.set('view', 'slide');
+                    window.history.replaceState({}, '', url);
 
                     await nextTick();
 
@@ -410,10 +425,10 @@
                 }
             };
 
-            // Handle ESC to close presentation
+            // Handle ESC to close slide
             const handleEsc = (e) => {
-                if (e.key === 'Escape' && showPresentation.value) {
-                    togglePresentation();
+                if (e.key === 'Escape' && showSlide.value) {
+                    toggleSlide();
                 }
             };
 
@@ -459,9 +474,9 @@
                 // Theme
                 theme,
                 toggleTheme,
-                // Presentation
-                showPresentation,
-                togglePresentation
+                // Slide
+                showSlide,
+                toggleSlide
             };
         }
     };

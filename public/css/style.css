@@ -300,7 +300,7 @@ button {
     opacity: 1;
 }
 
-/* Hide header-anchor in Reveal.js presentation mode */
+/* Hide header-anchor in Reveal.js slide mode */
 .reveal .header-anchor {
     display: none !important;
 }

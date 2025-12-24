@@ -89,7 +89,7 @@
             <!-- Content -->
             <template v-else>
                 <!-- Header -->
-                <div v-show="!showPresentation" class="bg-gray-200 dark:bg-gray-900 dark:text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
+                <div v-show="!showSlide" class="bg-gray-200 dark:bg-gray-900 dark:text-white px-4 py-3 flex items-center shadow-md z-10 shrink-0">
                     <div class="flex-1 flex items-center space-x-3">
                         <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,8 +108,8 @@
                                 :title="theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'">
                             <i :class="theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
                         </button>
-                        <!-- Presentation Mode Button -->
-                        <button @click="togglePresentation" 
+                        <!-- Slide Mode Button -->
+                        <button @click="toggleSlide" 
                                 class="px-2 py-1 text-xs border border-gray-500 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-400 hover:text-white dark:hover:bg-gray-700 dark:hover:text-white transition"
                                 title="簡報模式">
                             <i class="fa-solid fa-display mr-1"></i>簡報
@@ -123,7 +123,7 @@
                 </div>
 
                 <!-- Main Content with TOC -->
-                <div v-show="!showPresentation" class="flex-1 flex overflow-hidden">
+                <div v-show="!showSlide" class="flex-1 flex overflow-hidden">
                     <!-- Preview Content -->
                     <div class="flex-1 overflow-auto" ref="previewContainer" @scroll="handlePreviewScroll">
                         <!-- Preview Info Bar -->
@@ -226,9 +226,9 @@
                 </div>
 
                 <!-- Reveal.js Container -->
-                <div v-show="showPresentation" class="reveal absolute inset-0 z-50 bg-black">
+                <div v-show="showSlide" class="reveal absolute inset-0 z-50 bg-black">
                     <div class="slides"></div>
-                    <button @click="togglePresentation" class="fixed top-4 right-4 z-[60] text-white/50 hover:text-white text-3xl transition">
+                    <button @click="toggleSlide" class="fixed top-4 right-4 z-[60] text-white/50 hover:text-white text-3xl transition">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
