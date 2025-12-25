@@ -1068,11 +1068,11 @@
                                 </div>
                                 
                                 <div class="flex gap-2">
-                                    <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                    <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
                                         <i :class="shareCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
                                         {{ shareCopied ? '已複製' : '複製連結' }}
                                     </button>
-                                    <button @click="openSharePage" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                                    <button @click="openSharePage" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                         開啟分享頁面
                                     </button>

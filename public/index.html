@@ -2101,7 +2101,7 @@
                         <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
                         <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate">{{ note.title }}</span>
                     </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400 shrink-0 ml-2" title="最後編輯時間">{{ new Date(note.updatedAt).toLocaleString() }}</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 shrink-0 ml-2" title="最後編輯時間">{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</span>
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
                     這本書裡還沒有筆記。

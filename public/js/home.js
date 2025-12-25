@@ -1823,7 +1823,7 @@
             }));
 
             return {
-                book, createNote, openNote,
+                dayjs, book, createNote, openNote,
                 editableDescription, editableTags, newTag, editablePermission,
                 addEditableTag, removeEditableTag, saveBookChanges, initInfoModal,
                 permission, isOwner, canEdit, canAddNote,
