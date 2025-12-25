@@ -1154,15 +1154,22 @@
                 
                 <!-- Revisions Modal (Activity Log) -->
                 <div v-if="showRevisionsModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showRevisionsModal = false">
-                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col" style="height: 85vh;">
                         <!-- Modal Header -->
                         <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800/50">
                             <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
                                 <i class="fa-solid fa-history mr-2 text-blue-500"></i>活動紀錄
                             </h2>
-                            <button @click="showRevisionsModal = false" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                                <i class="fa-solid fa-xmark text-lg"></i>
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <button v-if="canEdit" @click="saveCurrentVersion" :disabled="savingVersion"
+                                        class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition flex items-center disabled:opacity-50">
+                                    <i :class="savingVersion ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-floppy-disk'" class="mr-1"></i>
+                                    儲存目前版本
+                                </button>
+                                <button @click="showRevisionsModal = false" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                    <i class="fa-solid fa-xmark text-lg"></i>
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Modal Body -->

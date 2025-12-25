@@ -652,6 +652,106 @@ router.get('/notes/:id/revisions', async (req, res) => {
     }
 });
 
+// Manually Save Current Version as Revision
+router.post('/notes/:id/revisions', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Check edit permission
+        let canEdit = false;
+        if (isOwner) canEdit = true;
+        else if (userPermOverride === 'edit') canEdit = true;
+        else if (effectivePermission === 'public-edit') canEdit = true;
+        else if (effectivePermission === 'auth-edit' && userId) canEdit = true;
+
+        if (!canEdit) {
+            return res.status(403).json({ error: 'Edit permission denied' });
+        }
+
+        const dmp = new DiffMatchPatch();
+        const currentContent = note.content || '';
+
+        // Get existing revisions
+        const revisions = await db.NoteRevision.findAll({
+            where: { noteId: note.id },
+            order: [['createdAt', 'DESC']]
+        });
+
+        if (revisions.length === 0) {
+            // First revision: store full content
+            await db.NoteRevision.create({
+                noteId: note.id,
+                content: currentContent,
+                length: currentContent.length,
+                editorId: userId
+            });
+        } else {
+            const latestRevision = revisions[0];
+
+            // Get the content of the latest revision for diff calculation
+            let lastContent = latestRevision.content;
+            if (lastContent === null) {
+                // Need to reconstruct from previous version with content
+                for (let i = 0; i < revisions.length; i++) {
+                    if (revisions[i].content !== null) {
+                        lastContent = revisions[i].content;
+                        break;
+                    }
+                }
+            }
+
+            // Calculate diff
+            const diffs = dmp.diff_main(lastContent || '', currentContent);
+            dmp.diff_cleanupEfficiency(diffs);
+            const patches = dmp.patch_make(lastContent || '', diffs);
+            const patchText = dmp.patch_toText(patches);
+
+            if (patchText) {
+                // Clear content from previous latest revision
+                if (latestRevision.content !== null) {
+                    await latestRevision.update({ content: null });
+                }
+
+                // Create new revision with patch and full content
+                await db.NoteRevision.create({
+                    noteId: note.id,
+                    patch: patchText,
+                    content: currentContent,
+                    length: currentContent.length,
+                    editorId: userId
+                });
+
+                // Cleanup old revisions (keep only REVISION_MAX_COUNT)
+                const allRevisions = await db.NoteRevision.findAll({
+                    where: { noteId: note.id },
+                    order: [['createdAt', 'DESC']]
+                });
+                if (allRevisions.length > REVISION_MAX_COUNT) {
+                    const toDelete = allRevisions.slice(REVISION_MAX_COUNT);
+                    await db.NoteRevision.destroy({
+                        where: { id: toDelete.map(r => r.id) }
+                    });
+                }
+            }
+        }
+
+        // Update savedAt timestamp
+        await note.update({ savedAt: new Date() });
+
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get Specific Revision Content (reconstructed via patches)
 router.get('/notes/:id/revisions/:revisionId', async (req, res) => {
     try {

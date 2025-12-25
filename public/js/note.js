@@ -853,6 +853,35 @@
                 }
             };
 
+            // Manual save current version
+            const savingVersion = ref(false);
+            const saveCurrentVersion = async () => {
+                if (savingVersion.value) return;
+                savingVersion.value = true;
+
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/revisions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: content.value })
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Failed to save version');
+                    }
+
+                    // Reload revisions list
+                    await loadRevisions();
+
+                    globalModal.showAlert('已儲存目前版本！', { type: 'success' });
+                } catch (e) {
+                    globalModal.showAlert('儲存失敗：' + e.message);
+                } finally {
+                    savingVersion.value = false;
+                }
+            };
+
             // User Profile Modal for Note Page
             const showUserProfileModal = ref(false);
             const editableName = ref('');
@@ -2504,6 +2533,7 @@
                 showRevisionsModal, revisions, revisionsLoading,
                 selectedRevision, revisionLoading, diffHtml,
                 loadRevisions, selectRevision, confirmRestoreRevision,
+                savingVersion, saveCurrentVersion,
                 // Utils for templates
                 dayjs: window.dayjs,
                 // Markdown Toolbar
