@@ -2152,7 +2152,7 @@
                 :loading-user-permissions="infoLoadingUserPermissions" :user-search-query="infoUserSearchQuery"
                 :user-search-results="infoUserSearchResults" :new-user-permission="infoNewUserPermission"
                 @close="showInfoModal = false" @save="saveBookChanges" @update:tab="infoModalTab = $event"
-                @update:title="bookInfoItem.title = $event" @update:description="editableDescription = $event" @update:permission="editablePermission = $event"
+                @update:title="bookInfoItem.title = $event" @update:description="autoSaveDescription" @update:permission="editablePermission = $event"
                 @update:isPublic="book.isPublic = $event"
                 @update:newTag="newTag = $event" @update:newUserPermission="infoNewUserPermission = $event"
                 @add-tag="addEditableTag" @remove-tag="removeEditableTag"

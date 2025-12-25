@@ -1762,6 +1762,18 @@
                 editableTags.value = editableTags.value.filter(t => t !== tagToRemove);
             };
 
+            // Auto-save description on blur
+            const autoSaveDescription = async (newDesc) => {
+                editableDescription.value = newDesc;
+                if (!canEdit.value) return;
+                try {
+                    await api.updateBook(book.value.id, { description: newDesc });
+                    book.value.description = newDesc;
+                } catch (e) {
+                    globalModal.showAlert('描述儲存失敗');
+                }
+            };
+
             const saveBookChanges = async () => {
                 try {
                     // Save permission if changed (owner only)
@@ -1849,6 +1861,8 @@
                 infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
                 infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
                 removeInfoUserPermission, updateInfoUserPermissionLevel,
+                // Auto-save
+                autoSaveDescription,
                 // Share
                 shareBook
             };
