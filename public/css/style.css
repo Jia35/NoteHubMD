@@ -856,39 +856,30 @@ li.CodeMirror-hint-active {
     top: 120px;
     height: calc(100vh - 150px);
     transition: all 0.2s ease;
+    /* Always pin to right side */
+    left: auto;
+    right: 1rem;
 }
 
-@media (min-width: 1280px) {
-
-    /* XL: Centered Layout with TOC to the right */
-    .note-toc {
-        left: 50%;
-        margin-left: 420px;
-        right: auto;
-    }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-
-    /* LG to XL: TOC pinned to right, Content shifted */
-    .note-toc {
-        left: auto;
-        margin-left: 0;
-        right: 1rem;
-    }
-
-    /* Shift content to left by reserving space on the right */
-    /* Only apply when TOC is present and in view mode (has-toc class) */
+/* Shift content to left by reserving space on the right when TOC is visible */
+/* TOC is visible on lg screens (>= 1024px) when content is NOT narrow */
+@media (min-width: 1024px) {
     .markdown-body.has-toc.flex.justify-center {
         /* Reserve space for TOC (w-56 = 14rem + padding) */
         padding-right: 15rem;
-        /* justify-center aligns center in the remaining space (Total - PaddingRight).
-           So the visual center shifts left. */
         transition: padding-right 0.2s ease;
     }
 
-    /* Also ensure we force the flex container to acknowledge this padding */
     .markdown-body.has-toc {
         box-sizing: border-box;
     }
+}
+
+/* Hide right TOC when main content area is too narrow (detected by JS ResizeObserver) */
+.content-narrow .note-toc {
+    display: none !important;
+}
+
+.content-narrow .markdown-body.has-toc.flex.justify-center {
+    padding-right: 0;
 }

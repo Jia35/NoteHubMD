@@ -484,12 +484,62 @@
 
                 document.addEventListener('click', handleImageClick);
                 document.addEventListener('keyup', handleEsc);
+
+                // Initialize showBookToc based on screen width
+                if (window.innerWidth >= 1024) {
+                    showBookToc.value = true;
+                }
             });
 
             onUnmounted(() => {
                 document.removeEventListener('click', handleImageClick);
                 document.removeEventListener('keyup', handleEsc);
                 if (revealInstance) revealInstance.destroy();
+            });
+
+            // Book TOC Toggle
+            const showBookToc = ref(false);
+            const toggleBookToc = () => {
+                showBookToc.value = !showBookToc.value;
+            };
+
+            // Watch showBookToc to add/remove body class for CSS-based right TOC visibility control
+            watch(showBookToc, (isOpen) => {
+                if (isOpen) {
+                    document.body.classList.add('book-toc-open');
+                } else {
+                    document.body.classList.remove('book-toc-open');
+                }
+            }, { immediate: true });
+
+            // ResizeObserver to detect main content area width and control right TOC visibility
+            let resizeObserver = null;
+            const setupResizeObserver = () => {
+                if (resizeObserver) return;
+                nextTick(() => {
+                    const mainContentArea = previewContainer.value;
+                    if (!mainContentArea) return;
+
+                    resizeObserver = new ResizeObserver((entries) => {
+                        for (const entry of entries) {
+                            const width = entry.contentRect.width;
+                            // Hide right TOC when main content area is less than 800px
+                            if (width < 800) {
+                                document.body.classList.add('content-narrow');
+                            } else {
+                                document.body.classList.remove('content-narrow');
+                            }
+                        }
+                    });
+                    resizeObserver.observe(mainContentArea);
+                });
+            };
+
+            // Set up observer after loading
+            watch(loading, (isLoading) => {
+                if (!isLoading) {
+                    setupResizeObserver();
+                }
             });
 
             return {
@@ -521,7 +571,10 @@
                 bookNotes,
                 prevNote,
                 nextNote,
-                getNoteShareLink
+                getNoteShareLink,
+                // Book TOC
+                showBookToc,
+                toggleBookToc
             };
         }
     };
