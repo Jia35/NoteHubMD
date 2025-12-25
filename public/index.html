@@ -2110,11 +2110,27 @@
                     <span v-if="canEdit" class="drag-handle cursor-move text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3 px-1" @click.stop>
                         <i class="fa-solid fa-grip-vertical"></i>
                     </span>
+                    <!-- Note Icon and Title/Tags -->
                     <div class="flex items-center flex-1 min-w-0">
-                        <span class="mr-3 text-gray-400"><i class="fa-solid fa-note-sticky"></i></span>
-                        <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate">{{ note.title }}</span>
+                        <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate block" :title="note.title">{{ note.title }}</span>
+                            <!-- Tags below title -->
+                            <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1 mt-1">
+                                <span v-for="tag in note.tags.slice(0, 6)" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+                                    {{ tag }}
+                                </span>
+                                <span v-if="note.tags.length > 6" class="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400" :title="note.tags.slice(6).join(', ')">
+                                    +{{ note.tags.length - 6 }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <span class="text-sm text-gray-500 dark:text-gray-400 shrink-0 ml-2" title="最後編輯時間">{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</span>
+                    <!-- Date and Author (right side) -->
+                    <div class="text-right shrink-0 ml-4 text-xs text-gray-500 dark:text-gray-400">
+                        <div>{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</div>
+                        <div v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username }}</div>
+                    </div>
                 </div>
                 <div v-if="!book.Notes || book.Notes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
                     這本書裡還沒有筆記。
