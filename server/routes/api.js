@@ -1203,6 +1203,7 @@ router.post('/books/:id/notes', async (req, res) => {
         const newOrder = (maxOrderNote?.order ?? -1) + 1;
 
         let id = generateId();
+        let shareId = generateId(7);
         let retry = 0;
         while (retry < 5) {
             try {
@@ -1213,12 +1214,14 @@ router.post('/books/:id/notes', async (req, res) => {
                     bookId: book.id,
                     ownerId: userId,
                     permission: 'inherit', // Default to inherit from book
-                    order: newOrder
+                    order: newOrder,
+                    shareId: shareId  // Auto-generate share link
                 });
                 return res.json(note);
             } catch (e) {
                 if (e.name === 'SequelizeUniqueConstraintError') {
                     id = generateId();
+                    shareId = generateId(7);
                     retry++;
                 } else {
                     throw e;
