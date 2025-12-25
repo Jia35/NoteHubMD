@@ -1149,7 +1149,7 @@
                     </template>
                 </InfoModal>
                 
-                <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-10 shrink-0">
+                <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
                     <div class="flex-1 flex items-center space-x-2">
                         <!-- <a href="/" class="hover:text-blue-400 transition font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1162,8 +1162,7 @@
                                     <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
                                 </a>
                                 <!-- Book Notes Tooltip -->
-                                <div v-if="book.Notes && book.Notes.length > 0" 
-                                     class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                                <div v-if="book.Notes && book.Notes.length > 0" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
                                     <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 280px; max-width: 400px;">
                                         <!-- Arrow -->
                                         <div class="absolute top-0 left-4 w-4 h-4 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>

@@ -172,6 +172,7 @@ router.post('/notes', async (req, res) => {
     }
 
     let id = generateId();
+    let shareId = generateId(7);
     let retry = 0;
     while (retry < 5) {
         try {
@@ -179,7 +180,8 @@ router.post('/notes', async (req, res) => {
                 id: id,
                 title: (req.body && req.body.title) || 'Untitled Note',
                 content: (req.body && req.body.content) || '',
-                ownerId: req.session.userId || null
+                ownerId: req.session.userId || null,
+                shareId: shareId  // Auto-generated share link
             };
             // Add optional fields if provided
             if (permission !== undefined) noteData.permission = permission;
@@ -190,6 +192,7 @@ router.post('/notes', async (req, res) => {
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
                 id = generateId();
+                shareId = generateId(7);
                 retry++;
             } else {
                 return res.status(500).json({ error: e.message });
@@ -826,7 +829,7 @@ router.get('/share/:shareIdOrAlias', async (req, res) => {
                     model: db.Book,
                     attributes: ['id', 'title', 'permission'],
                     include: [
-                        { model: db.Note, attributes: ['id', 'title', 'order'], order: [['order', 'ASC']] }
+                        { model: db.Note, attributes: ['id', 'title', 'order', 'shareId', 'shareAlias'], order: [['order', 'ASC']] }
                     ]
                 },
                 { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },

@@ -30,6 +30,42 @@
             const previewContainer = ref(null);
             const previewContent = ref(null);
 
+            // Book navigation
+            const book = ref(null);
+
+            // Book notes sorted by order (only those with share links)
+            const bookNotes = computed(() => {
+                if (!book.value || !book.value.Notes) return [];
+                return book.value.Notes
+                    .filter(n => n.shareId || n.shareAlias)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+            });
+
+            // Current note index in book
+            const currentNoteIndex = computed(() => {
+                if (!bookNotes.value.length) return -1;
+                return bookNotes.value.findIndex(n => n.id === noteId.value);
+            });
+
+            // Previous note in book
+            const prevNote = computed(() => {
+                const idx = currentNoteIndex.value;
+                if (idx <= 0) return null;
+                return bookNotes.value[idx - 1];
+            });
+
+            // Next note in book
+            const nextNote = computed(() => {
+                const idx = currentNoteIndex.value;
+                if (idx < 0 || idx >= bookNotes.value.length - 1) return null;
+                return bookNotes.value[idx + 1];
+            });
+
+            // Get share link for a note
+            const getNoteShareLink = (note) => {
+                return '/s/' + (note.shareAlias || note.shareId);
+            };
+
             // Theme
             const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark');
 
@@ -315,6 +351,9 @@
                     lastEditedAt.value = note.lastEditedAt;
                     canEdit.value = note.canEdit || note.isOwner;
 
+                    // Store book info for navigation (if note belongs to a book)
+                    book.value = note.Book || null;
+
                     // Update page title
                     document.title = `${title.value} - NoteHubMD`;
 
@@ -476,7 +515,13 @@
                 toggleTheme,
                 // Slide
                 showSlide,
-                toggleSlide
+                toggleSlide,
+                // Book navigation
+                book,
+                bookNotes,
+                prevNote,
+                nextNote,
+                getNoteShareLink
             };
         }
     };
