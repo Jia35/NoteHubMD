@@ -21,6 +21,7 @@
     "body-parser": "^2.2.1",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
+    "diff-match-patch": "^1.0.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-session": "^1.18.2",

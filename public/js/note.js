@@ -741,6 +741,118 @@
                 if (val) loadUserPermissions();
             });
 
+            // --- Revisions (Activity Log) ---
+            const showRevisionsModal = ref(false);
+            const revisions = ref([]);
+            const revisionsLoading = ref(false);
+            const selectedRevision = ref(null);
+            const revisionLoading = ref(false);
+            const revisionContent = ref('');
+            const diffHtml = ref('');
+
+            // Load revisions list
+            const loadRevisions = async () => {
+                revisionsLoading.value = true;
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/revisions`);
+                    if (response.ok) {
+                        revisions.value = await response.json();
+                    } else {
+                        console.error('Failed to load revisions');
+                    }
+                } catch (e) {
+                    console.error('[Note] Failed to load revisions:', e);
+                } finally {
+                    revisionsLoading.value = false;
+                }
+                // Reset selection
+                selectedRevision.value = null;
+                diffHtml.value = '';
+            };
+
+            // Select a revision and load its content
+            const selectRevision = async (rev) => {
+                selectedRevision.value = rev;
+                revisionLoading.value = true;
+                diffHtml.value = '';
+
+                try {
+                    const response = await fetch(`/api/notes/${noteId.value}/revisions/${rev.id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        revisionContent.value = data.content || '';
+
+                        // Generate diff HTML
+                        const dmp = new diff_match_patch();
+                        const diffs = dmp.diff_main(revisionContent.value, content.value);
+                        dmp.diff_cleanupSemantic(diffs);
+
+                        // Build HTML with diff highlighting
+                        let html = '';
+                        for (const [op, text] of diffs) {
+                            const escapedText = text
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;');
+                            if (op === 1) {
+                                // Insert (in current version but not in old)
+                                html += `<span class="bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200">${escapedText}</span>`;
+                            } else if (op === -1) {
+                                // Delete (in old version but not in current)
+                                html += `<span class="bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`;
+                            } else {
+                                html += escapedText;
+                            }
+                        }
+                        diffHtml.value = html;
+                    }
+                } catch (e) {
+                    console.error('[Note] Failed to load revision content:', e);
+                    globalModal.showAlert('載入版本內容失敗');
+                } finally {
+                    revisionLoading.value = false;
+                }
+            };
+
+            // Confirm and restore to selected revision
+            const confirmRestoreRevision = async () => {
+                if (!selectedRevision.value) return;
+
+                const confirmed = await globalModal.showConfirm(
+                    '確定要還原到此版本嗎？\n\n此操作會將目前的內容替換為選定版本的內容，並建立一個新的版本記錄。'
+                );
+                if (!confirmed) return;
+
+                try {
+                    const response = await fetch(
+                        `/api/notes/${noteId.value}/revisions/${selectedRevision.value.id}/restore`,
+                        { method: 'POST' }
+                    );
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Restore failed');
+                    }
+
+                    const result = await response.json();
+
+                    // Update editor content
+                    content.value = result.content;
+                    if (cmInstance.value) {
+                        cmInstance.value.setValue(result.content);
+                    }
+                    updatePreview();
+
+                    // Reload revisions list
+                    await loadRevisions();
+
+                    globalModal.showAlert('已成功還原到選定版本！', { type: 'success' });
+                    showRevisionsModal.value = false;
+                } catch (e) {
+                    globalModal.showAlert('還原失敗：' + e.message);
+                }
+            };
+
             // User Profile Modal for Note Page
             const showUserProfileModal = ref(false);
             const editableName = ref('');
@@ -2388,6 +2500,12 @@
                 aliasEnabled, aliasInput, currentAlias, aliasError, aliasSaving,
                 toggleAlias, saveAlias, aliasCopied, copyAliasUrl,
                 noteInfoItem,
+                // Revisions (Activity Log)
+                showRevisionsModal, revisions, revisionsLoading,
+                selectedRevision, revisionLoading, diffHtml,
+                loadRevisions, selectRevision, confirmRestoreRevision,
+                // Utils for templates
+                dayjs: window.dayjs,
                 // Markdown Toolbar
                 toggleBold, toggleItalic, toggleStrikethrough, toggleUnderline,
                 toggleSuperscript, toggleSubscript,

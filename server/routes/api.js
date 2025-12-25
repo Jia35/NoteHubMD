@@ -6,6 +6,12 @@ const multer = require('multer');
 const db = require('../models');
 const config = require('../config');
 const { generateId, generateShareId, generateImageId } = require('../utils/idGenerator');
+const DiffMatchPatch = require('diff-match-patch');
+
+// Revision settings
+const REVISION_MAX_COUNT = 50;
+const REVISION_IDLE_MINUTES = 10;
+const REVISION_FORCE_MINUTES = 20;
 
 // --- App Info ---
 router.get('/version', (req, res) => {
@@ -318,6 +324,92 @@ router.put('/notes/:id', async (req, res) => {
             updateData.tags = parseTags(updateData.content);
             // Track when content was last edited
             updateData.lastEditedAt = new Date();
+
+            // --- Auto-save revision logic ---
+            const now = new Date();
+            const lastEditedAt = note.lastEditedAt ? new Date(note.lastEditedAt) : null;
+            const savedAt = note.savedAt ? new Date(note.savedAt) : null;
+
+            // Check if revision should be saved:
+            // 1. First edit ever (no savedAt)
+            // 2. 10 minutes idle rule: no edits for 10 minutes
+            // 3. 20 minutes force rule: 20 minutes since last save
+            let shouldSaveRevision = false;
+
+            if (!savedAt) {
+                // First revision for this note
+                shouldSaveRevision = true;
+            } else if (lastEditedAt && (now - lastEditedAt) > REVISION_IDLE_MINUTES * 60 * 1000) {
+                // 10 minutes since last edit
+                shouldSaveRevision = true;
+            } else if ((now - savedAt) > REVISION_FORCE_MINUTES * 60 * 1000) {
+                // 20 minutes since last save
+                shouldSaveRevision = true;
+            }
+
+            if (shouldSaveRevision && userId) {
+                try {
+                    const dmp = new DiffMatchPatch();
+                    const oldContent = note.content || '';
+                    const newContent = updateData.content;
+
+                    // Get existing revisions
+                    const revisions = await db.NoteRevision.findAll({
+                        where: { noteId: note.id },
+                        order: [['createdAt', 'DESC']]
+                    });
+
+                    if (revisions.length === 0) {
+                        // First revision: store full content
+                        await db.NoteRevision.create({
+                            noteId: note.id,
+                            content: oldContent,
+                            length: oldContent.length,
+                            editorId: userId
+                        });
+                    } else {
+                        // Calculate diff from old content to new content
+                        const diffs = dmp.diff_main(oldContent, newContent);
+                        dmp.diff_cleanupEfficiency(diffs);
+                        const patches = dmp.patch_make(oldContent, diffs);
+                        const patchText = dmp.patch_toText(patches);
+
+                        if (patchText) {
+                            // Clear content from previous latest revision
+                            const latestRevision = revisions[0];
+                            if (latestRevision && latestRevision.content !== null) {
+                                await latestRevision.update({ content: null });
+                            }
+
+                            // Create new revision with patch and full content
+                            await db.NoteRevision.create({
+                                noteId: note.id,
+                                patch: patchText,
+                                content: newContent,
+                                length: newContent.length,
+                                editorId: userId
+                            });
+
+                            // Cleanup old revisions (keep only REVISION_MAX_COUNT)
+                            const allRevisions = await db.NoteRevision.findAll({
+                                where: { noteId: note.id },
+                                order: [['createdAt', 'DESC']]
+                            });
+                            if (allRevisions.length > REVISION_MAX_COUNT) {
+                                const toDelete = allRevisions.slice(REVISION_MAX_COUNT);
+                                await db.NoteRevision.destroy({
+                                    where: { id: toDelete.map(r => r.id) }
+                                });
+                            }
+                        }
+                    }
+
+                    updateData.savedAt = now;
+                } catch (revError) {
+                    console.error('Revision save error:', revError);
+                    // Continue with note update even if revision fails
+                }
+            }
         }
 
         // Set last editor (content changes) and last updater (any changes)
@@ -514,6 +606,269 @@ router.delete('/notes/:id/user-permissions/:targetUserId', async (req, res) => {
         if (deleted === 0) return res.status(404).json({ error: 'Permission not found' });
 
         res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Note Revisions (Activity Log) ---
+
+// Get Note Revisions List
+router.get('/notes/:id/revisions', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+
+        // Check view permission
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        if (effectivePermission === 'private' && !isOwner && !userPermOverride) {
+            if (!userId) return res.status(401).json({ error: 'Login required' });
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        if ((effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') && !userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const revisions = await db.NoteRevision.findAll({
+            where: { noteId: note.id },
+            order: [['createdAt', 'DESC']],
+            include: [{ model: db.User, as: 'editor', attributes: ['id', 'username', 'name', 'avatar'] }],
+            attributes: ['id', 'length', 'createdAt', 'editorId']
+        });
+
+        res.json(revisions.map(r => ({
+            id: r.id,
+            length: r.length,
+            createdAt: r.createdAt,
+            editor: r.editor
+        })));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get Specific Revision Content (reconstructed via patches)
+router.get('/notes/:id/revisions/:revisionId', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId || null;
+        const isOwner = note.ownerId && note.ownerId === userId;
+
+        // Check view permission
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        if (effectivePermission === 'private' && !isOwner && !userPermOverride) {
+            if (!userId) return res.status(401).json({ error: 'Login required' });
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        if ((effectivePermission === 'auth-view' || effectivePermission === 'auth-edit') && !userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const targetRevision = await db.NoteRevision.findOne({
+            where: { id: req.params.revisionId, noteId: note.id },
+            include: [{ model: db.User, as: 'editor', attributes: ['id', 'username', 'name', 'avatar'] }]
+        });
+        if (!targetRevision) return res.status(404).json({ error: 'Revision not found' });
+
+        // Get all revisions from newest to this one to reconstruct content
+        const revisions = await db.NoteRevision.findAll({
+            where: { noteId: note.id },
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Find the latest revision with full content
+        let content = null;
+        let startIndex = 0;
+        for (let i = 0; i < revisions.length; i++) {
+            if (revisions[i].content !== null) {
+                content = revisions[i].content;
+                startIndex = i;
+                break;
+            }
+        }
+
+        if (content === null) {
+            return res.status(500).json({ error: 'Cannot reconstruct revision content' });
+        }
+
+        // Find target revision index
+        const targetIndex = revisions.findIndex(r => r.id === targetRevision.id);
+        if (targetIndex === -1) {
+            return res.status(404).json({ error: 'Revision not found' });
+        }
+
+        // Apply patches backwards from startIndex to targetIndex
+        if (targetIndex > startIndex) {
+            const dmp = new DiffMatchPatch();
+            for (let i = startIndex; i < targetIndex; i++) {
+                const revision = revisions[i];
+                if (revision.patch) {
+                    try {
+                        const patches = dmp.patch_fromText(revision.patch);
+                        // Reverse patch: swap text1 and text2 in each diff
+                        const reversedPatches = patches.map(p => {
+                            const reversed = Object.assign({}, p);
+                            reversed.diffs = p.diffs.map(d => {
+                                if (d[0] === 1) return [-1, d[1]];  // INSERT -> DELETE
+                                if (d[0] === -1) return [1, d[1]];  // DELETE -> INSERT
+                                return d;
+                            });
+                            return reversed;
+                        });
+                        const [newContent, results] = dmp.patch_apply(reversedPatches, content);
+                        content = newContent;
+                    } catch (e) {
+                        console.error('Patch apply error:', e);
+                    }
+                }
+            }
+        }
+
+        res.json({
+            id: targetRevision.id,
+            content: content,
+            length: targetRevision.length,
+            createdAt: targetRevision.createdAt,
+            editor: targetRevision.editor
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Restore to a Specific Revision
+router.post('/notes/:id/revisions/:revisionId/restore', async (req, res) => {
+    try {
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = note.ownerId && note.ownerId === userId;
+        const effectivePermission = await resolveNotePermission(note);
+        const userPermOverride = await getUserPermission('note', note.id, userId);
+
+        // Check edit permission
+        let canEdit = false;
+        if (isOwner) canEdit = true;
+        else if (userPermOverride === 'edit') canEdit = true;
+        else if (effectivePermission === 'public-edit') canEdit = true;
+        else if (effectivePermission === 'auth-edit' && userId) canEdit = true;
+
+        if (!canEdit) {
+            return res.status(403).json({ error: 'Edit permission denied' });
+        }
+
+        // Get target revision content via the same reconstruction logic
+        const targetRevision = await db.NoteRevision.findOne({
+            where: { id: req.params.revisionId, noteId: note.id }
+        });
+        if (!targetRevision) return res.status(404).json({ error: 'Revision not found' });
+
+        // Get all revisions to reconstruct content
+        const revisions = await db.NoteRevision.findAll({
+            where: { noteId: note.id },
+            order: [['createdAt', 'DESC']]
+        });
+
+        let content = null;
+        let startIndex = 0;
+        for (let i = 0; i < revisions.length; i++) {
+            if (revisions[i].content !== null) {
+                content = revisions[i].content;
+                startIndex = i;
+                break;
+            }
+        }
+
+        if (content === null) {
+            return res.status(500).json({ error: 'Cannot reconstruct revision content' });
+        }
+
+        const targetIndex = revisions.findIndex(r => r.id === targetRevision.id);
+        if (targetIndex > startIndex) {
+            const dmp = new DiffMatchPatch();
+            for (let i = startIndex; i < targetIndex; i++) {
+                const revision = revisions[i];
+                if (revision.patch) {
+                    try {
+                        const patches = dmp.patch_fromText(revision.patch);
+                        const reversedPatches = patches.map(p => {
+                            const reversed = Object.assign({}, p);
+                            reversed.diffs = p.diffs.map(d => {
+                                if (d[0] === 1) return [-1, d[1]];
+                                if (d[0] === -1) return [1, d[1]];
+                                return d;
+                            });
+                            return reversed;
+                        });
+                        const [newContent] = dmp.patch_apply(reversedPatches, content);
+                        content = newContent;
+                    } catch (e) {
+                        console.error('Patch apply error:', e);
+                    }
+                }
+            }
+        }
+
+        // Create a new revision for the restore action
+        const dmp = new DiffMatchPatch();
+        const currentContent = note.content || '';
+        const diffs = dmp.diff_main(currentContent, content);
+        dmp.diff_cleanupEfficiency(diffs);
+        const patches = dmp.patch_make(currentContent, diffs);
+        const patchText = dmp.patch_toText(patches);
+
+        // Only create revision if there's a change
+        if (patchText) {
+            // Clear content from previous latest revision
+            const latestRevision = revisions[0];
+            if (latestRevision) {
+                await latestRevision.update({ content: null });
+            }
+
+            // Create new revision
+            await db.NoteRevision.create({
+                noteId: note.id,
+                patch: patchText,
+                content: content,
+                length: content.length,
+                editorId: userId
+            });
+
+            // Cleanup old revisions (keep only REVISION_MAX_COUNT)
+            const allRevisions = await db.NoteRevision.findAll({
+                where: { noteId: note.id },
+                order: [['createdAt', 'DESC']]
+            });
+            if (allRevisions.length > REVISION_MAX_COUNT) {
+                const toDelete = allRevisions.slice(REVISION_MAX_COUNT);
+                await db.NoteRevision.destroy({
+                    where: { id: toDelete.map(r => r.id) }
+                });
+            }
+        }
+
+        // Update note content
+        await note.update({
+            content: content,
+            lastEditedAt: new Date(),
+            lastEditorId: userId,
+            lastUpdaterId: userId,
+            savedAt: new Date()
+        });
+
+        res.json({ success: true, content });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

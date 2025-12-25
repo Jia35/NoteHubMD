@@ -35,6 +35,7 @@ db.Book = require('./Book')(sequelize, Sequelize);
 db.Note = require('./Note')(sequelize, Sequelize);
 db.Permission = require('./Permission')(sequelize, Sequelize);
 db.Comment = require('./Comment')(sequelize, Sequelize);
+db.NoteRevision = require('./NoteRevision')(sequelize, Sequelize);
 
 // Associations
 db.User.hasMany(db.Book, { foreignKey: 'ownerId' });
@@ -74,6 +75,11 @@ db.Note.hasMany(db.Comment, { foreignKey: 'noteId' });
 db.Comment.belongsTo(db.Note, { foreignKey: 'noteId' });
 db.User.hasMany(db.Comment, { foreignKey: 'userId' });
 db.Comment.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+
+// NoteRevision associations
+db.Note.hasMany(db.NoteRevision, { foreignKey: 'noteId', as: 'revisions' });
+db.NoteRevision.belongsTo(db.Note, { foreignKey: 'noteId' });
+db.NoteRevision.belongsTo(db.User, { foreignKey: 'editorId', as: 'editor' });
 
 module.exports = db;
 

@@ -62,6 +62,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(64),
             allowNull: true,
             unique: true
+        },
+        savedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            comment: 'Last revision save time for auto-save logic'
         }
     }, {
         paranoid: true

@@ -59,6 +59,9 @@
     <!-- Mermaid -->
     <script src="/vendors/js/mermaid.min.js"></script>
 
+    <!-- Diff-Match-Patch for revisions -->
+    <script src="/vendors/js/diff-match-patch.js"></script>
+
     <!-- Day.js for date/time manipulation -->
     <script src="/vendors/js/dayjs/dayjs.min.js"></script>
     <script src="/vendors/js/dayjs/relativeTime.js"></script>
@@ -1149,6 +1152,90 @@
                     </template>
                 </InfoModal>
                 
+                <!-- Revisions Modal (Activity Log) -->
+                <div v-if="showRevisionsModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showRevisionsModal = false">
+                    <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
+                        <!-- Modal Header -->
+                        <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800/50">
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                                <i class="fa-solid fa-history mr-2 text-blue-500"></i>活動紀錄
+                            </h2>
+                            <button @click="showRevisionsModal = false" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Modal Body -->
+                        <div class="flex flex-1 overflow-hidden">
+                            <!-- Revisions List (Left Panel) -->
+                            <div class="w-72 border-r border-gray-300 dark:border-gray-700 overflow-y-auto shrink-0">
+                                <div v-if="revisionsLoading" class="p-4 text-center text-gray-500">
+                                    <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
+                                </div>
+                                <div v-else-if="revisions.length === 0" class="p-4 text-center text-gray-400 text-sm">
+                                    <i class="fa-solid fa-inbox mb-2 text-2xl block"></i>
+                                    尚無版本紀錄
+                                </div>
+                                <div v-else>
+                                    <div v-for="(rev, index) in revisions" :key="rev.id" 
+                                         @click="selectRevision(rev)"
+                                         class="p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition"
+                                         :class="selectedRevision?.id === rev.id ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'">
+                                        <div class="flex items-center mb-1">
+                                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white mr-2 shrink-0"
+                                                  :class="rev.editor ? 'bg-blue-600' : 'bg-gray-500'">
+                                                {{ rev.editor?.username?.charAt(0).toUpperCase() || '?' }}
+                                            </span>
+                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                {{ rev.editor?.name || rev.editor?.username || '未知用戶' }}
+                                            </span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 ml-8">
+                                            {{ dayjs(rev.createdAt).format('YYYY/MM/DD HH:mm') }}
+                                        </div>
+                                        <div class="text-xs text-gray-400 dark:text-gray-500 ml-8">
+                                            {{ rev.length || 0 }} 字元
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Diff View (Right Panel) -->
+                            <div class="flex-1 flex flex-col overflow-hidden">
+                                <div v-if="!selectedRevision" class="flex-1 flex items-center justify-center text-gray-400">
+                                    <div class="text-center">
+                                        <i class="fa-solid fa-hand-pointer text-4xl mb-3 block"></i>
+                                        <p>選擇一個版本查看差異</p>
+                                    </div>
+                                </div>
+                                <template v-else>
+                                    <!-- Diff Header -->
+                                    <div class="p-3 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 shrink-0">
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-sm text-gray-700 dark:text-gray-300">
+                                                <i class="fa-solid fa-code-compare mr-1"></i>
+                                                與目前版本比較
+                                            </div>
+                                            <button v-if="canEdit" @click="confirmRestoreRevision"
+                                                    class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">
+                                                <i class="fa-solid fa-rotate-left mr-1"></i>
+                                                還原此版本
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Diff Content -->
+                                    <div v-if="revisionLoading" class="flex-1 flex items-center justify-center text-gray-500">
+                                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
+                                    </div>
+                                    <div v-else class="flex-1 overflow-auto p-4">
+                                        <div v-html="diffHtml" class="font-mono text-sm whitespace-pre-wrap break-words leading-relaxed"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
                     <div class="flex-1 flex items-center space-x-2">
                         <!-- <a href="/" class="hover:text-blue-400 transition font-medium">
@@ -1255,6 +1342,13 @@
                                 title="筆記設定">
                             <i class="fa-solid fa-cog text-xs"></i>
                             <span>筆記設定</span>
+                        </button>
+                        <!-- Activity Log Button -->
+                        <button @click="showRevisionsModal = true; loadRevisions();" 
+                                class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition"
+                                title="活動紀錄">
+                            <i class="fa-solid fa-history text-xs"></i>
+                            <span>活動紀錄</span>
                         </button>
                         <!-- Share Button -->
                         <button v-if="canEdit || isOwner" @click="shareNote" 
