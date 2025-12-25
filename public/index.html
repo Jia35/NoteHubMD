@@ -164,7 +164,7 @@
     <script type="text/x-template" id="note-card-template">
         <!-- Grid Mode -->
     <div v-if="mode === 'grid'"
-        class="group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700"
+        class="group relative bg-white dark:bg-dark-surface px-6 py-4 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700 h-[140px] flex flex-col justify-center"
         @click="$emit('click')">
         <!-- Dropdown Menu Button -->
         <div class="absolute top-2 right-2">
@@ -206,28 +206,31 @@
             <p v-if="note.lastEditor || note.owner" class="text-gray-400 dark:text-gray-500 text-xs">by {{
                 note.lastEditor?.username || note.owner?.username }}</p>
         </div>
-        <!-- Tags -->
-        <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
-            <span v-for="tag in note.tags" :key="tag"
-                class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                {{ tag }}
-            </span>
+        <!-- Tags (fixed height area) -->
+        <div class="h-[22px] overflow-hidden">
+            <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
+                <span v-for="tag in note.tags" :key="tag"
+                    class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                    {{ tag }}
+                </span>
+            </div>
         </div>
     </div>
 
     <!-- List Mode -->
     <div v-else
-        class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border border-gray-100 dark:border-gray-700 transition group relative"
+        class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border border-gray-100 dark:border-gray-700 transition group relative h-[70px]"
         @click="$emit('click')">
         <!-- Icon -->
         <div class="w-10 text-center text-xl mr-3 text-blue-500 flex-shrink-0"><i class="fa-solid fa-note-sticky"></i>
         </div>
 
         <!-- Main Info -->
-        <div class="flex-1 min-w-0 mr-4">
-            <div class="flex items-center gap-2 mb-1">
-                <h3 class="font-bold text-gray-800 dark:text-white truncate text-base "
-                    :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</h3>
+        <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-gray-800 dark:text-white truncate text-base mb-1"
+                :title="note.title || 'Untitled'">{{ note.title || 'Untitled' }}</h3>
+            <!-- Tags below title (fixed height) -->
+            <div class="h-[20px] overflow-hidden">
                 <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
                     <span v-for="tag in note.tags" :key="tag"
                         class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex-shrink-0">
@@ -235,11 +238,12 @@
                     </span>
                 </div>
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">
-                <span>{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</span>
-                <span v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username ||
-                    note.owner?.username}}</span>
-            </div>
+        </div>
+
+        <!-- Date and User (right side, stacked) -->
+        <div class="text-right shrink-0 mr-4 text-xs text-gray-500 dark:text-gray-400">
+            <div>{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</div>
+            <div v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username }}</div>
         </div>
 
         <!-- Context Menu Button -->

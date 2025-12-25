@@ -571,6 +571,27 @@
   .h-84 {
     height: calc(var(--spacing) * 84);
   }
+  .h-\[20px\] {
+    height: 20px;
+  }
+  .h-\[22px\] {
+    height: 22px;
+  }
+  .h-\[60px\] {
+    height: 60px;
+  }
+  .h-\[70px\] {
+    height: 70px;
+  }
+  .h-\[130px\] {
+    height: 130px;
+  }
+  .h-\[140px\] {
+    height: 140px;
+  }
+  .h-\[150px\] {
+    height: 150px;
+  }
   .h-full {
     height: 100%;
   }
