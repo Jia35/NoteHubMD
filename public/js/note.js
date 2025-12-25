@@ -2145,6 +2145,9 @@
                     const note = await api.getNote(noteId.value);
                     content.value = note.content || '';
                     title.value = note.title || 'Untitled';
+                    // Update browser tab title
+                    const shortTitle = (note.title || 'Untitled').substring(0, 10);
+                    document.title = `${shortTitle} | NoteHubMD`;
                     permission.value = note.permission || 'private';
                     effectivePermission.value = note.effectivePermission || note.permission || 'private';
                     isOwner.value = note.isOwner || false;
@@ -2208,6 +2211,9 @@
                             const newTitle = extractTitle(val);
                             if (newTitle !== title.value) {
                                 title.value = newTitle;
+                                // Update browser tab title
+                                const shortTitle = newTitle.substring(0, 10);
+                                document.title = `${shortTitle} | NoteHubMD`;
                             }
                             updatePreview();
                             // Emit change
@@ -2344,6 +2350,9 @@
                         const note = await api.getNote(newNoteId);
                         content.value = note.content || '';
                         title.value = note.title || 'Untitled';
+                        // Update browser tab title
+                        const shortTitle = (note.title || 'Untitled').substring(0, 10);
+                        document.title = `${shortTitle} | NoteHubMD`;
                         permission.value = note.permission || 'private';
                         effectivePermission.value = note.effectivePermission || note.permission || 'private';
                         isOwner.value = note.isOwner || false;

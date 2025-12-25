@@ -1694,6 +1694,10 @@
                     canEdit.value = data.canEdit || false;
                     canAddNote.value = data.canAddNote || false;
 
+                    // Update browser tab title
+                    const shortTitle = (data.title || 'Untitled').substring(0, 10);
+                    document.title = `${shortTitle} | NoteHubMD`;
+
                     // Initialize sortable after data is loaded
                     nextTick(() => initSortable());
                 } catch (e) {
