@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node server/index.js",
+    "start:vite": "set USE_VITE_BUILD=true && node server/index.js",
     "dev": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./public/css/tailwind.input.css -o ./public/css/tailwind.min.css --watch",
     "build:css": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./public/css/tailwind.input.css -o ./public/css/tailwind.min.css --minify",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -1,0 +1,411 @@
+/**
+ * API Helper Composable
+ */
+
+const api = {
+    async login(username, password) {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Login failed')
+        }
+        return res.json()
+    },
+
+    async register(username, password) {
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Registration failed')
+        }
+        return res.json()
+    },
+
+    async logout() {
+        await fetch('/api/auth/logout', { method: 'POST' })
+    },
+
+    async getMe() {
+        const res = await fetch('/api/auth/me')
+        if (!res.ok) throw new Error('Not authenticated')
+        return res.json()
+    },
+
+    async updateProfile(data) {
+        const res = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        if (!res.ok) {
+            const result = await res.json()
+            throw new Error(result.error || 'Failed to update profile')
+        }
+        return res.json()
+    },
+
+    async uploadAvatar(file) {
+        const formData = new FormData()
+        formData.append('avatar', file)
+        const res = await fetch('/api/upload/avatar', {
+            method: 'POST',
+            body: formData
+        })
+        if (!res.ok) {
+            const result = await res.json()
+            throw new Error(result.error || 'Failed to upload avatar')
+        }
+        return res.json()
+    },
+
+    async createNote() {
+        const res = await fetch('/api/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+        return res.json()
+    },
+
+    async getNote(id) {
+        const res = await fetch('/api/notes/' + id)
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Note not found')
+        }
+        return res.json()
+    },
+
+    async updateNote(id, data) {
+        const res = await fetch('/api/notes/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        return res.json()
+    },
+
+    async createBook(data = {}) {
+        const res = await fetch('/api/books', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        return res.json()
+    },
+
+    async getBook(id) {
+        const res = await fetch('/api/books/' + id)
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Book not found')
+        }
+        return res.json()
+    },
+
+    async updateBook(id, data) {
+        const res = await fetch('/api/books/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        return res.json()
+    },
+
+    async createNoteInBook(bookId) {
+        const res = await fetch(`/api/books/${bookId}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+        return res.json()
+    },
+
+    async getNotes(options = {}) {
+        const params = new URLSearchParams(options)
+        const res = await fetch('/api/notes?' + params.toString())
+        return res.json()
+    },
+
+    async getAllNotesForTags() {
+        const res = await fetch('/api/notes?includeBookNotes=true')
+        return res.json()
+    },
+
+    async getBooks() {
+        const res = await fetch('/api/books')
+        return res.json()
+    },
+
+    async reorderBookNotes(bookId, noteIds) {
+        const res = await fetch(`/api/books/${bookId}/notes/reorder`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ noteIds })
+        })
+        if (!res.ok) throw new Error('Reorder failed')
+        return res.json()
+    },
+
+    async updatePermission(id, permission) {
+        const res = await fetch('/api/notes/' + id + '/permission', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permission })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to update permission')
+        }
+        return res.json()
+    },
+
+    async updateBookPermission(id, permission) {
+        const res = await fetch('/api/books/' + id + '/permission', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permission })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to update book permission')
+        }
+        return res.json()
+    },
+
+    // User search for permission assignment
+    async searchUsers(query) {
+        const res = await fetch('/api/users/search?q=' + encodeURIComponent(query))
+        return res.json()
+    },
+
+    // Note user permissions
+    async getNoteUserPermissions(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions')
+        if (!res.ok) throw new Error('Failed to load user permissions')
+        return res.json()
+    },
+
+    async addNoteUserPermission(noteId, targetUserId, permission) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId, permission })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to add user permission')
+        }
+        return res.json()
+    },
+
+    async removeNoteUserPermission(noteId, targetUserId) {
+        const res = await fetch('/api/notes/' + noteId + '/user-permissions/' + targetUserId, {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to remove user permission')
+        return res.json()
+    },
+
+    // Book user permissions
+    async getBookUserPermissions(bookId) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions')
+        if (!res.ok) throw new Error('Failed to load user permissions')
+        return res.json()
+    },
+
+    async addBookUserPermission(bookId, targetUserId, permission) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId, permission })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to add user permission')
+        }
+        return res.json()
+    },
+
+    async removeBookUserPermission(bookId, targetUserId) {
+        const res = await fetch('/api/books/' + bookId + '/user-permissions/' + targetUserId, {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to remove user permission')
+        return res.json()
+    },
+
+    // Trash operations - Notes
+    async deleteNote(id) {
+        const res = await fetch('/api/notes/' + id, { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to delete note')
+        return res.json()
+    },
+
+    async restoreNote(id) {
+        const res = await fetch('/api/notes/' + id + '/restore', { method: 'POST' })
+        if (!res.ok) throw new Error('Failed to restore note')
+        return res.json()
+    },
+
+    async forceDeleteNote(id) {
+        const res = await fetch('/api/notes/' + id + '/force', { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to permanently delete note')
+        return res.json()
+    },
+
+    // Trash operations - Books
+    async deleteBook(id) {
+        const res = await fetch('/api/books/' + id, { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to delete book')
+        return res.json()
+    },
+
+    async restoreBook(id) {
+        const res = await fetch('/api/books/' + id + '/restore', { method: 'POST' })
+        if (!res.ok) throw new Error('Failed to restore book')
+        return res.json()
+    },
+
+    async forceDeleteBook(id) {
+        const res = await fetch('/api/books/' + id + '/force', { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to permanently delete book')
+        return res.json()
+    },
+
+    // Get Trash
+    async getTrash() {
+        const res = await fetch('/api/trash')
+        if (!res.ok) throw new Error('Failed to get trash')
+        return res.json()
+    },
+
+    // Pinned items
+    async getPinnedItems() {
+        const res = await fetch('/api/auth/pins')
+        if (!res.ok) throw new Error('Failed to get pinned items')
+        return res.json()
+    },
+
+    async addPin(type, id) {
+        const res = await fetch('/api/auth/pins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, id })
+        })
+        if (!res.ok) throw new Error('Failed to add pin')
+        return res.json()
+    },
+
+    async removePin(type, id) {
+        const res = await fetch('/api/auth/pins/' + type + '/' + id, {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to remove pin')
+        return res.json()
+    },
+
+    // Note revisions
+    async getNoteRevisions(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/revisions')
+        if (!res.ok) throw new Error('Failed to get revisions')
+        return res.json()
+    },
+
+    async getRevision(noteId, revisionId) {
+        const res = await fetch('/api/notes/' + noteId + '/revisions/' + revisionId)
+        if (!res.ok) throw new Error('Failed to get revision')
+        return res.json()
+    },
+
+    async saveRevision(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/revisions', {
+            method: 'POST'
+        })
+        if (!res.ok) throw new Error('Failed to save revision')
+        return res.json()
+    },
+
+    async restoreRevision(noteId, revisionId) {
+        const res = await fetch('/api/notes/' + noteId + '/revisions/' + revisionId + '/restore', {
+            method: 'POST'
+        })
+        if (!res.ok) throw new Error('Failed to restore revision')
+        return res.json()
+    },
+
+    // Share link
+    async resetShareId(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/reset-share-id', {
+            method: 'POST'
+        })
+        if (!res.ok) throw new Error('Failed to reset share ID')
+        return res.json()
+    },
+
+    // Get shared note
+    async getSharedNote(shareId) {
+        const res = await fetch('/api/share/' + shareId)
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Note not found')
+        }
+        return res.json()
+    },
+
+    // Get shared book
+    async getSharedBook(shareId) {
+        const res = await fetch('/api/share/book/' + shareId)
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Book not found')
+        }
+        return res.json()
+    },
+
+    // Comments
+    async getComments(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/comments')
+        if (!res.ok) throw new Error('Failed to get comments')
+        return res.json()
+    },
+
+    async addComment(noteId, content, parentId = null) {
+        const res = await fetch('/api/notes/' + noteId + '/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, parentId })
+        })
+        if (!res.ok) throw new Error('Failed to add comment')
+        return res.json()
+    },
+
+    async deleteComment(noteId, commentId) {
+        const res = await fetch('/api/notes/' + noteId + '/comments/' + commentId, {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to delete comment')
+        return res.json()
+    },
+
+    // App version
+    async getAppVersion() {
+        const res = await fetch('/api/version')
+        if (!res.ok) return { version: '' }
+        return res.json()
+    }
+}
+
+export function useApi() {
+    return api
+}
+
+export default api

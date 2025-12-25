@@ -57,36 +57,63 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
 // Serve different HTML files based on route (Page Separation)
-// Login page
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/login.html'));
-});
+// Check for Vite SPA mode
+const viteConfig = require('./config/vite');
+const spaHandler = viteConfig.spaMiddleware(app, express);
 
-// Note page
-app.get('/n/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/note.html'));
-});
+if (spaHandler) {
+    // Vite SPA mode - all routes handled by SPA
+    // Login page (SPA handles it)
+    app.get('/login', spaHandler);
 
-// Note share page
-app.get('/s/:shareId', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/note_share.html'));
-});
+    // Note page (SPA handles it)
+    app.get('/n/:id', spaHandler);
 
-// Book share page
-app.get('/v/:shareId', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/book_share.html'));
-});
+    // Note share page (SPA handles it)
+    app.get('/s/:shareId', spaHandler);
 
-// 404 page
-app.get('/404', (req, res) => {
-    res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
-});
+    // Book share page (SPA handles it)
+    app.get('/v/:shareId', spaHandler);
 
-// All other routes (Home, Books, Trash, Admin, etc.) - use index.html
-// Using regex for catch-all in Express 5
-app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
+    // 404 page (SPA handles it)
+    app.get('/404', spaHandler);
+
+    // All other routes - SPA fallback
+    app.get(/(.*)/, spaHandler);
+} else {
+    // Legacy mode - serve individual HTML files
+    // Login page
+    app.get('/login', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/login.html'));
+    });
+
+    // Note page
+    app.get('/n/:id', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/note.html'));
+    });
+
+    // Note share page
+    app.get('/s/:shareId', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/note_share.html'));
+    });
+
+    // Book share page
+    app.get('/v/:shareId', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/book_share.html'));
+    });
+
+    // 404 page
+    app.get('/404', (req, res) => {
+        res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
+    });
+
+    // All other routes (Home, Books, Trash, Admin, etc.) - use index.html
+    // Using regex for catch-all in Express 5
+    app.get(/(.*)/, (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/index.html'));
+    });
+}
+
 
 // Sync DB and start server
 // Using force: false to preserve existing data (columns already exist)

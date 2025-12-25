@@ -30,6 +30,8 @@ build/
 /database/database.sqlite
 _uploads/
 
+public_dist/
+
 # # Diagnostic reports (https://nodejs.org/api/report.html)
 # report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
