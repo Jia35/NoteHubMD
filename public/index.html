@@ -153,8 +153,11 @@
             </div>
             <!-- Tags -->
             <div v-if="book.tags && book.tags.length > 0" class="flex flex-wrap gap-1">
-                <span v-for="tag in book.tags" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                <span v-for="tag in book.tags.slice(0, 3)" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
                     {{ tag }}
+                </span>
+                <span v-if="book.tags.length > 3" class="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400" :title="book.tags.slice(3).join(', ')">
+                    +{{ book.tags.length - 3 }}
                 </span>
             </div>
         </div>
@@ -209,9 +212,14 @@
         <!-- Tags (fixed height area) -->
         <div class="h-[22px] overflow-hidden">
             <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
-                <span v-for="tag in note.tags" :key="tag"
+                <span v-for="tag in note.tags.slice(0, 3)" :key="tag"
                     class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
                     {{ tag }}
+                </span>
+                <span v-if="note.tags.length > 3"
+                    class="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                    :title="note.tags.slice(3).join(', ')">
+                    +{{ note.tags.length - 3 }}
                 </span>
             </div>
         </div>
@@ -232,9 +240,14 @@
             <!-- Tags below title (fixed height) -->
             <div class="h-[20px] overflow-hidden">
                 <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
-                    <span v-for="tag in note.tags" :key="tag"
+                    <span v-for="tag in note.tags.slice(0, 6)" :key="tag"
                         class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex-shrink-0">
                         {{ tag }}
+                    </span>
+                    <span v-if="note.tags.length > 6"
+                        class="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex-shrink-0"
+                        :title="note.tags.slice(6).join(', ')">
+                        +{{ note.tags.length - 6 }}
                     </span>
                 </div>
             </div>
