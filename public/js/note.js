@@ -748,7 +748,9 @@
             const selectedRevision = ref(null);
             const revisionLoading = ref(false);
             const revisionContent = ref('');
+            const previousRevisionContent = ref('');
             const diffHtml = ref('');
+            const diffCompareMode = ref('previous'); // 'previous' or 'current'
 
             // Load revisions list
             const loadRevisions = async () => {
@@ -768,6 +770,50 @@
                 // Reset selection
                 selectedRevision.value = null;
                 diffHtml.value = '';
+                diffCompareMode.value = 'previous';
+            };
+
+            // Generate diff HTML based on current compare mode
+            const generateDiffHtml = (oldContent, newContent) => {
+                const dmp = new diff_match_patch();
+                const diffs = dmp.diff_main(oldContent, newContent);
+                dmp.diff_cleanupSemantic(diffs);
+
+                let html = '';
+                for (const [op, text] of diffs) {
+                    const escapedText = text
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    if (op === 1) {
+                        // Insert (in new version but not in old)
+                        html += `<span class="bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200">${escapedText}</span>`;
+                    } else if (op === -1) {
+                        // Delete (in old version but not in new)
+                        html += `<span class="bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`;
+                    } else {
+                        html += escapedText;
+                    }
+                }
+                return html;
+            };
+
+            // Recalculate diff when compare mode changes
+            const recalculateDiff = () => {
+                if (!selectedRevision.value) return;
+
+                if (diffCompareMode.value === 'previous') {
+                    // Compare selected version with previous version
+                    if (previousRevisionContent.value !== null) {
+                        diffHtml.value = generateDiffHtml(previousRevisionContent.value, revisionContent.value);
+                    } else {
+                        // No previous version, show content as all new
+                        diffHtml.value = generateDiffHtml('', revisionContent.value);
+                    }
+                } else {
+                    // Compare selected version with current version
+                    diffHtml.value = generateDiffHtml(revisionContent.value, content.value);
+                }
             };
 
             // Select a revision and load its content
@@ -777,34 +823,31 @@
                 diffHtml.value = '';
 
                 try {
+                    // Fetch selected revision content
                     const response = await fetch(`/api/notes/${noteId.value}/revisions/${rev.id}`);
                     if (response.ok) {
                         const data = await response.json();
                         revisionContent.value = data.content || '';
 
-                        // Generate diff HTML
-                        const dmp = new diff_match_patch();
-                        const diffs = dmp.diff_main(revisionContent.value, content.value);
-                        dmp.diff_cleanupSemantic(diffs);
-
-                        // Build HTML with diff highlighting
-                        let html = '';
-                        for (const [op, text] of diffs) {
-                            const escapedText = text
-                                .replace(/&/g, '&amp;')
-                                .replace(/</g, '&lt;')
-                                .replace(/>/g, '&gt;');
-                            if (op === 1) {
-                                // Insert (in current version but not in old)
-                                html += `<span class="bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200">${escapedText}</span>`;
-                            } else if (op === -1) {
-                                // Delete (in old version but not in current)
-                                html += `<span class="bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`;
+                        // Find and fetch the previous revision's content
+                        const revIndex = revisions.value.findIndex(r => r.id === rev.id);
+                        if (revIndex >= 0 && revIndex < revisions.value.length - 1) {
+                            // There's a previous (older) revision
+                            const prevRev = revisions.value[revIndex + 1];
+                            const prevResponse = await fetch(`/api/notes/${noteId.value}/revisions/${prevRev.id}`);
+                            if (prevResponse.ok) {
+                                const prevData = await prevResponse.json();
+                                previousRevisionContent.value = prevData.content || '';
                             } else {
-                                html += escapedText;
+                                previousRevisionContent.value = '';
                             }
+                        } else {
+                            // This is the oldest revision, no previous
+                            previousRevisionContent.value = '';
                         }
-                        diffHtml.value = html;
+
+                        // Calculate diff based on current mode
+                        recalculateDiff();
                     }
                 } catch (e) {
                     console.error('[Note] Failed to load revision content:', e);
@@ -836,11 +879,15 @@
 
                     const result = await response.json();
 
-                    // Update editor content
+                    // Update content reactive value first
                     content.value = result.content;
-                    if (cmInstance.value) {
-                        cmInstance.value.setValue(result.content);
+
+                    // Update editor textarea directly if exists
+                    if (cmInstance) {
+                        cmInstance.setValue(result.content);
                     }
+
+                    // Refresh preview
                     updatePreview();
 
                     // Reload revisions list
@@ -2534,6 +2581,7 @@
                 selectedRevision, revisionLoading, diffHtml,
                 loadRevisions, selectRevision, confirmRestoreRevision,
                 savingVersion, saveCurrentVersion,
+                diffCompareMode, recalculateDiff,
                 // Utils for templates
                 dayjs: window.dayjs,
                 // Markdown Toolbar
