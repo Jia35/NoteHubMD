@@ -31,6 +31,11 @@ module.exports = (sequelize, DataTypes) => {
         deletedById: {
             type: DataTypes.INTEGER,
             allowNull: true
+        },
+        shareId: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+            unique: true
         }
     }, {
         paranoid: true

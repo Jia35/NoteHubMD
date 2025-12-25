@@ -1863,6 +1863,184 @@ router.delete('/books/:id/force', async (req, res) => {
     }
 });
 
+// --- Book Share ---
+
+// Generate share link for a book (owner or editor only)
+router.post('/books/:id/share', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
+        // Check if user can share (owner or has edit permission)
+        let canShare = false;
+        if (isOwner) {
+            canShare = true;
+        } else if (userPermOverride === 'edit') {
+            canShare = true;
+        } else if (permission === 'public-edit' || permission === 'auth-edit') {
+            canShare = true;
+        }
+
+        if (!canShare) {
+            return res.status(403).json({ error: 'Permission denied. Only owner or editors can share.' });
+        }
+
+        // If shareId already exists, return it
+        if (book.shareId) {
+            return res.json({
+                shareId: book.shareId,
+                shareUrl: `/v/${book.shareId}`
+            });
+        }
+
+        // Generate new shareId with retry logic
+        let shareId = generateShareId();
+        let retry = 0;
+        while (retry < 5) {
+            try {
+                await book.update({ shareId });
+                return res.json({
+                    shareId,
+                    shareUrl: `/v/${shareId}`
+                });
+            } catch (e) {
+                if (e.name === 'SequelizeUniqueConstraintError') {
+                    shareId = generateShareId();
+                    retry++;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        res.status(500).json({ error: 'Failed to generate unique share ID' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Reset share link for a book (generate new shareId, old link becomes invalid)
+router.delete('/books/:id/share', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
+        // Check if user can reset share link (owner or has edit permission)
+        let canShare = false;
+        if (isOwner) {
+            canShare = true;
+        } else if (userPermOverride === 'edit') {
+            canShare = true;
+        } else if (permission === 'public-edit' || permission === 'auth-edit') {
+            canShare = true;
+        }
+
+        if (!canShare) {
+            return res.status(403).json({ error: 'Permission denied. Only owner or editors can reset share link.' });
+        }
+
+        // Generate new shareId
+        let shareId = generateShareId();
+        let retry = 0;
+        while (retry < 5) {
+            try {
+                await book.update({ shareId });
+                return res.json({
+                    shareId,
+                    shareUrl: `/v/${shareId}`
+                });
+            } catch (e) {
+                if (e.name === 'SequelizeUniqueConstraintError') {
+                    shareId = generateShareId();
+                    retry++;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        res.status(500).json({ error: 'Failed to generate unique share ID' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get book by share ID (for public sharing page)
+router.get('/book-share/:shareId', async (req, res) => {
+    try {
+        const book = await db.Book.findOne({
+            where: { shareId: req.params.shareId },
+            include: [
+                {
+                    model: db.Note,
+                    attributes: ['id', 'title', 'order', 'shareId', 'shareAlias', 'tags', 'lastEditedAt'],
+                    order: [['order', 'ASC']],
+                    include: [
+                        { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
+                    ]
+                },
+                { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
+                { model: db.User, as: 'lastUpdater', attributes: ['id', 'username', 'name', 'avatar'] }
+            ],
+            order: [[db.Note, 'order', 'ASC']]
+        });
+        if (!book) return res.status(404).json({ error: 'Share link not found' });
+
+        const userId = req.session.userId || null;
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const permission = book.permission || 'private';
+
+        // Check user-specific permission override
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
+        // Permission check
+        if (permission === 'private') {
+            if (!isOwner && !userPermOverride) {
+                if (!userId) {
+                    return res.status(401).json({ error: 'Login required' });
+                }
+                return res.status(403).json({ error: 'Access denied' });
+            }
+        } else if (permission === 'auth-view' || permission === 'auth-edit') {
+            if (!userId) {
+                return res.status(401).json({ error: 'Login required' });
+            }
+        }
+
+        // Determine if user can edit
+        let canEdit = false;
+        if (isOwner) {
+            canEdit = true;
+        } else if (userPermOverride === 'edit') {
+            canEdit = true;
+        } else if (permission === 'public-edit') {
+            canEdit = true;
+        } else if (permission === 'auth-edit' && userId) {
+            canEdit = true;
+        }
+
+        res.json({
+            ...book.toJSON(),
+            isOwner,
+            canEdit
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- Trash ---
 
 // Delete Note (Soft)

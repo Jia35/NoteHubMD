@@ -2079,6 +2079,13 @@
                         <i class="fa-solid fa-cog text-xs"></i>
                         <span>書本設定</span>
                     </button>
+                    <!-- Share Button -->
+                    <button v-if="canEdit" @click="shareBook" 
+                            class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-sm text-white transition"
+                            title="分享書本">
+                        <i class="fa-solid fa-share-nodes text-xs"></i>
+                        <span>分享</span>
+                    </button>
                 </div>
             </div>
 

@@ -1792,6 +1792,21 @@
                 } catch (e) { globalModal.showAlert('儲存失敗'); }
             };
 
+            // Share book function
+            const shareBook = async () => {
+                try {
+                    const res = await fetch(`/api/books/${book.value.id}/share`, { method: 'POST' });
+                    if (!res.ok) {
+                        const data = await res.json();
+                        throw new Error(data.error || 'Failed to generate share link');
+                    }
+                    const data = await res.json();
+                    window.open(data.shareUrl, '_blank');
+                } catch (e) {
+                    globalModal.showAlert('分享失敗：' + e.message);
+                }
+            };
+
             onMounted(loadBook);
 
             // Watch for route parameter changes to reload book when navigating between books
@@ -1833,7 +1848,9 @@
                 showInfoModal, infoModalTab, bookInfoItem,
                 infoUserPermissions, infoUserSearchQuery, infoUserSearchResults, infoNewUserPermission,
                 infoLoadingUserPermissions, infoSearchUsers, addInfoUserPermission,
-                removeInfoUserPermission, updateInfoUserPermissionLevel
+                removeInfoUserPermission, updateInfoUserPermissionLevel,
+                // Share
+                shareBook
             };
         }
     };
