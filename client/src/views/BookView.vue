@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, inject, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { NoteCard, InfoModal } from '@/components'
+import { SidebarNav, NoteCard, InfoModal } from '@/components'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +16,26 @@ const permission = ref('private')
 const isOwner = ref(false)
 const canEdit = ref(false)
 const canAddNote = ref(false)
+
+// User & Sidebar state
+const user = ref(null)
+const sidebarBooks = ref([])
+const pinnedItems = ref([])
+const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
+const currentRoute = computed(() => route.path)
+const showSettings = ref(false)
+const showUserProfileModal = ref(false)
+const showCreateBookModal = ref(false)
+
+// Filtered sidebar books
+const filteredSidebarBooks = computed(() => {
+  if (globalViewMode.value === 'my') {
+    return sidebarBooks.value.filter(b => b.isOwner)
+  }
+  return sidebarBooks.value.filter(b => b.isPublic)
+})
+const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
+const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
 
 // Display mode
 const displayMode = ref(localStorage.getItem('NoteHubMD-bookDisplayMode') || 'list')
@@ -54,6 +74,17 @@ const isPinned = (type, id) => {
 const loadBook = async () => {
   loading.value = true
   try {
+    // Load user and sidebar data
+    const [userData, booksData, pinnedData] = await Promise.all([
+      api.getMe().catch(() => null),
+      api.getBooks(),
+      api.getPinnedItems().catch(() => [])
+    ])
+    user.value = userData
+    sidebarBooks.value = booksData
+    pinnedItems.value = pinnedData
+    allBooks.value = booksData
+
     const data = await api.getBook(route.params.id)
     book.value = data
     if (!book.value.tags) book.value.tags = []
@@ -65,9 +96,6 @@ const loadBook = async () => {
     // Update browser tab title
     const shortTitle = (data.title || 'Untitled').substring(0, 20)
     document.title = `${shortTitle} | NoteHubMD`
-    
-    // Load all books for move note functionality
-    allBooks.value = await api.getBooks()
   } catch (e) {
     console.error('Failed to load book', e)
     if (e.message?.includes('Login required')) {
@@ -215,6 +243,30 @@ const formatDate = (date) => {
   return window.dayjs ? window.dayjs(date).format('YYYY/MM/DD HH:mm') : new Date(date).toLocaleDateString()
 }
 
+// Sidebar handlers
+const setGlobalViewMode = (mode) => {
+  globalViewMode.value = mode
+  localStorage.setItem('NoteHubMD-viewMode', mode)
+}
+
+const unpinItem = async (type, id) => {
+  try {
+    await api.removePin(type, id)
+    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+  } catch (e) {
+    showAlert?.('取消釘選失敗', 'error')
+  }
+}
+
+const createSidebarNote = async () => {
+  try {
+    const note = await api.createNote()
+    window.location.href = '/n/' + note.id
+  } catch (e) {
+    showAlert?.('建立筆記失敗', 'error')
+  }
+}
+
 // Handle click outside to close menu
 onMounted(() => {
   loadBook()
@@ -232,15 +284,35 @@ watch(() => route.params.id, () => {
 </script>
 
 <template>
-  <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
-    <!-- Breadcrumb -->
-    <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
-      <router-link to="/" class="hover:text-blue-500">Home</router-link>
-      <span class="mx-2">/</span>
-      <span>{{ book?.title || 'Loading...' }}</span>
-    </div>
+  <div class="h-full flex bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
+    <!-- Sidebar -->
+    <SidebarNav
+      :user="user"
+      :books="limitedSidebarBooks"
+      :pinned-items="pinnedItems"
+      :show-pinned="true"
+      :show-more-books="hasMoreBooks"
+      :current-route="currentRoute"
+      :global-view-mode="globalViewMode"
+      @unpin="unpinItem"
+      @view-mode-change="setGlobalViewMode"
+      @create-note="createSidebarNote"
+      @create-book="showCreateBookModal = true"
+      @open-profile="showUserProfileModal = true"
+      @open-settings="showSettings = true"
+    />
 
-    <!-- Loading State -->
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-8 py-5 container mx-auto">
+        <!-- Breadcrumb -->
+        <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+          <router-link to="/" class="hover:text-blue-500">Home</router-link>
+          <span class="mx-2">/</span>
+          <span>{{ book?.title || 'Loading...' }}</span>
+        </div>
+
+        <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center h-64">
       <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i>
     </div>
@@ -379,5 +451,7 @@ watch(() => route.params.id, () => {
       @update:commentsEnabled="autoSaveCommentsEnabled"
       @update:isPublic="autoSaveIsPublic"
     />
+      </div>
+    </div>
   </div>
 </template>

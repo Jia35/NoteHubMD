@@ -26,6 +26,9 @@ const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 // Current route path
 const currentRoute = computed(() => route.path)
 
+// Check if on uncategorized page
+const isUncategorizedPage = computed(() => route.path === '/uncategorized')
+
 // Sidebar books (filtered and limited)
 const filteredSidebarBooks = computed(() => {
   if (globalViewMode.value === 'my') {
@@ -598,11 +601,13 @@ onUnmounted(() => {
       <div v-else class="px-8 py-5 h-full overflow-y-auto">
         <!-- Breadcrumb -->
         <div class="mb-4 text-gray-500 dark:text-gray-400">
-          <span>Home</span>
+          <router-link v-if="isUncategorizedPage" to="/" class="hover:text-blue-500">Home</router-link>
+          <span v-if="isUncategorizedPage" class="mx-2">/</span>
+          <span>{{ isUncategorizedPage ? '未分類筆記' : 'Home' }}</span>
         </div>
 
-        <!-- Books Section -->
-        <section class="mb-6">
+        <!-- Books Section (not shown on uncategorized page) -->
+        <section v-if="!isUncategorizedPage" class="mb-6">
           <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
           <div class="flex gap-4 pb-4" style="overflow-x: auto;">
             <!-- Empty State -->
@@ -632,7 +637,7 @@ onUnmounted(() => {
 
         <!-- Notes Section (Uncategorized) -->
         <section>
-          <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Notes</h2>
+          <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">{{ isUncategorizedPage ? '未分類筆記' : 'Notes' }}</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <!-- Empty State -->
             <div

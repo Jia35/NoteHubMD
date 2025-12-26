@@ -377,6 +377,65 @@ const formatDate = (date) => {
                 <input type="checkbox" v-model="includeContent" class="mr-2 w-4 h-4 accent-blue-600" />
                 包含內文
               </label>
+
+              <!-- Owner Filter -->
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-globe mr-1"></i>範圍：</span>
+                <select v-model="searchOwnerFilter" @change="performSearch"
+                        class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                  <option value="all">全部</option>
+                  <option value="my">我的</option>
+                  <option value="public">公開</option>
+                </select>
+              </div>
+
+              <!-- Date Range Filter -->
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-calendar mr-1"></i>日期：</span>
+                <select v-model="searchDateRange" @change="performSearch"
+                        class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                  <option value="all">全部</option>
+                  <option value="today">今天</option>
+                  <option value="week">一週內</option>
+                  <option value="month">一個月內</option>
+                  <option value="year">一年內</option>
+                  <option value="custom">自訂</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Custom Date Range Inputs -->
+            <div v-if="searchDateRange === 'custom'" class="mt-3 flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400">從：</span>
+                <input type="date" v-model="searchDateStart" @change="performSearch"
+                       class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400">到：</span>
+                <input type="date" v-model="searchDateEnd" @change="performSearch"
+                       class="px-2 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+              <button v-if="searchDateStart || searchDateEnd" @click="searchDateStart = ''; searchDateEnd = ''; performSearch()"
+                      class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                <i class="fa-solid fa-xmark"></i> 清除
+              </button>
+            </div>
+
+            <!-- Tag Filter -->
+            <div v-if="allTags.length > 0" class="mt-3 flex flex-wrap gap-1 items-center">
+              <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-tags mr-1"></i>標籤：</span>
+              <button v-for="tag in allTags" :key="tag" @click="toggleTag(tag)"
+                      class="px-2 py-0.5 text-xs rounded-full transition cursor-pointer"
+                      :class="selectedTag === tag
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-600'">
+                {{ tag }}
+              </button>
+              <button v-if="selectedTag" @click="selectedTag = ''; performSearch()"
+                      class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                <i class="fa-solid fa-xmark"></i> 清除
+              </button>
             </div>
           </div>
 

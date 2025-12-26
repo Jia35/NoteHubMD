@@ -8,6 +8,7 @@ const LoginView = () => import('@/views/LoginView.vue')
 const NoteShareView = () => import('@/views/NoteShareView.vue')
 const BookShareView = () => import('@/views/BookShareView.vue')
 const TrashView = () => import('@/views/TrashView.vue')
+const AdminView = () => import('@/views/AdminView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 const routes = [
@@ -39,6 +40,12 @@ const routes = [
         path: '/trash',
         name: 'trash',
         component: TrashView,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/admin',
+        name: 'admin',
+        component: AdminView,
         meta: { requiresAuth: true }
     },
     {

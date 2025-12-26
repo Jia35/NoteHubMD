@@ -2,29 +2,63 @@
 /**
  * TrashView - 垃圾桶頁面
  */
-import { ref, onMounted, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, inject } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/composables/useApi'
+import { SidebarNav } from '@/components'
 
 const router = useRouter()
+const route = useRoute()
 const showAlert = inject('showAlert')
 const showConfirm = inject('showConfirm')
 
-// Data
+// User & Sidebar state
+const user = ref(null)
+const sidebarBooks = ref([])
+const pinnedItems = ref([])
+const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
+const currentRoute = computed(() => route.path)
+
+// Settings Modal
+const showSettings = ref(false)
+const showUserProfileModal = ref(false)
+const showCreateBookModal = ref(false)
+
+// Trash data
 const loading = ref(true)
 const books = ref([])
 const notes = ref([])
 
-// Load trash items
-const loadTrash = async () => {
+// Filtered sidebar books
+const filteredSidebarBooks = computed(() => {
+  if (globalViewMode.value === 'my') {
+    return sidebarBooks.value.filter(book => book.isOwner)
+  }
+  return sidebarBooks.value.filter(book => book.isPublic)
+})
+const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
+const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
+
+// Load data
+const loadData = async () => {
   loading.value = true
   try {
-    const data = await api.getTrash()
-    books.value = data.books || []
-    notes.value = data.notes || []
+    // Load user and sidebar data
+    const [userData, booksData, pinnedData, trashData] = await Promise.all([
+      api.getMe().catch(() => null),
+      api.getBooks(),
+      api.getPinnedItems().catch(() => []),
+      api.getTrash()
+    ])
+    
+    user.value = userData
+    sidebarBooks.value = booksData
+    pinnedItems.value = pinnedData
+    books.value = trashData.books || []
+    notes.value = trashData.notes || []
   } catch (e) {
-    console.error('Failed to load trash:', e)
-    showAlert?.('載入垃圾桶失敗', 'error')
+    console.error('Failed to load data:', e)
+    showAlert?.('載入資料失敗', 'error')
   } finally {
     loading.value = false
   }
@@ -85,106 +119,150 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString('zh-TW')
 }
 
-onMounted(() => {
-  loadTrash()
-})
+// Sidebar handlers
+const setGlobalViewMode = (mode) => {
+  globalViewMode.value = mode
+  localStorage.setItem('NoteHubMD-viewMode', mode)
+}
+
+const unpinItem = async (type, id) => {
+  try {
+    await api.removePin(type, id)
+    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+  } catch (e) {
+    showAlert?.('取消釘選失敗', 'error')
+  }
+}
+
+const createNote = async () => {
+  try {
+    const note = await api.createNote()
+    window.location.href = '/n/' + note.id
+  } catch (e) {
+    showAlert?.('建立筆記失敗', 'error')
+  }
+}
+
+onMounted(loadData)
 </script>
 
 <template>
-  <div class="px-8 py-5 container mx-auto overflow-y-auto h-full">
-    <!-- Breadcrumb -->
-    <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
-      <router-link to="/" class="hover:text-blue-500">Home</router-link>
-      <span class="mx-2">/</span>
-      <span>垃圾桶</span>
-    </div>
+  <div class="h-full flex bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
+    <!-- Sidebar -->
+    <SidebarNav
+      :user="user"
+      :books="limitedSidebarBooks"
+      :pinned-items="pinnedItems"
+      :show-pinned="true"
+      :show-more-books="hasMoreBooks"
+      :current-route="currentRoute"
+      :global-view-mode="globalViewMode"
+      @unpin="unpinItem"
+      @view-mode-change="setGlobalViewMode"
+      @create-note="createNote"
+      @create-book="showCreateBookModal = true"
+      @open-profile="showUserProfileModal = true"
+      @open-settings="showSettings = true"
+    />
 
-    <!-- Title -->
-    <h1 class="text-4xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
-      <i class="fa-solid fa-trash-can mr-3"></i>垃圾桶
-    </h1>
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-8 py-5 container mx-auto">
+        <!-- Breadcrumb -->
+        <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
+          <router-link to="/" class="hover:text-blue-500">Home</router-link>
+          <span class="mx-2">/</span>
+          <span>垃圾桶</span>
+        </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="text-gray-500 dark:text-gray-400">
-      <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
-    </div>
+        <!-- Title -->
+        <h1 class="text-4xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
+          <i class="fa-solid fa-trash-can mr-3"></i>垃圾桶
+        </h1>
 
-    <div v-else>
-      <!-- Deleted Books -->
-      <div class="mb-8">
-        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Books</h2>
-        <div v-if="books.length === 0" class="text-gray-400 italic">(無已刪除的 Book)</div>
-        <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div 
-            v-for="book in books" 
-            :key="book.id" 
-            class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center"
-          >
-            <div class="flex-1 min-w-0 mr-4">
-              <div class="flex items-center">
-                <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-book"></i></span>
-                <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="book.title">{{ book.title }}</span>
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
-                <span>刪除時間: {{ formatDate(book.deletedAt) }}</span>
-                <span v-if="book.deletedBy" class="ml-3">刪除者: {{ book.deletedBy.username }}</span>
-              </div>
-            </div>
-            <div class="flex space-x-2">
-              <button 
-                @click="restoreBook(book.id)" 
-                class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" 
-                title="還原"
+        <!-- Loading -->
+        <div v-if="loading" class="text-gray-500 dark:text-gray-400">
+          <i class="fa-solid fa-spinner fa-spin mr-2"></i>載入中...
+        </div>
+
+        <div v-else>
+          <!-- Deleted Books -->
+          <div class="mb-8">
+            <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Books</h2>
+            <div v-if="books.length === 0" class="text-gray-400 italic">(無已刪除的 Book)</div>
+            <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div 
+                v-for="book in books" 
+                :key="book.id" 
+                class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center"
               >
-                <i class="fa-solid fa-rotate-left mr-1"></i>還原
-              </button>
-              <button 
-                @click="forceDeleteBook(book.id)" 
-                class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" 
-                title="永久刪除"
-              >
-                <i class="fa-solid fa-trash mr-1"></i>永久刪除
-              </button>
+                <div class="flex-1 min-w-0 mr-4">
+                  <div class="flex items-center">
+                    <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-book"></i></span>
+                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="book.title">{{ book.title }}</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                    <span>刪除時間: {{ formatDate(book.deletedAt) }}</span>
+                    <span v-if="book.deletedBy" class="ml-3">刪除者: {{ book.deletedBy.username }}</span>
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <button 
+                    @click="restoreBook(book.id)" 
+                    class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" 
+                    title="還原"
+                  >
+                    <i class="fa-solid fa-rotate-left mr-1"></i>還原
+                  </button>
+                  <button 
+                    @click="forceDeleteBook(book.id)" 
+                    class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" 
+                    title="永久刪除"
+                  >
+                    <i class="fa-solid fa-trash mr-1"></i>永久刪除
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Deleted Notes -->
-      <div>
-        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Notes</h2>
-        <div v-if="notes.length === 0" class="text-gray-400 italic">(無已刪除的 Note)</div>
-        <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div 
-            v-for="note in notes" 
-            :key="note.id" 
-            class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center"
-          >
-            <div class="flex-1 min-w-0 mr-4">
-              <div class="flex items-center">
-                <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
-                <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="note.title">{{ note.title }}</span>
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
-                <span>刪除時間: {{ formatDate(note.deletedAt) }}</span>
-                <span v-if="note.deletedBy" class="ml-3">刪除者: {{ note.deletedBy.username }}</span>
-              </div>
-            </div>
-            <div class="flex space-x-2">
-              <button 
-                @click="restoreNote(note.id)" 
-                class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" 
-                title="還原"
+          <!-- Deleted Notes -->
+          <div>
+            <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Notes</h2>
+            <div v-if="notes.length === 0" class="text-gray-400 italic">(無已刪除的 Note)</div>
+            <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div 
+                v-for="note in notes" 
+                :key="note.id" 
+                class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center"
               >
-                <i class="fa-solid fa-rotate-left mr-1"></i>還原
-              </button>
-              <button 
-                @click="forceDeleteNote(note.id)" 
-                class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" 
-                title="永久刪除"
-              >
-                <i class="fa-solid fa-trash mr-1"></i>永久刪除
-              </button>
+                <div class="flex-1 min-w-0 mr-4">
+                  <div class="flex items-center">
+                    <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
+                    <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="note.title">{{ note.title }}</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                    <span>刪除時間: {{ formatDate(note.deletedAt) }}</span>
+                    <span v-if="note.deletedBy" class="ml-3">刪除者: {{ note.deletedBy.username }}</span>
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <button 
+                    @click="restoreNote(note.id)" 
+                    class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" 
+                    title="還原"
+                  >
+                    <i class="fa-solid fa-rotate-left mr-1"></i>還原
+                  </button>
+                  <button 
+                    @click="forceDeleteNote(note.id)" 
+                    class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" 
+                    title="永久刪除"
+                  >
+                    <i class="fa-solid fa-trash mr-1"></i>永久刪除
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
