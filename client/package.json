@@ -17,7 +17,7 @@
     "@codemirror/view": "^6.39.7",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "codemirror": "^6.0.2",
-    "cropperjs": "^2.1.0",
+    "cropperjs": "^1.6.2",
     "dayjs": "^1.11.19",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
