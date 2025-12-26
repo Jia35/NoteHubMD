@@ -86,6 +86,16 @@ const showCreateBookModal = ref(false)
 const newBookTitle = ref('')
 const newBookDescription = ref('')
 
+// Export/Import Notes
+const exportingNotes = ref(false)
+const importingNotes = ref(false)
+const showImportMenu = ref(false)
+const importFileInput = ref(null)
+const importFolderInput = ref(null)
+
+// About Modal
+const showAboutModal = ref(false)
+
 // Load data
 const loadData = async () => {
   loading.value = true
@@ -446,6 +456,103 @@ const logout = async () => {
   window.location.href = '/login'
 }
 
+// Export Notes
+const exportNotes = async () => {
+  if (exportingNotes.value) return
+  exportingNotes.value = true
+  try {
+    const response = await fetch('/api/export/my-notes')
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Export failed')
+    }
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const filenameMatch = contentDisposition?.match(/filename="(.+)"/)
+    a.download = filenameMatch ? filenameMatch[1] : 'notes_export.zip'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    showAlert?.('匯出失敗：' + e.message, 'error')
+  } finally {
+    exportingNotes.value = false
+  }
+}
+
+// Import Notes from file
+const handleImportFile = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  importingNotes.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/import/notes', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error || 'Import failed')
+    }
+
+    showAlert?.(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
+    await loadData()
+  } catch (e) {
+    showAlert?.('匯入失敗：' + e.message, 'error')
+  } finally {
+    importingNotes.value = false
+    event.target.value = ''
+  }
+}
+
+// Import Notes from folder
+const handleImportFolder = async (event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.md'))
+  if (mdFiles.length === 0) {
+    showAlert?.('資料夾中沒有找到 .md 檔案', 'warning')
+    event.target.value = ''
+    return
+  }
+
+  importingNotes.value = true
+  try {
+    const formData = new FormData()
+    mdFiles.forEach(file => {
+      formData.append('files', file)
+    })
+
+    const response = await fetch('/api/import/notes-folder', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error || 'Import failed')
+    }
+
+    showAlert?.(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
+    await loadData()
+  } catch (e) {
+    showAlert?.('匯入失敗：' + e.message, 'error')
+  } finally {
+    importingNotes.value = false
+    event.target.value = ''
+  }
+}
+
 // Handle click outside to close menu
 onMounted(() => {
   loadData()
@@ -633,17 +740,122 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
+
+            <!-- Data Management (only for logged in users) -->
+            <div v-if="user">
+              <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">資料管理</h3>
+              <!-- Export Notes -->
+              <button @click="exportNotes" :disabled="exportingNotes"
+                      class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform shrink-0">
+                  <i :class="exportingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-export'"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 .zip 檔案</div>
+                </div>
+              </button>
+              <!-- Import Notes -->
+              <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip" class="hidden">
+              <input type="file" ref="importFolderInput" @change="handleImportFolder" webkitdirectory class="hidden">
+              <div class="relative mt-2">
+                <button @click="showImportMenu = !showImportMenu" :disabled="importingNotes"
+                        class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm cursor-pointer">
+                  <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
+                    <i :class="importingNotes ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-import'"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-gray-400 ml-2"></i>
+                </button>
+                <!-- Dropdown Menu -->
+                <div v-show="showImportMenu"
+                     class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 overflow-hidden">
+                  <button @click="importFileInput?.click(); showImportMenu = false"
+                          class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left cursor-pointer">
+                    <i class="fa-solid fa-file text-blue-500 mr-3"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md 或 .zip)</span>
+                  </button>
+                  <button @click="importFolderInput?.click(); showImportMenu = false"
+                          class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-t border-gray-100 dark:border-gray-700 cursor-pointer">
+                    <i class="fa-solid fa-folder text-yellow-500 mr-3"></i>
+                    <span class="text-sm text-gray-700 dark:text-gray-200">上傳資料夾</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin (Conditional) -->
+            <div v-if="user && (user.role === 'super-admin' || user.role === 'admin')">
+              <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">管理者</h3>
+              <router-link to="/admin" @click="showSettings = false"
+                           class="flex items-center w-full p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-100 dark:border-purple-800/30 group">
+                <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center mr-3 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-user-shield text-lg"></i>
+                </div>
+                <div class="text-left flex-1">
+                  <div class="font-bold text-sm">管理後台</div>
+                  <div class="text-xs opacity-70">進入系統管理介面</div>
+                </div>
+                <i class="fa-solid fa-chevron-right ml-2 text-sm opacity-30"></i>
+              </router-link>
+            </div>
           </div>
           
           <!-- Footer -->
           <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
-            <span class="text-xs text-gray-400">v{{ appVersion }}</span>
+            <button @click="showSettings = false; showAboutModal = true" title="關於 NoteHubMD"
+                    class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center cursor-pointer">
+              v{{ appVersion }} <i class="fa-solid fa-circle-info ml-1 text-[10px]"></i>
+            </button>
             <button v-if="user" @click="logout" class="flex items-center px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition cursor-pointer">
               <i class="fa-solid fa-right-from-bracket mr-2"></i>登出
             </button>
             <router-link v-else to="/login" @click="showSettings = false" class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
               <i class="fa-solid fa-right-to-bracket mr-2"></i>登入
             </router-link>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- About Modal -->
+    <Teleport to="body">
+      <div v-if="showAboutModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showAboutModal = false">
+        <div class="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <!-- Header -->
+          <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+              <i class="fa-solid fa-circle-info mr-2 text-blue-500"></i> 關於 NoteHubMD
+            </h2>
+            <button @click="showAboutModal = false"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <!-- Body -->
+          <div class="p-6 text-center">
+            <img src="@/assets/images/logo.png" alt="NoteHubMD"
+                 class="w-20 h-20 mx-auto mb-4 cursor-pointer hover:animate-bounce transition-transform">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">NoteHubMD</h3>
+            <p class="text-xs text-gray-400 mb-3">v{{ appVersion }}</p>
+            <p class="text-sm text-gray-700 dark:text-gray-300 mb-10">
+              現代化、可自架的 Markdown 筆記平台，支援即時協作。
+            </p>
+            <hr class="border-gray-200 dark:border-gray-700 mb-6">
+            <div class="text-left text-gray-600 dark:text-gray-400">
+              <h4 class="text-sm font-bold mb-2">
+                ❄️ 雪之妖精——「北長尾山雀」
+              </h4>
+              <p class="text-sm leading-relaxed mb-3">
+                外型像一顆長尾巴的棉花糖，圓滾滾又呆萌，卻是觀察力滿點的小鳥。牠們行動安靜、習慣群聚，總在枝頭默默記錄季節的變化。
+              </p>
+              <p class="text-sm leading-relaxed">
+                靈感就像牠們一樣，靈動可愛卻又稍縱即逝，不趕快記下來就會咻——地飛走，快把它們「抓」進筆記裡吧！
+              </p>
+            </div>
           </div>
         </div>
       </div>
