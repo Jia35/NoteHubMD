@@ -44,7 +44,8 @@ const routes = [
     {
         path: '/n/:id',
         name: 'note',
-        component: NoteView
+        component: NoteView,
+        meta: { requiresAuth: true }
     },
     {
         path: '/login',
@@ -52,11 +53,13 @@ const routes = [
         component: LoginView
     },
     {
+        // Share pages are public (no auth required)
         path: '/s/:shareId',
         name: 'noteShare',
         component: NoteShareView
     },
     {
+        // Share pages are public (no auth required)
         path: '/v/:shareId',
         name: 'bookShare',
         component: BookShareView
@@ -77,11 +80,11 @@ const router = createRouter({
     routes
 })
 
-// Navigation guard
+// Navigation guard - redirect to login if not authenticated
 router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAuth) {
         try {
-            const response = await fetch('/api/me')
+            const response = await fetch('/api/auth/me')
             if (!response.ok) {
                 return next({ path: '/login', query: { redirect: to.fullPath } })
             }
@@ -93,3 +96,4 @@ router.beforeEach(async (to, from, next) => {
 })
 
 export default router
+
