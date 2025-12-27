@@ -42,6 +42,17 @@ import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
+// Mermaid
+import mermaid from 'mermaid'
+
+// Initialize mermaid with default config
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+  fontFamily: 'inherit'
+})
+
 // Highlight.js
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -283,6 +294,37 @@ const noteInfoItem = computed(() => ({
   lineCount: lineCount.value
 }))
 
+// Parse extended code block syntax: language + modifiers (!, =, =N)
+// Examples: python!, javascript=, python!=30, =10
+const parseCodeBlockInfo = (info) => {
+  const result = {
+    language: '',
+    wordWrap: false,
+    lineNumbers: false,
+    startLine: 1
+  }
+
+  if (!info) return result
+
+  // Match pattern: [language][!][=][startLineNumber]
+  // Examples: python, python!, python=, python=10, python!=, python!=10, !=, =10, !
+  const match = info.match(/^([a-zA-Z0-9_+-]*)(!?)(=?)(\d*)$/)
+  if (match) {
+    result.language = match[1] || ''
+    result.wordWrap = match[2] === '!'
+    result.lineNumbers = match[3] === '='
+    if (match[4]) {
+      result.startLine = parseInt(match[4], 10)
+      result.lineNumbers = true // If start number specified, enable line numbers
+    }
+  } else {
+    // Fallback: treat as language only
+    result.language = info
+  }
+
+  return result
+}
+
 // Markdown-it setup
 const md = new MarkdownIt({
   html: true,
@@ -290,12 +332,50 @@ const md = new MarkdownIt({
   typographer: true,
   breaks: true,
   highlight: (str, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
-      } catch {}
+    const parsed = parseCodeBlockInfo(lang)
+    const actualLang = parsed.language.toLowerCase()
+
+    // Handle mermaid code blocks specially
+    if (actualLang === 'mermaid') {
+      return '<div class="mermaid">' + str + '</div>'
     }
-    return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`
+
+    // Build CSS classes
+    const classes = ['hljs']
+    if (parsed.wordWrap) classes.push('code-wrap')
+    if (parsed.lineNumbers) classes.push('has-line-numbers')
+
+    let highlightedCode
+    if (parsed.language && hljs.getLanguage(parsed.language)) {
+      try {
+        highlightedCode = hljs.highlight(str, { language: parsed.language, ignoreIllegals: true }).value
+      } catch {
+        highlightedCode = md.utils.escapeHtml(str)
+      }
+    } else {
+      highlightedCode = md.utils.escapeHtml(str)
+    }
+
+    // If line numbers are enabled, wrap with line number display
+    if (parsed.lineNumbers) {
+      const lines = highlightedCode.split('\n')
+      // Remove trailing empty line if present
+      if (lines.length > 0 && lines[lines.length - 1] === '') {
+        lines.pop()
+      }
+
+      const lineNumbersHtml = lines.map((_, i) =>
+        `<span class="code-line-number">${parsed.startLine + i}</span>`
+      ).join('')
+
+      const codeHtml = lines.map(line =>
+        `<span class="code-line">${line || ' '}</span>`
+      ).join('')
+
+      return `<pre class="${classes.join(' ')}"><code><div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div></code></pre>`
+    }
+
+    return `<pre class="${classes.join(' ')}"><code>${highlightedCode}</code></pre>`
   }
 })
   .use(markdownItAnchor, { permalink: false })
@@ -494,8 +574,8 @@ const initEditor = () => {
 const renderMarkdown = () => {
   renderedContent.value = md.render(content.value)
   
-  // Generate TOC from headings
-  nextTick(() => {
+  // Generate TOC from headings and render mermaid diagrams
+  nextTick(async () => {
     if (previewContent.value) {
       const headings = previewContent.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
       toc.value = Array.from(headings).map((h, idx) => ({
@@ -507,6 +587,24 @@ const renderMarkdown = () => {
       headings.forEach((h, idx) => {
         if (!h.id) h.id = `heading-${idx}`
       })
+      
+      // Render mermaid diagrams
+      const mermaidDivs = previewContent.value.querySelectorAll('.mermaid')
+      if (mermaidDivs.length > 0) {
+        try {
+          // Update mermaid theme based on current theme
+          const isDark = document.documentElement.classList.contains('dark')
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'default',
+            securityLevel: 'loose',
+            fontFamily: 'inherit'
+          })
+          await mermaid.run({ nodes: mermaidDivs })
+        } catch (e) {
+          console.warn('Mermaid rendering error:', e)
+        }
+      }
     }
   })
 }
@@ -550,7 +648,60 @@ const ZOOM_STEP = 0.25
 const handlePreviewClick = (event) => {
   const target = event.target
   
-  // Handle task list checkbox click (if we implement it later)
+  // Handle task list checkbox click
+  if (target.classList.contains('task-list-item-checkbox')) {
+    // Prevent default checkbox toggle to avoid flicker
+    event.preventDefault()
+    
+    if (!canEdit.value || !editorView.value) return
+    
+    // Find index of clicked checkbox
+    const checkboxes = previewContent.value.querySelectorAll('.task-list-item-checkbox')
+    let checkboxIndex = -1
+    for (let i = 0; i < checkboxes.length; i++) {
+      if (checkboxes[i] === target) {
+        checkboxIndex = i
+        break
+      }
+    }
+    if (checkboxIndex === -1) return
+    
+    // Find task list items in source by scanning for [ ] or [x] patterns
+    const lines = content.value.split('\n')
+    let taskCount = 0
+    
+    for (let lineNo = 0; lineNo < lines.length; lineNo++) {
+      const line = lines[lineNo]
+      // Match task list pattern: starts with list marker followed by [ ] or [x]
+      const match = line.match(/^(\s*[-*+]|\s*\d+\.)\s+\[([ xX])\]/)
+      if (match) {
+        if (taskCount === checkboxIndex) {
+          // Found the line! Toggle the checkbox
+          const doc = editorView.value.state.doc
+          const cmLine = doc.line(lineNo + 1) // CodeMirror lines are 1-indexed
+          const lineContent = cmLine.text
+          
+          // Toggle checkbox in line content
+          const newLineContent = lineContent.replace(/\[([ xX])\]/, (m, p1) => {
+            return p1 === ' ' ? '[x]' : '[ ]'
+          })
+          
+          if (newLineContent !== lineContent) {
+            editorView.value.dispatch({
+              changes: {
+                from: cmLine.from,
+                to: cmLine.to,
+                insert: newLineContent
+              }
+            })
+          }
+          return
+        }
+        taskCount++
+      }
+    }
+    return
+  }
   
   // Handle image clicks
   if (target.tagName === 'IMG' && !target.closest('.mermaid')) {
@@ -1633,5 +1784,69 @@ watch(() => route.params.id, (newId, oldId) => {
 .dark .markdown-body mark {
     background-color: #fbc02d;
     color: #000;
+}
+
+/* Code Block Word Wrap */
+.hljs.code-wrap,
+.hljs.code-wrap code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+/* Code Block Line Numbers */
+.markdown-body pre.hljs.has-line-numbers {
+    padding: 0;
+}
+
+.hljs.has-line-numbers code {
+    display: flex;
+    padding: 0;
+}
+
+.hljs.has-line-numbers .code-line-numbers {
+    flex-shrink: 0;
+    padding: 16px 12px;
+    text-align: right;
+    user-select: none;
+    color: #6e7681;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line-number {
+    display: block;
+    min-width: 1.5em;
+}
+
+.hljs.has-line-numbers .code-content {
+    flex: 1;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line {
+    display: block;
+}
+
+/* Word wrap with line numbers */
+.hljs.has-line-numbers.code-wrap .code-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-x: visible;
+}
+
+/* Dark mode line numbers */
+.dark .hljs.has-line-numbers .code-line-numbers {
+    color: #6e7681;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-right-color: rgba(255, 255, 255, 0.1);
 }
 </style>
