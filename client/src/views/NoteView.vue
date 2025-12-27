@@ -59,7 +59,8 @@ import java from 'highlight.js/lib/languages/java'
 import csharp from 'highlight.js/lib/languages/csharp'
 import php from 'highlight.js/lib/languages/php'
 import rust from 'highlight.js/lib/languages/rust'
-import 'highlight.js/styles/github-dark.css'
+import hljsGithubDark from 'highlight.js/styles/github-dark.css?inline'
+import hljsGithubLight from 'highlight.js/styles/github.css?inline'
 
 // Register languages
 hljs.registerLanguage('javascript', javascript)
@@ -583,59 +584,65 @@ const handleLightboxWheel = (event) => {
     }
 }
 
+// Image Upload Helper
+const uploadAndInsertImage = async (file, view, eventType = 'paste', coords = null) => {
+  try {
+    const res = await api.uploadImage(file)
+    const markdown = eventType === 'drop' ? `![${file.name}](${res.url})` : `![image](${res.url})`
+    
+    let insertPos
+    if (eventType === 'drop' && coords) {
+      const pos = view.posAtCoords(coords)
+      insertPos = pos ? pos : view.state.selection.main.from
+    } else {
+      insertPos = view.state.selection.main.from
+    }
+
+    const transaction = view.state.update({
+      changes: { from: insertPos, insert: markdown + (eventType === 'drop' ? '\n' : '') }
+    })
+    view.dispatch(transaction)
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    if (window.showAlert) {
+      window.showAlert('圖片上傳失敗：' + error.message, 'error')
+    } else {
+      alert('圖片上傳失敗：' + error.message)
+    }
+  }
+}
+
 // Paste Handling
-const handlePaste = async (event, view) => {
+const handlePaste = (event, view) => {
   const items = event.clipboardData?.items
-  if (!items) return
+  if (!items) return false
 
   for (const item of items) {
     if (item.type.startsWith('image/')) {
       event.preventDefault()
       const file = item.getAsFile()
-      if (!file) continue
-
-      try {
-        const res = await api.uploadImage(file)
-        const markdown = `![image](${res.url})`
-        const transaction = view.state.update({
-          changes: { from: view.state.selection.main.from, insert: markdown }
-        })
-        view.dispatch(transaction)
-      } catch (error) {
-        console.error('Image upload failed:', error)
-        showAlert?.('圖片上傳失敗：' + error.message, 'error')
+      if (file) {
+        uploadAndInsertImage(file, view, 'paste')
       }
       return true
     }
   }
+  return false
 }
 
-const handleDrop = async (event, view) => {
+const handleDrop = (event, view) => {
   const files = event.dataTransfer?.files
-  if (!files || files.length === 0) return
+  if (!files || files.length === 0) return false
 
   const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
-  if (imageFiles.length === 0) return
+  if (imageFiles.length === 0) return false
 
   event.preventDefault()
   
   for (const file of imageFiles) {
-    try {
-      const res = await api.uploadImage(file)
-      const markdown = `![${file.name}](${res.url})`
-      
-      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
-      const insertPos = pos ? pos : view.state.selection.main.from
-      
-      const transaction = view.state.update({
-        changes: { from: insertPos, insert: markdown + '\n' }
-      })
-      view.dispatch(transaction)
-    } catch (error) {
-       console.error('Image upload failed:', error)
-       showAlert?.('圖片上傳失敗：' + error.message, 'error')
-    }
+    uploadAndInsertImage(file, view, 'drop', { x: event.clientX, y: event.clientY })
   }
+  return true
 }
 
 // Sync Scroll
@@ -898,6 +905,18 @@ const setMode = (m) => {
   mode.value = m
 }
 
+
+// Update highlight.js style
+const updateHighlightStyle = (t) => {
+  let styleEl = document.getElementById('hljs-theme-style')
+  if (!styleEl) {
+    styleEl = document.createElement('style')
+    styleEl.id = 'hljs-theme-style'
+    document.head.appendChild(styleEl)
+  }
+  styleEl.textContent = t === 'dark' ? hljsGithubDark : hljsGithubLight
+}
+
 // Set theme
 const setTheme = (t) => {
   theme.value = t
@@ -907,6 +926,7 @@ const setTheme = (t) => {
   } else {
     document.documentElement.classList.remove('dark')
   }
+  updateHighlightStyle(t)
 }
 
 // Set view mode
@@ -1077,7 +1097,10 @@ const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
 const getRelativeTime = (date) => dayjs(date).fromNow()
 
 // Lifecycle
-onMounted(() => loadNote())
+onMounted(() => {
+  updateHighlightStyle(theme.value)
+  loadNote()
+})
 
 onUnmounted(() => {
   if (saveTimeout) clearTimeout(saveTimeout)
@@ -1330,7 +1353,7 @@ watch(() => route.params.id, (newId, oldId) => {
           
           <!-- Resizable Divider (only in Both mode) -->
           <div v-if="showEditor && showPreview" 
-               class="w-1 bg-gray-300 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
+               class="w-0.5 bg-gray-300 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
                @mousedown="startResize"
                title="拖曳調整寬度"></div>
           
@@ -1538,7 +1561,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .editor-container { height: 100%; }
 .editor-container .cm-editor { height: 100%; }
 .editor-container .cm-scroller { overflow: auto; }
-.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.6; padding: 16px; }
+.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.6; padding: 4px 8px; }
 .editor-container .cm-line { padding: 0 4px; }
 .editor-container .cm-gutters { 
   font-family: 'Fira Code', monospace; 
@@ -1559,7 +1582,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; }
-.markdown-body pre.hljs { padding: 1em; background: #0d1117; }
+.markdown-body pre.hljs { padding: 1em; }
 .markdown-body blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 1em; color: #666; }
 .markdown-body table { border-collapse: collapse; margin: 1em 0; width: 100%; }
 .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 0.5em 1em; }
@@ -1567,8 +1590,48 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body a:hover { text-decoration: underline; }
 
 .dark .markdown-body code { background: #2d2d2d; }
-.dark .markdown-body pre.hljs { background: #1e1e1e; }
+.dark .markdown-body pre.hljs { }
 .dark .markdown-body blockquote { border-color: #444; color: #aaa; }
 .dark .markdown-body th, .dark .markdown-body td { border-color: #444; }
 .dark .markdown-body a { color: #58a6ff; }
+
+
+/* Spoiler / Details */
+.markdown-body details {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 0.5em 0.5em 0;
+    margin-bottom: 1em;
+}
+.dark .markdown-body details {
+    border-color: #444;
+}
+.markdown-body summary {
+    cursor: pointer;
+    font-weight: bold;
+    padding-bottom: 0.5em;
+    outline: none;
+}
+.markdown-body details[open] {
+    padding-bottom: 0.5em;
+}
+.markdown-body details[open] summary {
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 0.5em;
+}
+.dark .markdown-body details[open] summary {
+    border-bottom-color: #444;
+}
+
+/* Mark */
+.markdown-body mark {
+    background-color: #ffeb3b;
+    color: #000;
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+}
+.dark .markdown-body mark {
+    background-color: #fbc02d;
+    color: #000;
+}
 </style>
