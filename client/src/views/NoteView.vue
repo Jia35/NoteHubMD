@@ -1,7 +1,6 @@
 <script setup>
 /**
  * NoteView - 筆記編輯頁 (完整版)
- * 
  * 使用 CodeMirror 6 編輯器與 markdown-it 渲染器
  */
 import { ref, computed, onMounted, onUnmounted, inject, watch, nextTick, shallowRef } from 'vue'
@@ -9,15 +8,23 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import { useSocket } from '@/composables/useSocket'
 import dayjs from 'dayjs'
+import relativeTimePlugin from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/zh-tw'
 
-// CodeMirror 6 imports
+dayjs.extend(relativeTimePlugin)
+dayjs.locale('zh-tw')
+
+// Components
+import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, CreateBookModal, RevisionsModal } from '@/components'
+
+// CodeMirror 6
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
 
-// Markdown-it imports
+// Markdown-it
 import MarkdownIt from 'markdown-it'
 import markdownItAnchor from 'markdown-it-anchor'
 import { full as markdownItEmoji } from 'markdown-it-emoji'
@@ -27,7 +34,7 @@ import markdownItSup from 'markdown-it-sup'
 import markdownItIns from 'markdown-it-ins'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
-// Highlight.js - 只載入常用語言
+// Highlight.js
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -46,7 +53,7 @@ import php from 'highlight.js/lib/languages/php'
 import rust from 'highlight.js/lib/languages/rust'
 import 'highlight.js/styles/github-dark.css'
 
-// 註冊語言
+// Register languages
 hljs.registerLanguage('javascript', javascript)
 hljs.registerLanguage('js', javascript)
 hljs.registerLanguage('typescript', typescript)
@@ -80,6 +87,7 @@ const showConfirm = inject('showConfirm')
 
 // Note data
 const note = ref(null)
+const book = ref(null)
 const loading = ref(true)
 const saving = ref(false)
 const content = ref('')
@@ -88,25 +96,99 @@ const content = ref('')
 const currentUser = ref(null)
 const isOwner = ref(false)
 const canEdit = ref(false)
+const permission = ref('private')
 
 // View mode
-const viewMode = ref('edit') // 'edit', 'view', 'both'
+const mode = ref('edit')
 const showSidebar = ref(false)
+const editorWidth = ref(50)
 
-// Editor refs
+// Editor
 const editorContainer = ref(null)
 const previewContainer = ref(null)
+const previewContent = ref(null)
 const editorView = shallowRef(null)
-
-// Markdown preview
 const renderedContent = ref('')
 
-// Socket.io for real-time collaboration
-const { socket, joinNote, leaveNote, editNote, onNoteUpdated, offNoteUpdated, onUsersInNote, offUsersInNote, usersInNote } = useSocket()
+// Stats
+const charCount = computed(() => content.value.length)
+const lineCount = computed(() => content.value.split('\n').length)
+
+// Socket
+const { socket, joinNote, leaveNote, editNote, onNoteUpdated, offNoteUpdated, onUsersInNote, offUsersInNote } = useSocket()
 const onlineUsers = ref([])
 const showOnlineUsersPopup = ref(false)
 
-// Initialize markdown-it with plugins
+// Sidebar data
+const books = ref([])
+const pinnedItems = ref([])
+const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
+
+// Modals
+const showSettingsModal = ref(false)
+const showAboutModal = ref(false)
+const showUserProfileModal = ref(false)
+const showCreateBookModal = ref(false)
+const showNoteInfoModal = ref(false)
+const showRevisionsModal = ref(false)
+const noteInfoModalTab = ref('info')
+
+// Settings
+const theme = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+const appVersion = ref('')
+
+// Permission options
+const permissionOptions = [
+  { value: 'public-edit', label: '可編輯' },
+  { value: 'auth-edit', label: '可編輯(需登入)' },
+  { value: 'public-view', label: '唯讀' },
+  { value: 'auth-view', label: '唯讀(需登入)' },
+  { value: 'private', label: '私人' }
+]
+
+// Comments
+const comments = ref([])
+const noteCommentsEnabled = ref(true)
+
+// Note owner/editor info
+const noteOwner = ref(null)
+const lastEditor = ref(null)
+const lastContentEditedAt = ref(null)
+
+// TOC
+const toc = ref([])
+
+// Resizable
+const isResizing = ref(false)
+const contentArea = ref(null)
+
+// Info modal data
+const userPermissions = ref([])
+const loadingUserPermissions = ref(false)
+const userSearchQuery = ref('')
+const userSearchResults = ref([])
+const newUserPermission = ref('view')
+
+// Computed
+const showEditor = computed(() => mode.value === 'edit' || mode.value === 'both')
+const showPreview = computed(() => mode.value === 'view' || mode.value === 'both')
+const currentRoute = computed(() => '/n/' + route.params.id)
+const filteredSidebarBooks = computed(() => {
+  if (globalViewMode.value === 'my') {
+    return books.value.filter(b => b.isOwner)
+  }
+  return books.value.filter(b => b.isPublic)
+})
+
+const noteInfoItem = computed(() => ({
+  ...note.value,
+  isOwner: isOwner.value,
+  canEdit: canEdit.value,
+  charCount: charCount.value,
+  lineCount: lineCount.value
+}))
+
+// Markdown-it setup
 const md = new MarkdownIt({
   html: true,
   linkify: true,
@@ -133,26 +215,45 @@ const md = new MarkdownIt({
 const loadNote = async () => {
   loading.value = true
   try {
-    // Load user info
     currentUser.value = await api.getMe().catch(() => null)
     
-    // Load note
+    const [booksData, pinnedData, versionData] = await Promise.all([
+      api.getBooks().catch(() => []),
+      api.getPinnedItems().catch(() => []),
+      api.getAppVersion().catch(() => ({ version: '' }))
+    ])
+    books.value = booksData
+    pinnedItems.value = pinnedData
+    appVersion.value = versionData.version || ''
+    
     const data = await api.getNote(route.params.id)
     note.value = data
     content.value = data.content || ''
     isOwner.value = data.isOwner || false
     canEdit.value = data.canEdit || false
+    permission.value = data.permission || 'private'
+    book.value = data.book || null
+    noteCommentsEnabled.value = data.commentsEnabled !== false
+    noteOwner.value = data.owner || null
+    lastEditor.value = data.lastEditor || null
+    lastContentEditedAt.value = data.lastContentEditedAt || data.updatedAt || null
     
-    // Update page title
-    const title = data.title || 'Untitled'
-    document.title = `${title.substring(0, 20)} | NoteHubMD`
+    document.title = `${(data.title || 'Untitled').substring(0, 20)} | NoteHubMD`
     
-    // Render markdown
     renderMarkdown()
     
-    // Initialize editor if can edit
     if (canEdit.value) {
-      nextTick(() => initEditor())
+      // Delay editor init to ensure DOM is ready
+      nextTick(() => {
+        setTimeout(() => {
+          initEditor()
+        }, 100)
+      })
+    }
+    
+    // Load comments
+    if (noteCommentsEnabled.value) {
+      comments.value = await api.getComments(route.params.id).catch(() => [])
     }
   } catch (e) {
     console.error('Failed to load note:', e)
@@ -172,12 +273,10 @@ const loadNote = async () => {
   } finally {
     loading.value = false
     
-    // Join socket room after loading
     if (note.value && canEdit.value) {
       const username = currentUser.value?.username || 'Guest'
       joinNote(note.value.id, username)
       
-      // Listen for real-time updates
       onUsersInNote((users) => {
         onlineUsers.value = users
       })
@@ -185,7 +284,6 @@ const loadNote = async () => {
       onNoteUpdated((newContent) => {
         if (newContent !== content.value && editorView.value) {
           content.value = newContent
-          // Update editor without triggering change event
           const currentDoc = editorView.value.state.doc.toString()
           if (currentDoc !== newContent) {
             editorView.value.dispatch({
@@ -199,9 +297,15 @@ const loadNote = async () => {
   }
 }
 
-// Initialize CodeMirror 6 editor
+// Init CodeMirror
 const initEditor = () => {
-  if (!editorContainer.value || editorView.value) return
+  console.log('initEditor called', { editorContainer: editorContainer.value, editorView: editorView.value })
+  if (!editorContainer.value) {
+    console.warn('Editor container not found, retrying...')
+    setTimeout(initEditor, 100)
+    return
+  }
+  if (editorView.value) return
   
   const isDark = document.documentElement.classList.contains('dark')
   
@@ -219,7 +323,6 @@ const initEditor = () => {
         content.value = update.state.doc.toString()
         debouncedSave()
         renderMarkdown()
-        // Emit to socket for real-time sync
         if (note.value) {
           editNote(note.value.id, content.value)
         }
@@ -238,12 +341,64 @@ const initEditor = () => {
     }),
     parent: editorContainer.value
   })
+  console.log('Editor created successfully')
 }
 
-// Render markdown preview
+// Render markdown and generate TOC
 const renderMarkdown = () => {
   renderedContent.value = md.render(content.value)
+  
+  // Generate TOC from headings
+  nextTick(() => {
+    if (previewContent.value) {
+      const headings = previewContent.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
+      toc.value = Array.from(headings).map((h, idx) => ({
+        id: h.id || `heading-${idx}`,
+        text: h.textContent,
+        level: parseInt(h.tagName[1])
+      }))
+      // Ensure all headings have IDs
+      headings.forEach((h, idx) => {
+        if (!h.id) h.id = `heading-${idx}`
+      })
+    }
+  })
 }
+
+// Resize functions
+const startResize = (e) => {
+  isResizing.value = true
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+  e.preventDefault()
+}
+
+const handleResize = (e) => {
+  if (!isResizing.value || !contentArea.value) return
+  const rect = contentArea.value.getBoundingClientRect()
+  const newWidth = ((e.clientX - rect.left) / rect.width) * 100
+  editorWidth.value = Math.max(20, Math.min(80, newWidth))
+}
+
+const stopResize = () => {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+}
+
+// Scroll to TOC item
+const scrollToHeading = (id) => {
+  const el = document.getElementById(id)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+// Relative time for last edited
+const relativeLastEditedTime = computed(() => {
+  if (!lastContentEditedAt.value) return null
+  return dayjs(lastContentEditedAt.value).fromNow()
+})
 
 // Debounced save
 let saveTimeout = null
@@ -265,27 +420,179 @@ const saveNote = async () => {
   }
 }
 
-// Toggle view mode
-const setViewMode = (mode) => {
-  viewMode.value = mode
+// Set mode
+const setMode = (m) => {
+  mode.value = m
 }
 
-// Go to share page
-const openSharePage = () => {
-  if (note.value?.shareId) {
-    window.open('/s/' + note.value.shareId, '_blank')
+// Set theme
+const setTheme = (t) => {
+  theme.value = t
+  localStorage.setItem('NoteHubMD-theme', t)
+  if (t === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
+// Set view mode
+const setGlobalViewMode = (m) => {
+  globalViewMode.value = m
+  localStorage.setItem('NoteHubMD-viewMode', m)
+}
+
+// Logout
+const logout = async () => {
+  await api.logout()
+  window.location.href = '/login'
+}
+
+// Create note
+const createNewNote = async () => {
+  try {
+    const newNote = await api.createNote()
+    window.location.href = '/n/' + newNote.id
+  } catch (e) {
+    showAlert?.('建立筆記失敗', 'error')
+  }
+}
+
+// Create book
+const handleCreateBook = async (data) => {
+  try {
+    const newBook = await api.createBook(data)
+    showCreateBookModal.value = false
+    router.push('/b/' + newBook.id)
+  } catch (e) {
+    showAlert?.('建立書本失敗', 'error')
+  }
+}
+
+// Unpin
+const unpinItem = async (type, id) => {
+  try {
+    await api.removePin(type, id)
+    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+  } catch (e) {
+    showAlert?.('取消釘選失敗', 'error')
+  }
+}
+
+// Share note
+const shareNote = () => {
+  noteInfoModalTab.value = 'share'
+  showNoteInfoModal.value = true
+}
+
+// Toggle online users popup
+const toggleOnlineUsersPopup = () => {
+  showOnlineUsersPopup.value = !showOnlineUsersPopup.value
+}
+
+// Handle permission change
+const handlePermissionChange = async (newPerm) => {
+  try {
+    await api.updatePermission(note.value.id, newPerm)
+    permission.value = newPerm
+  } catch (e) {
+    showAlert?.('更新權限失敗', 'error')
+  }
+}
+
+// Auto save comments enabled
+const autoSaveCommentsEnabled = async (enabled) => {
+  try {
+    await api.updateNote(note.value.id, { commentsEnabled: enabled })
+    noteCommentsEnabled.value = enabled
+  } catch (e) {
+    showAlert?.('更新失敗', 'error')
+  }
+}
+
+// Auto save isPublic
+const autoSaveIsPublic = async (isPublic) => {
+  try {
+    await api.updateNote(note.value.id, { isPublic })
+    note.value.isPublic = isPublic
+  } catch (e) {
+    showAlert?.('更新失敗', 'error')
+  }
+}
+
+// User permissions
+const searchUsers = async () => {
+  if (!userSearchQuery.value.trim()) {
+    userSearchResults.value = []
+    return
+  }
+  try {
+    userSearchResults.value = await api.searchUsers(userSearchQuery.value)
+  } catch (e) {
+    userSearchResults.value = []
+  }
+}
+
+const addUserPermission = async (user) => {
+  try {
+    await api.addNoteUserPermission(note.value.id, user.id, newUserPermission.value)
+    userPermissions.value.push({ userId: user.id, user, permission: newUserPermission.value })
+    userSearchQuery.value = ''
+    userSearchResults.value = []
+  } catch (e) {
+    showAlert?.('新增權限失敗', 'error')
+  }
+}
+
+const removeUserPermission = async (userId) => {
+  try {
+    await api.removeNoteUserPermission(note.value.id, userId)
+    userPermissions.value = userPermissions.value.filter(p => p.userId !== userId)
+  } catch (e) {
+    showAlert?.('移除權限失敗', 'error')
+  }
+}
+
+const updateUserPermissionLevel = async (perm, newLevel) => {
+  try {
+    await api.addNoteUserPermission(note.value.id, perm.userId, newLevel)
+    const idx = userPermissions.value.findIndex(p => p.userId === perm.userId)
+    if (idx !== -1) {
+      userPermissions.value[idx].permission = newLevel
+    }
+  } catch (e) {
+    showAlert?.('更新權限失敗', 'error')
+  }
+}
+
+// Handle revision restore
+const handleRevisionRestore = (restoredContent) => {
+  content.value = restoredContent
+  if (editorView.value) {
+    const currentDoc = editorView.value.state.doc.toString()
+    editorView.value.dispatch({
+      changes: { from: 0, to: currentDoc.length, insert: restoredContent }
+    })
+  }
+  renderMarkdown()
+  saveNote()
+}
+
+// Handle user profile update
+const handleUserProfileUpdate = (data) => {
+  if (currentUser.value) {
+    currentUser.value.name = data.name
+    currentUser.value.avatar = data.avatar
+    currentUser.value.avatarOriginal = data.avatarOriginal
   }
 }
 
 // Format date
-const formatDate = (date) => {
-  return dayjs(date).format('YYYY/MM/DD HH:mm')
-}
+const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
+const getRelativeTime = (date) => dayjs(date).fromNow()
 
-// Cleanup
-onMounted(() => {
-  loadNote()
-})
+// Lifecycle
+onMounted(() => loadNote())
 
 onUnmounted(() => {
   if (saveTimeout) clearTimeout(saveTimeout)
@@ -293,7 +600,6 @@ onUnmounted(() => {
     editorView.value.destroy()
     editorView.value = null
   }
-  // Leave socket room
   if (note.value) {
     leaveNote(note.value.id)
     offNoteUpdated()
@@ -301,9 +607,8 @@ onUnmounted(() => {
   }
 })
 
-// Watch route changes
+// Watch route
 watch(() => route.params.id, (newId, oldId) => {
-  // Leave old room
   if (oldId) {
     leaveNote(oldId)
     offNoteUpdated()
@@ -315,41 +620,50 @@ watch(() => route.params.id, (newId, oldId) => {
   }
   loadNote()
 })
-
-// Watch dark mode changes
-watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
-  if (editorView.value) {
-    // Recreate editor with new theme
-    const doc = editorView.value.state.doc.toString()
-    editorView.value.destroy()
-    editorView.value = null
-    content.value = doc
-    nextTick(() => initEditor())
-  }
-})
 </script>
 
 <template>
   <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-    <!-- Sidebar Strip -->
-    <div 
-      @click="showSidebar = true"
-      class="w-12 bg-gray-200 dark:bg-gray-900 flex flex-col items-center py-3 border-r border-gray-300 dark:border-gray-800 shrink-0 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition"
-      title="展開選單"
-    >
-      <router-link to="/" class="flex items-center justify-center mb-4" @click.stop>
+    <!-- Collapsed Sidebar Strip -->
+    <div @click="showSidebar = true" 
+         class="w-12 bg-gray-200 dark:bg-gray-900 dark:text-white flex flex-col items-center py-3 border-r border-gray-300 dark:border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors"
+         title="展開選單">
+      <a href="/" @click.stop class="flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-800 transition">
         <img src="@/assets/images/logo.png" alt="NoteHubMD" class="w-8 h-8">
-      </router-link>
+      </a>
       <div class="flex-1"></div>
-      <div 
-        class="w-8 h-8 rounded-full flex items-center justify-center text-white overflow-hidden"
-        :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'"
-      >
-        <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white overflow-hidden"
+           :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
+        <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
         <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
       </div>
     </div>
 
+    <!-- Expanded Sidebar -->
+    <Transition name="note-sidebar-slide">
+      <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="absolute top-0 h-full" @click.stop>
+          <SidebarNav 
+            :user="currentUser"
+            :books="filteredSidebarBooks"
+            :pinned-items="pinnedItems"
+            :show-pinned="true"
+            :show-more-books="false"
+            :current-route="currentRoute"
+            :global-view-mode="globalViewMode"
+            :app-version="appVersion"
+            @unpin="unpinItem"
+            @view-mode-change="setGlobalViewMode"
+            @create-note="createNewNote"
+            @create-book="showCreateBookModal = true"
+            @open-profile="showUserProfileModal = true"
+            @open-settings="showSettingsModal = true"
+          />
+        </div>
+      </div>
+    </Transition>
+    
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Loading -->
@@ -360,134 +674,212 @@ watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
       <!-- Note Content -->
       <template v-else-if="note">
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-surface shrink-0">
-          <div class="flex items-center gap-3 min-w-0">
-            <h1 class="text-lg font-semibold truncate">{{ note.title || 'Untitled' }}</h1>
-            <span v-if="saving" class="text-sm text-gray-500">
-              <i class="fa-solid fa-spinner fa-spin mr-1"></i>儲存中...
+        <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0">
+          <div class="flex-1 flex items-center space-x-2">
+            <template v-if="book">
+              <a :href="'/b/' + book.id" class="hover:text-blue-400 transition">
+                <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+              </a>
+              <span class="text-gray-600">/</span>
+            </template>
+            <span class="text-sm bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
+              <i class="fa-solid fa-note-sticky mr-1"></i>{{ note.title || 'Untitled' }}
             </span>
-            <span v-else class="text-sm text-gray-500">
-              <i class="fa-solid fa-check text-green-500 mr-1"></i>已儲存
-            </span>
+            <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
+            <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
           </div>
-          <div class="flex items-center gap-2">
+          
+          <!-- Mode Toggle -->
+          <div class="flex bg-gray-300 dark:bg-gray-800 rounded-lg p-0.5 space-x-0.5">
+            <button @click="setMode('edit')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
+                    :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button @click="setMode('both')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
+                    :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Both">
+              <i class="fa-solid fa-columns"></i>
+            </button>
+            <button @click="setMode('view')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
+                    :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="View">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          
+          <!-- Right Actions -->
+          <div class="flex-1 flex justify-end items-center space-x-3">
             <!-- Online Users -->
-            <div v-if="onlineUsers.length > 0" class="flex items-center relative">
-              <div class="flex -space-x-2">
-                <div 
-                  v-for="(user, index) in onlineUsers.slice(0, 3)" 
-                  :key="user.username"
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs overflow-hidden border-2 border-white dark:border-gray-800 bg-blue-600"
-                  :title="user.username"
-                >
-                  <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
-                  <span v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</span>
-                </div>
-                <div 
-                  v-if="onlineUsers.length > 3"
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs bg-gray-500 border-2 border-white dark:border-gray-800 cursor-pointer"
-                  @click="showOnlineUsersPopup = !showOnlineUsersPopup"
-                >
-                  +{{ onlineUsers.length - 3 }}
-                </div>
-              </div>
-              <span class="ml-2 text-xs text-gray-500">{{ onlineUsers.length }} 人在線</span>
-              
-              <!-- Users Popup -->
-              <div 
-                v-if="showOnlineUsersPopup"
-                class="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-50 min-w-48"
-              >
-                <div class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">線上使用者</div>
-                <div class="space-y-2">
-                  <div v-for="user in onlineUsers" :key="user.username" class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs overflow-hidden bg-blue-600">
-                      <img v-if="user.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="">
-                      <span v-else>{{ user.username?.charAt(0).toUpperCase() || '?' }}</span>
-                    </div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ user.username }}</span>
+            <div class="relative">
+              <button @click="toggleOnlineUsersPopup" 
+                      class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+                <i class="fa-solid fa-users text-xs"></i>
+                <span class="font-medium">{{ onlineUsers.length }}</span>
+              </button>
+              <div v-if="showOnlineUsersPopup" class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-50">
+                <div class="p-3">
+                  <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">
+                    <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
                   </div>
+                  <ul class="space-y-1 max-h-48 overflow-y-auto">
+                    <li v-for="(user, index) in onlineUsers" :key="index" class="flex items-center text-sm text-gray-800 dark:text-gray-200 py-1">
+                      <span class="w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0"
+                            :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                        {{ user.username?.charAt(0).toUpperCase() || '?' }}
+                      </span>
+                      <span class="truncate">{{ user.username || 'Guest' }}</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
             
-            <!-- View Mode Toggle -->
-            <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-              <button 
-                @click="setViewMode('edit')"
-                :class="viewMode === 'edit' ? 'bg-white dark:bg-gray-600 text-blue-500 shadow-sm' : 'text-gray-400'"
-                class="px-2 py-1 rounded text-sm transition cursor-pointer"
-                title="編輯"
-              >
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button 
-                @click="setViewMode('both')"
-                :class="viewMode === 'both' ? 'bg-white dark:bg-gray-600 text-blue-500 shadow-sm' : 'text-gray-400'"
-                class="px-2 py-1 rounded text-sm transition cursor-pointer"
-                title="雙欄"
-              >
-                <i class="fa-solid fa-columns"></i>
-              </button>
-              <button 
-                @click="setViewMode('view')"
-                :class="viewMode === 'view' ? 'bg-white dark:bg-gray-600 text-blue-500 shadow-sm' : 'text-gray-400'"
-                class="px-2 py-1 rounded text-sm transition cursor-pointer"
-                title="預覽"
-              >
-                <i class="fa-solid fa-eye"></i>
-              </button>
-            </div>
+            <!-- Permission -->
+            <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fa-solid fa-lock text-xs"></i>
+              <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+            </button>
             
-            <!-- Share Button -->
-            <button 
-              v-if="note.shareId"
-              @click="openSharePage"
-              class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition cursor-pointer"
-            >
-              <i class="fa-solid fa-share-nodes mr-1"></i>分享
+            <!-- Note Settings -->
+            <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fa-solid fa-cog text-xs"></i>
+              <span>筆記設定</span>
+            </button>
+            
+            <!-- Activity Log -->
+            <button @click="showRevisionsModal = true" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fa-solid fa-history text-xs"></i>
+              <span>活動紀錄</span>
+            </button>
+            
+            <!-- Share -->
+            <button v-if="canEdit || isOwner" @click="shareNote" 
+                    class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm text-white transition cursor-pointer">
+              <i class="fa-solid fa-share-alt text-xs"></i>
+              <span>分享</span>
             </button>
           </div>
         </div>
-
-        <!-- Editor / Preview Area -->
-        <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Content Area -->
+        <div ref="contentArea" class="flex-1 flex overflow-hidden relative">
           <!-- Editor -->
-          <div 
-            v-show="viewMode === 'edit' || viewMode === 'both'"
-            class="flex-1 flex flex-col overflow-hidden"
-            :class="viewMode === 'both' ? 'border-r border-gray-300 dark:border-gray-700' : ''"
-          >
-            <div v-if="canEdit" ref="editorContainer" class="flex-1 overflow-auto editor-container"></div>
+          <div v-show="showEditor" class="h-full flex flex-col" 
+               :class="showPreview ? 'border-r border-gray-300 dark:border-gray-700' : ''"
+               :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
+            <div v-if="canEdit" ref="editorContainer" class="flex-1 overflow-hidden relative editor-container"></div>
             <div v-else class="flex-1 flex items-center justify-center text-gray-500">
               <i class="fa-solid fa-lock mr-2"></i>您沒有編輯權限
             </div>
+            <!-- Editor Footer -->
+            <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-between items-center text-xs z-10 shrink-0">
+              <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400 px-2">
+                <span>字數: {{ charCount }}</span>
+                <span>行數: {{ lineCount }}</span>
+              </div>
+            </div>
           </div>
-
-          <!-- Preview -->
-          <div 
-            v-show="viewMode === 'view' || viewMode === 'both'"
-            ref="previewContainer"
-            class="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-900"
-          >
-            <div 
-              class="prose dark:prose-invert max-w-none markdown-body"
-              v-html="renderedContent"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-between px-4 py-2 border-t border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-surface text-xs text-gray-500 shrink-0">
-          <div class="flex items-center gap-4">
-            <span><i class="fa-solid fa-user mr-1"></i>{{ note.owner?.username }}</span>
-            <span><i class="fa-solid fa-clock mr-1"></i>{{ formatDate(note.updatedAt) }}</span>
-            <span><i class="fa-solid fa-text-width mr-1"></i>{{ content.length }} 字元</span>
-          </div>
-          <div v-if="note.book" class="flex items-center">
-            <router-link :to="'/b/' + note.book.id" class="text-blue-500 hover:underline">
-              <i class="fa-solid fa-book mr-1"></i>{{ note.book.title }}
-            </router-link>
+          
+          <!-- Resizable Divider (only in Both mode) -->
+          <div v-if="showEditor && showPreview" 
+               class="w-1 bg-gray-300 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500 cursor-col-resize shrink-0 transition-colors z-10"
+               @mousedown="startResize"
+               title="拖曳調整寬度"></div>
+          
+          <!-- Preview with TOC -->
+          <div v-show="showPreview" class="h-full flex min-w-0 flex-1">
+            <!-- Preview Content -->
+            <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer">
+              <!-- Preview Info Bar -->
+              <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0 sticky top-0 z-20"
+                   :class="{'flex justify-center': !showEditor}">
+                <div :class="{'w-full px-8': !showEditor, 'px-4': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
+                  <div class="flex items-center space-x-4">
+                    <!-- Owner -->
+                    <div v-if="noteOwner" class="flex items-center">
+                      <div class="relative group mr-1.5">
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                              style="font-size: 10px;"
+                              :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                          <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
+                          <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
+                        </span>
+                        <!-- Owner Tooltip -->
+                        <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
+                          <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                          <div class="flex items-center relative z-10">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                 :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                              <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover">
+                              <span v-else class="text-xl text-white font-bold">{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</span>
+                            </div>
+                            <div>
+                              <div class="font-bold text-gray-900 dark:text-white text-base">{{ noteOwner.name || noteOwner.username || 'Guest' }}</div>
+                              <div class="text-xs text-gray-500 dark:text-gray-400">@{{ noteOwner.username || 'guest' }}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
+                    </div>
+                    <!-- Last Editor -->
+                    <div v-if="lastEditor" class="flex items-center">
+                      <div class="relative group mr-1.5">
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                              style="font-size: 10px;"
+                              :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                          <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
+                          <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                        </span>
+                        <!-- Editor Tooltip -->
+                        <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
+                          <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
+                          <div class="flex items-center relative z-10">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
+                                 :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                              <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover">
+                              <span v-else class="text-xl text-white font-bold">{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</span>
+                            </div>
+                            <div>
+                              <div class="font-bold text-gray-900 dark:text-white text-base">{{ lastEditor.name || lastEditor.username || 'Guest' }}</div>
+                              <div class="text-xs text-gray-500 dark:text-gray-400">@{{ lastEditor.username || 'guest' }}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
+                    </div>
+                    <!-- Last Edited Time -->
+                    <div v-if="relativeLastEditedTime" class="flex items-center">
+                      <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
+                      <span>編輯於 {{ relativeLastEditedTime }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Preview Content -->
+              <div class="markdown-body dark:text-gray-300"
+                   :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}">
+                <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent" v-html="renderedContent"></div>
+              </div>
+            </div>
+            
+            <!-- TOC Sidebar (only in view mode, no editor) -->
+            <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
+                 class="w-56 shrink-0 overflow-y-auto p-3 hidden lg:block border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <i class="fa-solid fa-list mr-1"></i> 目錄
+              </h3>
+              <nav class="space-y-1">
+                <a v-for="item in toc" :key="item.id"
+                   @click.prevent="scrollToHeading(item.id)"
+                   class="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer truncate transition-colors"
+                   :style="{ paddingLeft: ((item.level - 1) * 12) + 'px' }">
+                  {{ item.text }}
+                </a>
+              </nav>
+            </div>
           </div>
         </div>
       </template>
@@ -500,80 +892,121 @@ watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
         </div>
       </div>
     </div>
+
+    <!-- Modals -->
+    <SettingsModal 
+      :show="showSettingsModal" 
+      :user="currentUser" 
+      :theme="theme" 
+      :app-version="appVersion"
+      @close="showSettingsModal = false"
+      @set-theme="setTheme"
+      @logout="logout"
+      @open-about="showAboutModal = true"
+    />
+    
+    <AboutModal :show="showAboutModal" :app-version="appVersion" @close="showAboutModal = false" />
+    
+    <UserProfileModal 
+      :show="showUserProfileModal" 
+      :user="currentUser"
+      @close="showUserProfileModal = false"
+      @updated="handleUserProfileUpdate"
+    />
+    
+    <CreateBookModal 
+      :show="showCreateBookModal"
+      @close="showCreateBookModal = false"
+      @create="handleCreateBook"
+    />
+    
+    <RevisionsModal 
+      :show="showRevisionsModal"
+      :note-id="note?.id"
+      :can-edit="canEdit"
+      :current-content="content"
+      @close="showRevisionsModal = false"
+      @restore="handleRevisionRestore"
+    />
+    
+    <InfoModal
+      :show="showNoteInfoModal"
+      type="note"
+      :item="noteInfoItem"
+      :tab="noteInfoModalTab"
+      :editable-permission="permission"
+      :comments-enabled="noteCommentsEnabled"
+      :user-permissions="userPermissions"
+      :loading-user-permissions="loadingUserPermissions"
+      :user-search-query="userSearchQuery"
+      :user-search-results="userSearchResults"
+      :new-user-permission="newUserPermission"
+      :books="books"
+      @close="showNoteInfoModal = false"
+      @update:tab="noteInfoModalTab = $event"
+      @update:permission="handlePermissionChange"
+      @update:commentsEnabled="autoSaveCommentsEnabled"
+      @update:isPublic="autoSaveIsPublic"
+      @update:newUserPermission="newUserPermission = $event"
+      @search-users="(q) => { userSearchQuery = q; searchUsers(); }"
+      @add-user-permission="addUserPermission"
+      @remove-user-permission="removeUserPermission"
+      @update-user-permission="updateUserPermissionLevel"
+    />
   </div>
 </template>
 
 <style>
-/* CodeMirror 6 container */
-.editor-container {
-  height: 100%;
+.note-sidebar-slide-enter-active,
+.note-sidebar-slide-leave-active {
+  transition: opacity 0.3s ease;
+}
+.note-sidebar-slide-enter-active > div:first-child,
+.note-sidebar-slide-leave-active > div:first-child {
+  transition: opacity 0.3s ease;
+}
+.note-sidebar-slide-enter-active > div:last-child,
+.note-sidebar-slide-leave-active > div:last-child {
+  transition: transform 0.3s ease;
+}
+.note-sidebar-slide-enter-from,
+.note-sidebar-slide-leave-to {
+  opacity: 0;
+}
+.note-sidebar-slide-enter-from > div:last-child,
+.note-sidebar-slide-leave-to > div:last-child {
+  transform: translateX(-100%);
 }
 
-.editor-container .cm-editor {
-  height: 100%;
-}
+.editor-container { height: 100%; }
+.editor-container .cm-editor { height: 100%; background: #fff; }
+.editor-container .cm-scroller { overflow: auto; }
+.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; padding: 16px; }
+.editor-container .cm-line { padding: 0 4px; }
+.editor-container .cm-gutters { background-color: #f8f9fa; border-right: 1px solid #e5e5e5; }
 
-.editor-container .cm-scroller {
-  overflow: auto;
-}
+.dark .editor-container .cm-editor { background: #1e1e1e; }
+.dark .editor-container .cm-gutters { background-color: #252526; border-color: #3c3c3c; }
 
-.editor-container .cm-content {
-  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  padding: 16px;
-}
-
-.editor-container .cm-line {
-  padding: 0 4px;
-}
-
-/* Light theme adjustments */
-.editor-container .cm-gutters {
-  background-color: #f8f9fa;
-  border-right: 1px solid #e5e5e5;
-}
-
-/* Markdown preview styles */
-.markdown-body {
-  font-size: 16px;
-  line-height: 1.6;
-}
-
+.markdown-body { font-size: 16px; line-height: 1.6; }
 .markdown-body h1 { font-size: 2em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
 .markdown-body h2 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
 .markdown-body h3 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
-.markdown-body h4 { font-size: 1em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
 .markdown-body p { margin: 1em 0; }
 .markdown-body ul, .markdown-body ol { margin: 1em 0; padding-left: 2em; }
-.markdown-body li { margin: 0.25em 0; }
-.markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; font-family: 'Fira Code', monospace; }
+.markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; }
 .markdown-body pre.hljs { padding: 1em; background: #0d1117; }
 .markdown-body blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 1em; color: #666; }
 .markdown-body table { border-collapse: collapse; margin: 1em 0; width: 100%; }
 .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 0.5em 1em; }
-.markdown-body th { background: #f5f5f5; font-weight: bold; }
-.markdown-body img { max-width: 100%; border-radius: 4px; }
 .markdown-body a { color: #0366d6; text-decoration: none; }
 .markdown-body a:hover { text-decoration: underline; }
-.markdown-body hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
-.markdown-body mark { background-color: #fff3b0; padding: 0.1em 0.2em; }
-.markdown-body ins { text-decoration: underline; }
-.markdown-body sub, .markdown-body sup { font-size: 0.8em; }
 
-/* Task list styles */
-.markdown-body .task-list-item { list-style: none; }
-.markdown-body .task-list-item input[type="checkbox"] { margin-right: 0.5em; }
-
-/* Dark mode */
 .dark .markdown-body code { background: #2d2d2d; }
 .dark .markdown-body pre.hljs { background: #1e1e1e; }
 .dark .markdown-body blockquote { border-color: #444; color: #aaa; }
 .dark .markdown-body th, .dark .markdown-body td { border-color: #444; }
-.dark .markdown-body th { background: #2d2d2d; }
-.dark .markdown-body h1, .dark .markdown-body h2 { border-color: #444; }
 .dark .markdown-body a { color: #58a6ff; }
-.dark .markdown-body mark { background-color: #634d00; }
 </style>
