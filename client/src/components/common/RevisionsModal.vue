@@ -5,6 +5,9 @@
 import { ref, watch, computed } from 'vue'
 import api from '@/composables/useApi'
 import dayjs from 'dayjs'
+import DiffMatchPatch from 'diff-match-patch'
+
+const dmp = new DiffMatchPatch()
 
 const props = defineProps({
   show: Boolean,
@@ -24,6 +27,7 @@ const revisionContent = ref('')
 const diffHtml = ref('')
 const diffCompareMode = ref('previous')
 const savingVersion = ref(false)
+const previousRevisionContent = ref('')
 
 // Load revisions when modal opens
 watch(() => props.show, async (newVal) => {
@@ -34,6 +38,7 @@ watch(() => props.show, async (newVal) => {
     revisions.value = []
     selectedRevision.value = null
     diffHtml.value = ''
+    previousRevisionContent.value = ''
   }
 })
 
@@ -56,6 +61,17 @@ const selectRevision = async (rev) => {
   try {
     const data = await api.getRevision(props.noteId, rev.id)
     revisionContent.value = data.content || ''
+    
+    // Load previous revision content for comparison
+    const idx = revisions.value.findIndex(r => r.id === rev.id)
+    if (idx < revisions.value.length - 1) {
+      const prevRev = revisions.value[idx + 1]
+      const prevData = await api.getRevision(props.noteId, prevRev.id)
+      previousRevisionContent.value = prevData.content || ''
+    } else {
+      previousRevisionContent.value = ''
+    }
+    
     recalculateDiff()
   } catch (e) {
     console.error('Failed to load revision:', e)
@@ -64,7 +80,7 @@ const selectRevision = async (rev) => {
   }
 }
 
-// Calculate diff
+// Calculate diff with diff-match-patch
 const recalculateDiff = () => {
   if (!selectedRevision.value) return
   
@@ -72,20 +88,27 @@ const recalculateDiff = () => {
   if (diffCompareMode.value === 'current') {
     baseContent = props.currentContent
   } else {
-    // Find previous revision
-    const idx = revisions.value.findIndex(r => r.id === selectedRevision.value.id)
-    if (idx < revisions.value.length - 1) {
-      // For simplicity, we'll compare with empty string if no previous revision content
-      baseContent = ''
+    baseContent = previousRevisionContent.value
+  }
+  
+  // Use diff-match-patch to calculate differences
+  const diffs = dmp.diff_main(baseContent, revisionContent.value)
+  dmp.diff_cleanupSemantic(diffs)
+  
+  // Generate HTML with highlighting
+  let html = ''
+  for (const [op, text] of diffs) {
+    const escapedText = escapeHtml(text).replace(/\n/g, '<br>')
+    if (op === DiffMatchPatch.DIFF_INSERT) {
+      html += `<span class="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200">${escapedText}</span>`
+    } else if (op === DiffMatchPatch.DIFF_DELETE) {
+      html += `<span class="bg-red-200 dark:bg-red-800/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`
+    } else {
+      html += `<span class="text-gray-800 dark:text-gray-200">${escapedText}</span>`
     }
   }
   
-  // Simple diff display - show revision content with basic highlighting
-  const lines = revisionContent.value.split('\n')
-  diffHtml.value = lines.map(line => {
-    const escapedLine = escapeHtml(line)
-    return `<div class="text-gray-800 dark:text-gray-200">${escapedLine || '&nbsp;'}</div>`
-  }).join('')
+  diffHtml.value = html
 }
 
 // Escape HTML

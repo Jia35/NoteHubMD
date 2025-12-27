@@ -423,7 +423,6 @@ const loadNote = async () => {
 
 // Init CodeMirror
 const initEditor = () => {
-  console.log('initEditor called', { editorContainer: editorContainer.value, editorView: editorView.value })
   if (!editorContainer.value) {
     console.warn('Editor container not found, retrying...')
     setTimeout(initEditor, 100)
@@ -488,7 +487,6 @@ const initEditor = () => {
     }),
     parent: editorContainer.value
   })
-  console.log('Editor created successfully')
 }
 
 // Render markdown and generate TOC
@@ -995,6 +993,18 @@ const autoSaveIsPublic = async (isPublic) => {
   }
 }
 
+// Move note to book
+const moveNoteToBook = async (bookId) => {
+  try {
+    await api.updateNote(note.value.id, { bookId: bookId || null })
+    note.value.bookId = bookId || null
+    book.value = bookId ? books.value.find(b => b.id === bookId) || null : null
+    showAlert?.('筆記已移動', 'success')
+  } catch (e) {
+    showAlert?.('移動筆記失敗', 'error')
+  }
+}
+
 // User permissions
 const searchUsers = async () => {
   if (!userSearchQuery.value.trim()) {
@@ -1489,6 +1499,7 @@ watch(() => route.params.id, (newId, oldId) => {
       @add-user-permission="addUserPermission"
       @remove-user-permission="removeUserPermission"
       @update-user-permission="updateUserPermissionLevel"
+      @move-note="moveNoteToBook"
     />
 
     <ImageLightbox 
