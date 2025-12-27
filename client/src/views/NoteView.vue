@@ -633,6 +633,7 @@ const renderMarkdown = () => {
             securityLevel: 'loose',
             fontFamily: 'inherit'
           })
+          await new Promise(resolve => setTimeout(resolve, 50))
           await mermaid.run({ nodes: mermaidDivs })
         } catch (e) {
           console.warn('Mermaid rendering error:', e)
