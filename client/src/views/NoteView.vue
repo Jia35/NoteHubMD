@@ -527,7 +527,7 @@ const initEditor = () => {
       if (update.docChanged) {
         content.value = update.state.doc.toString()
         debouncedSave()
-        renderMarkdown()
+        debouncedRender()
         if (note.value) {
           editNote(note.value.id, content.value)
         }
@@ -571,6 +571,14 @@ const initEditor = () => {
 }
 
 // Render markdown and generate TOC
+let renderTimeout = null
+const debouncedRender = () => {
+  if (renderTimeout) clearTimeout(renderTimeout)
+  renderTimeout = setTimeout(() => {
+    renderMarkdown()
+  }, 300)
+}
+
 const renderMarkdown = () => {
   renderedContent.value = md.render(content.value)
   
@@ -1051,6 +1059,14 @@ const saveNote = async () => {
   }
 }
 
+// Global save handler
+const handleGlobalSave = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    saveNote()
+  }
+}
+
 // Set mode
 const setMode = (m) => {
   mode.value = m
@@ -1249,12 +1265,17 @@ const getRelativeTime = (date) => dayjs(date).fromNow()
 
 // Lifecycle
 onMounted(() => {
+  // Global Ctrl+S handler
+  window.addEventListener('keydown', handleGlobalSave)
+
   updateHighlightStyle(theme.value)
   loadNote()
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalSave)
   if (saveTimeout) clearTimeout(saveTimeout)
+  if (renderTimeout) clearTimeout(renderTimeout)
   if (editorView.value) {
     editorView.value.destroy()
     editorView.value = null
