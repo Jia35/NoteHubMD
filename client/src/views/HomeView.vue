@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav, BookCard, NoteCard } from '@/components'
+import { SidebarNav, BookCard, NoteCard, InfoModal } from '@/components'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 
@@ -161,6 +161,23 @@ const showCreateBookModal = ref(false)
 const newBookTitle = ref('')
 const newBookDescription = ref('')
 
+// Info Modal State
+const showInfoModal = ref(false)
+const infoModalType = ref('') // 'book' or 'note'
+const infoModalItem = ref({})
+const infoModalTab = ref('info') // 'info', 'permission', 'share'
+const editableDescription = ref('')
+const editableTags = ref([])
+const newTag = ref('')
+const infoCommentsEnabled = ref(true)
+
+// User permissions state for Info Modal
+const infoUserPermissions = ref([])
+const infoUserSearchQuery = ref('')
+const infoUserSearchResults = ref([])
+const infoNewUserPermission = ref('edit')
+const infoLoadingUserPermissions = ref(false)
+
 // Export/Import Notes
 const exportingNotes = ref(false)
 const importingNotes = ref(false)
@@ -170,6 +187,137 @@ const importFolderInput = ref(null)
 
 // About Modal
 const showAboutModal = ref(false)
+
+// Info modal functions
+const editablePermission = ref('private')
+
+const openInfoModal = (type, item, tab = 'info') => {
+  infoModalType.value = type
+  infoModalItem.value = { ...item }
+  editableDescription.value = item.description || ''
+  editableTags.value = [...(item.tags || [])]
+  editablePermission.value = item.permission || 'private'
+  infoCommentsEnabled.value = !item.commentsDisabled
+  infoModalTab.value = tab
+  showInfoModal.value = true
+  openMenuId.value = null
+}
+
+const addEditableTag = async (tag) => {
+  if (!tag) return
+  if (editableTags.value.includes(tag)) {
+    return
+  }
+  editableTags.value.push(tag)
+  await autoSaveTags()
+}
+
+const removeEditableTag = async (tagToRemove) => {
+  editableTags.value = editableTags.value.filter(t => t !== tagToRemove)
+  await autoSaveTags()
+}
+
+// Auto-save functions
+const autoSaveTags = async () => {
+  try {
+    if (infoModalType.value === 'book') {
+      await api.updateBook(infoModalItem.value.id, { tags: editableTags.value })
+      const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
+      if (bookIndex !== -1) books.value[bookIndex].tags = [...editableTags.value]
+    } else {
+      await api.updateNote(infoModalItem.value.id, { tags: editableTags.value })
+      const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
+      if (noteIndex !== -1) notes.value[noteIndex].tags = [...editableTags.value]
+    }
+  } catch (e) {
+    showAlert?.('標籤儲存失敗', 'error')
+  }
+}
+
+const autoSaveTitle = async (newTitle) => {
+  infoModalItem.value.title = newTitle
+  if (infoModalType.value !== 'book' || !infoModalItem.value.canEdit) return
+  try {
+    await api.updateBook(infoModalItem.value.id, { title: newTitle })
+    const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
+    if (bookIndex !== -1) books.value[bookIndex].title = newTitle
+  } catch (e) {
+    showAlert?.('標題儲存失敗', 'error')
+  }
+}
+
+const autoSaveDescription = async (newDesc) => {
+  editableDescription.value = newDesc
+  if (infoModalType.value !== 'book' || !infoModalItem.value.canEdit) return
+  try {
+    await api.updateBook(infoModalItem.value.id, { description: newDesc })
+    const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
+    if (bookIndex !== -1) books.value[bookIndex].description = newDesc
+  } catch (e) {
+    showAlert?.('描述儲存失敗', 'error')
+  }
+}
+
+const autoSavePermission = async (newPermission) => {
+  editablePermission.value = newPermission
+  if (!infoModalItem.value.isOwner) return
+  try {
+    if (infoModalType.value === 'book') {
+      await api.updateBookPermission(infoModalItem.value.id, newPermission)
+      const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
+      if (bookIndex !== -1) books.value[bookIndex].permission = newPermission
+    } else {
+      await api.updatePermission(infoModalItem.value.id, newPermission)
+      const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
+      if (noteIndex !== -1) notes.value[noteIndex].permission = newPermission
+    }
+  } catch (e) {
+    showAlert?.('權限儲存失敗', 'error')
+  }
+}
+
+const autoSaveCommentsEnabled = async (enabled) => {
+  infoCommentsEnabled.value = enabled
+  if (infoModalType.value !== 'note' || !infoModalItem.value.isOwner) return
+  try {
+    await api.updateNote(infoModalItem.value.id, { commentsDisabled: !enabled })
+    const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
+    if (noteIndex !== -1) notes.value[noteIndex].commentsDisabled = !enabled
+  } catch (e) {
+    showAlert?.('留言設定儲存失敗', 'error')
+  }
+}
+
+const autoSaveIsPublic = async (isPublic) => {
+  infoModalItem.value.isPublic = isPublic
+  if (!infoModalItem.value.isOwner) return
+  try {
+    if (infoModalType.value === 'book') {
+      await api.updateBook(infoModalItem.value.id, { isPublic })
+      const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
+      if (bookIndex !== -1) books.value[bookIndex].isPublic = isPublic
+    } else {
+      await api.updateNote(infoModalItem.value.id, { isPublic })
+      const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
+      if (noteIndex !== -1) notes.value[noteIndex].isPublic = isPublic
+    }
+  } catch (e) {
+    showAlert?.('公開設定儲存失敗', 'error')
+  }
+}
+
+// Move Note
+const handleMoveNote = async (bookId) => {
+  try {
+    const noteId = infoModalItem.value.id
+    await api.updateNote(noteId, { bookId: bookId || null })
+    showAlert?.('移動成功', 'success')
+    showInfoModal.value = false
+    loadData()
+  } catch (e) {
+    showAlert?.('移動失敗', 'error')
+  }
+}
 
 // Load data
 const loadData = async () => {
@@ -736,7 +884,7 @@ onUnmounted(() => {
               :is-pinned="isPinned('book', book.id)"
               @click="openBook(book)"
               @toggle-menu="toggleMenu('book-' + book.id)"
-              @open-info="() => {}"
+              @open-info="openInfoModal('book', book)"
               @toggle-pin="togglePin('book', book)"
               @delete="deleteBook(book)"
             />
@@ -766,7 +914,8 @@ onUnmounted(() => {
               :is-pinned="isPinned('note', note.id)"
               @click="openNote(note)"
               @toggle-menu="toggleMenu('note-' + note.id)"
-              @open-info="() => {}"
+              @open-info="openInfoModal('note', note)"
+              @open-move="openInfoModal('note', note, 'info')"
               @toggle-pin="togglePin('note', note)"
               @delete="deleteNote(note)"
             />
@@ -783,7 +932,8 @@ onUnmounted(() => {
               :is-pinned="isPinned('note', note.id)"
               @click="openNote(note)"
               @toggle-menu="toggleMenu('note-' + note.id)"
-              @open-info="() => {}"
+              @open-info="openInfoModal('note', note)"
+              @open-move="openInfoModal('note', note, 'info')"
               @toggle-pin="togglePin('note', note)"
               @delete="deleteNote(note)"
             />
@@ -1115,6 +1265,28 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+    </Teleport>
+    <!-- Info Modal -->
+    <Teleport to="body">
+      <InfoModal
+        :show="showInfoModal"
+        :type="infoModalType"
+        :item="infoModalItem"
+        :tab="infoModalTab"
+        :user="user"
+        :user-permissions="infoUserPermissions"
+        :user-search-results="infoUserSearchResults"
+        :loading-user-permissions="infoLoadingUserPermissions"
+        @close="showInfoModal = false"
+        @update:title="autoSaveTitle"
+        @update:description="autoSaveDescription"
+        @update:permission="autoSavePermission"
+        @update:commentsEnabled="autoSaveCommentsEnabled"
+        @update:isPublic="autoSaveIsPublic"
+        @add-tag="addEditableTag"
+        @remove-tag="removeEditableTag"
+        @move-note="handleMoveNote"
+      />
     </Teleport>
   </div>
 </template>

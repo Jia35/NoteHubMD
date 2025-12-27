@@ -1,4 +1,6 @@
 <script setup>
+import { ref, computed } from 'vue'
+
 const props = defineProps({
   note: { type: Object, required: true },
   mode: { type: String, default: 'grid' },
@@ -32,35 +34,34 @@ const formatDate = (date) => {
       <!-- Dropdown Menu -->
       <div
         v-if="showMenu"
-        class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+        class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[100]"
       >
         <button
           @click.stop="emit('open-info')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg cursor-pointer"
         >
-          <i class="fa-solid fa-circle-info w-4 mr-2 inline-block text-center"></i>資訊
+          <i class="fa-solid fa-circle-info w-4 mr-1 inline-block text-center"></i>資訊
         </button>
         <button
           v-if="showMoveOption"
           @click.stop="emit('open-move')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
-          <i class="fa-solid fa-folder-open w-4 mr-2 inline-block text-center"></i>移動至...
+          <i class="fa-solid fa-folder-open w-4 mr-1 inline-block text-center"></i>移動至...
         </button>
         <button
           @click.stop="emit('toggle-pin')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
-          <i class="fa-solid fa-thumbtack w-4 mr-2 inline-block text-center"></i>
-          {{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
+          <i class="fa-solid fa-thumbtack w-4 mr-1 inline-block text-center"></i>{{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
         </button>
         <button
           @click.stop="note.canDelete && emit('delete')"
-          :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+          :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'text-gray-400 cursor-not-allowed'"
           class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
           :disabled="!note.canDelete"
         >
-          <i class="fa-solid fa-trash w-4 mr-2 inline-block text-center"></i>刪除
+          <i class="fa-solid fa-trash w-4 mr-1 inline-block text-center"></i>刪除
         </button>
       </div>
     </div>
@@ -157,17 +158,17 @@ const formatDate = (date) => {
       <!-- Dropdown Menu -->
       <div
         v-if="showMenu"
-        class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+        class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[100]"
       >
         <button
           @click.stop="emit('open-info')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg cursor-pointer"
         >
           <i class="fa-solid fa-circle-info w-4 mr-2 inline-block text-center"></i>資訊
         </button>
         <button
           @click.stop="emit('toggle-pin')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
           <i class="fa-solid fa-thumbtack w-4 mr-2 inline-block text-center"></i>
           {{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
@@ -175,13 +176,13 @@ const formatDate = (date) => {
         <button
           v-if="showMoveOption"
           @click.stop="emit('open-move')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
           <i class="fa-solid fa-folder-open w-4 mr-2 inline-block text-center"></i>移動至...
         </button>
         <button
           @click.stop="note.canDelete && emit('delete')"
-          :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+          :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'text-gray-400 cursor-not-allowed'"
           class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
           :disabled="!note.canDelete"
         >

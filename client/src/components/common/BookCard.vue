@@ -49,24 +49,23 @@ const formatDate = (date) => {
       >
         <button
           @click.stop="emit('open-info')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg cursor-pointer"
         >
-          <i class="fa-solid fa-circle-info w-4 mr-2 inline-block text-center"></i>資訊
+          <i class="fa-solid fa-circle-info w-4 mr-1 inline-block text-center"></i>資訊
         </button>
         <button
           @click.stop="emit('toggle-pin')"
-          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
-          <i class="fa-solid fa-thumbtack w-4 mr-2 inline-block text-center"></i>
-          {{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
+          <i class="fa-solid fa-thumbtack w-4 mr-1 inline-block text-center"></i>{{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
         </button>
         <button
           @click.stop="book.canDelete && emit('delete')"
-          :class="book.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'"
+          :class="book.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'text-gray-400 cursor-not-allowed'"
           class="w-full px-4 py-2 text-left text-sm rounded-b-lg"
           :disabled="!book.canDelete"
         >
-          <i class="fa-solid fa-trash w-4 mr-2 inline-block text-center"></i>刪除
+          <i class="fa-solid fa-trash w-4 mr-1 inline-block text-center"></i>刪除
         </button>
       </div>
     </Teleport>
