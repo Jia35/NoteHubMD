@@ -19,10 +19,16 @@ import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, Cre
 
 // CodeMirror 6
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Compartment } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
+import {
+  androidstudio, atomone, aura, copilot, darcula, eclipse, githubLight,
+  githubDark, gruvboxDark, kimbie, material, monokai, monokaiDimmed, noctisLilac,
+  okaidia, quietlight, solarizedLight, solarizedDark, sublime, tokyoNightDay,
+  tomorrowNightBlue, vscodeDark, whiteLight, xcodeLight, xcodeDark
+} from '@uiw/codemirror-themes-all'
 
 // Markdown-it
 import MarkdownIt from 'markdown-it'
@@ -136,6 +142,72 @@ const noteInfoModalTab = ref('info')
 // Settings
 const theme = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
 const appVersion = ref('')
+
+// Editor Theme
+const editorThemes = [
+  // Defaults
+  { label: '[預設] Default', value: 'default', theme: [] },
+
+  // Dark Themes
+  // { label: '[深色] Abcdef', value: 'abcdef', theme: abcdef },
+  // { label: '[深色] Abyss', value: 'abyss', theme: abyss },
+  { label: '[深色] Android Studio', value: 'androidstudio', theme: androidstudio },
+  // { label: '[深色] Andromeda', value: 'andromeda', theme: andromeda },
+  { label: '[深色] Atom One', value: 'atom-one', theme: atomone },
+  { label: '[深色] Aura', value: 'aura', theme: aura },
+  // { label: '[深色] Bespin', value: 'bespin', theme: bespin },
+  // { label: '[深色] Console', value: 'console', theme: consoleDark },
+  { label: '[深色] Copilot', value: 'copilot', theme: copilot },
+  { label: '[深色] Darcula', value: 'darcula', theme: darcula },
+  // { label: '[深色] Dracula', value: 'dracula', theme: dracula },
+  // { label: '[深色] Duotone Dark', value: 'duotone-dark', theme: duotoneDark },
+  { label: '[深色] GitHub Dark', value: 'github-dark', theme: githubDark },
+  { label: '[深色] Gruvbox Dark', value: 'gruvbox-dark', theme: gruvboxDark },
+  { label: '[深色] Kimbie', value: 'kimbie', theme: kimbie },
+  { label: '[深色] Material', value: 'material', theme: material },
+  { label: '[深色] Monokai', value: 'monokai', theme: monokai },
+  { label: '[深色] Monokai Dimmed', value: 'monokai-dimmed', theme: monokaiDimmed },
+  // { label: '[深色] Nord', value: 'nord', theme: nord },
+  { label: '[深色] Okaidia', value: 'okaidia', theme: okaidia },
+  { label: '[深色] One Dark', value: 'one-dark', theme: oneDark },
+  // { label: '[深色] Red', value: 'red', theme: red },
+  { label: '[深色] Solarized Dark', value: 'solarized-dark', theme: solarizedDark },
+  { label: '[深色] Sublime', value: 'sublime', theme: sublime },
+  // { label: '[深色] Tokyo Night', value: 'tokyo-night', theme: tokyoNight },
+  // { label: '[深色] Tokyo Night Storm', value: 'tokyo-night-storm', theme: tokyoNightStorm },
+  { label: '[深色] Tomorrow Night Blue', value: 'tomorrow-night-blue', theme: tomorrowNightBlue },
+  { label: '[深色] VS Code Dark', value: 'vscode-dark', theme: vscodeDark },
+  { label: '[深色] Xcode Dark', value: 'xcode-dark', theme: xcodeDark },
+
+  // Light Themes
+  // { label: '[亮色] BBEdit', value: 'bbedit', theme: bbedit },
+  // { label: '[亮色] Duotone Light', value: 'duotone-light', theme: duotoneLight },
+  { label: '[亮色] Eclipse', value: 'eclipse', theme: eclipse },
+  { label: '[亮色] GitHub Light', value: 'github-light', theme: githubLight },
+  // { label: '[亮色] Gruvbox Light', value: 'gruvbox-light', theme: gruvboxLight },
+  { label: '[亮色] Noctis Lilac', value: 'noctis-lilac', theme: noctisLilac },
+  { label: '[亮色] Quiet Light', value: 'quiet-light', theme: quietlight },
+  { label: '[亮色] Solarized Light', value: 'solarized-light', theme: solarizedLight },
+  { label: '[亮色] Tokyo Night Day', value: 'tokyo-night-day', theme: tokyoNightDay },
+  { label: '[亮色] White', value: 'white', theme: whiteLight },
+  { label: '[亮色] Xcode Light', value: 'xcode-light', theme: xcodeLight },
+]
+
+const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'monokai' : 'default'))
+const themeCompartment = new Compartment()
+
+watch(selectedEditorTheme, (newVal) => {
+  localStorage.setItem('NoteHubMD-editorTheme', newVal)
+  if (editorView.value) {
+    const themeItem = editorThemes.find(t => t.value === newVal)
+    const themeExtension = themeItem ? themeItem.theme : []
+    editorView.value.dispatch({
+      effects: themeCompartment.reconfigure(themeExtension)
+    })
+  }
+})
+
+
 
 // Permission options
 const permissionOptions = [
@@ -318,6 +390,7 @@ const initEditor = () => {
     placeholder('開始編輯筆記...'),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     EditorView.lineWrapping,
+    themeCompartment.of(editorThemes.find(t => t.value === selectedEditorTheme.value)?.theme || []),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         content.value = update.state.doc.toString()
@@ -330,9 +403,7 @@ const initEditor = () => {
     })
   ]
   
-  if (isDark) {
-    extensions.push(oneDark)
-  }
+
   
   editorView.value = new EditorView({
     state: EditorState.create({
@@ -778,6 +849,9 @@ watch(() => route.params.id, (newId, oldId) => {
                 <span>字數: {{ charCount }}</span>
                 <span>行數: {{ lineCount }}</span>
               </div>
+              <select v-model="selectedEditorTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer mr-2">
+                <option v-for="t in editorThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+              </select>
             </div>
           </div>
           
@@ -979,14 +1053,13 @@ watch(() => route.params.id, (newId, oldId) => {
 }
 
 .editor-container { height: 100%; }
-.editor-container .cm-editor { height: 100%; background: #fff; }
+.editor-container .cm-editor { height: 100%; }
 .editor-container .cm-scroller { overflow: auto; }
 .editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; padding: 16px; }
 .editor-container .cm-line { padding: 0 4px; }
-.editor-container .cm-gutters { background-color: #f8f9fa; border-right: 1px solid #e5e5e5; }
+.editor-container .cm-gutters { background-color: transparent; border-right: 1px solid #e5e5e5; }
 
-.dark .editor-container .cm-editor { background: #1e1e1e; }
-.dark .editor-container .cm-gutters { background-color: #252526; border-color: #3c3c3c; }
+.dark .editor-container .cm-gutters { border-color: #3c3c3c; }
 
 .markdown-body { font-size: 16px; line-height: 1.6; }
 .markdown-body h1 { font-size: 2em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
