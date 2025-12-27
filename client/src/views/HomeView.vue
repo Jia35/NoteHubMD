@@ -51,6 +51,22 @@ const displayBooks = computed(() => {
   }
 })
 
+// Sorted books
+const sortedBooks = computed(() => {
+  return [...displayBooks.value].sort((a, b) => {
+    let aVal, bVal
+    if (sortBy.value === 'title') {
+      aVal = (a.title || '').toLowerCase()
+      bVal = (b.title || '').toLowerCase()
+      return sortOrder.value === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
+    } else {
+      aVal = new Date(a[sortBy.value] || 0).getTime()
+      bVal = new Date(b[sortBy.value] || 0).getTime()
+      return sortOrder.value === 'asc' ? aVal - bVal : bVal - aVal
+    }
+  })
+})
+
 // Display notes (uncategorized, not in trash)
 const displayNotes = computed(() => {
   const filtered = notes.value.filter(n => !n.deletedAt && !n.bookId)
@@ -60,6 +76,62 @@ const displayNotes = computed(() => {
     return filtered.filter(n => n.isPublic)
   }
 })
+
+// Notes sorting and display
+const sortBy = ref(localStorage.getItem('NoteHubMD-sortBy') || 'updatedAt')
+const sortOrder = ref(localStorage.getItem('NoteHubMD-sortOrder') || 'desc')
+const displayMode = ref(localStorage.getItem('NoteHubMD-displayMode') || 'grid')
+const currentPage = ref(1)
+const pageSize = 20
+
+const sortOptions = [
+  { value: 'updatedAt', label: '更新時間' },
+  { value: 'createdAt', label: '建立時間' },
+  { value: 'title', label: '標題' }
+]
+
+// Sorted notes
+const sortedNotes = computed(() => {
+  const sorted = [...displayNotes.value].sort((a, b) => {
+    let aVal, bVal
+    if (sortBy.value === 'title') {
+      aVal = (a.title || '').toLowerCase()
+      bVal = (b.title || '').toLowerCase()
+      return sortOrder.value === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
+    } else {
+      aVal = new Date(a[sortBy.value] || 0).getTime()
+      bVal = new Date(b[sortBy.value] || 0).getTime()
+      return sortOrder.value === 'asc' ? aVal - bVal : bVal - aVal
+    }
+  })
+  return sorted
+})
+
+// Paginated notes
+const paginatedNotes = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return sortedNotes.value.slice(start, start + pageSize)
+})
+
+const totalPages = computed(() => Math.ceil(sortedNotes.value.length / pageSize))
+
+// Save preferences
+const setSortBy = (value) => {
+  sortBy.value = value
+  currentPage.value = 1
+  localStorage.setItem('NoteHubMD-sortBy', value)
+}
+
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
+  currentPage.value = 1
+  localStorage.setItem('NoteHubMD-sortOrder', sortOrder.value)
+}
+
+const setDisplayMode = (mode) => {
+  displayMode.value = mode
+  localStorage.setItem('NoteHubMD-displayMode', mode)
+}
 
 // Menu state
 const openMenuId = ref(null)
@@ -606,13 +678,49 @@ onUnmounted(() => {
           <span>{{ isUncategorizedPage ? '未分類筆記' : 'Home' }}</span>
         </div>
 
+        <!-- Sort & Display Controls (at top, applies to all) -->
+        <div v-if="!isUncategorizedPage || sortedNotes.length > 0" class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+          <h1 v-if="!isUncategorizedPage" class="text-2xl font-bold text-gray-800 dark:text-white">
+            <i class="fa-solid fa-house mr-2"></i>首頁
+          </h1>
+          <h1 v-else class="text-2xl font-bold text-gray-800 dark:text-white">
+            <i class="fa-solid fa-inbox mr-2"></i>未分類筆記
+          </h1>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+            <select :value="sortBy" @change="setSortBy($event.target.value)"
+                    class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+              <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+            <button @click="toggleSortOrder"
+                    class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer"
+                    :title="sortOrder === 'desc' ? '降冪' : '升冪'">
+              <i :class="sortOrder === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short'"></i>
+            </button>
+            <!-- View Toggle -->
+            <div class="border-l border-gray-300 dark:border-gray-600 h-6 mx-2"></div>
+            <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 text-sm">
+              <button type="button" @click="setDisplayMode('grid')"
+                      :class="displayMode === 'grid' ? 'bg-white dark:bg-gray-600 text-blue-500 shadow-sm' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                      class="px-2 py-1 rounded transition cursor-pointer" title="格狀顯示">
+                <i class="fa-solid fa-border-all pointer-events-none"></i>
+              </button>
+              <button type="button" @click="setDisplayMode('list')"
+                      :class="displayMode === 'list' ? 'bg-white dark:bg-gray-600 text-blue-500 shadow-sm' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                      class="px-2 py-1 rounded transition cursor-pointer" title="清單顯示">
+                <i class="fa-solid fa-list pointer-events-none"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Books Section (not shown on uncategorized page) -->
         <section v-if="!isUncategorizedPage" class="mb-6">
           <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
           <div class="flex gap-4 pb-4" style="overflow-x: auto;">
             <!-- Empty State -->
             <div
-              v-if="displayBooks.length === 0"
+              v-if="sortedBooks.length === 0"
               @click="openCreateBookModal"
               class="w-64 shrink-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6"
             >
@@ -621,7 +729,7 @@ onUnmounted(() => {
             </div>
             <!-- Book Cards -->
             <BookCard
-              v-for="book in displayBooks"
+              v-for="book in sortedBooks"
               :key="book.id"
               :book="book"
               :show-menu="openMenuId === 'book-' + book.id"
@@ -638,18 +746,19 @@ onUnmounted(() => {
         <!-- Notes Section (Uncategorized) -->
         <section>
           <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">{{ isUncategorizedPage ? '未分類筆記' : 'Notes' }}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <!-- Empty State -->
-            <div
-              v-if="displayNotes.length === 0"
-              @click="createNote"
-              class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]"
-            >
-              <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
-              <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
-            </div>
+
+          <!-- Empty State -->
+          <div v-if="sortedNotes.length === 0"
+               @click="createNote"
+               class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]">
+            <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
+            <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
+          </div>
+
+          <!-- Grid View -->
+          <div v-else-if="displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <NoteCard
-              v-for="note in displayNotes"
+              v-for="note in paginatedNotes"
               :key="note.id"
               :note="note"
               mode="grid"
@@ -661,6 +770,36 @@ onUnmounted(() => {
               @toggle-pin="togglePin('note', note)"
               @delete="deleteNote(note)"
             />
+          </div>
+
+          <!-- List View -->
+          <div v-else class="flex flex-col gap-2">
+            <NoteCard
+              v-for="note in paginatedNotes"
+              :key="note.id"
+              :note="note"
+              mode="list"
+              :show-menu="openMenuId === 'note-' + note.id"
+              :is-pinned="isPinned('note', note.id)"
+              @click="openNote(note)"
+              @toggle-menu="toggleMenu('note-' + note.id)"
+              @open-info="() => {}"
+              @toggle-pin="togglePin('note', note)"
+              @delete="deleteNote(note)"
+            />
+          </div>
+
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="flex justify-center items-center gap-2 mt-6">
+            <button @click="currentPage = currentPage - 1" :disabled="currentPage <= 1"
+                    class="px-3 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span class="text-sm text-gray-600 dark:text-gray-400">{{ currentPage }} / {{ totalPages }}</span>
+            <button @click="currentPage = currentPage + 1" :disabled="currentPage >= totalPages"
+                    class="px-3 py-1 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
         </section>
       </div>
