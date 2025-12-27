@@ -61,8 +61,9 @@ const allBooks = ref([])
 
 // Sorted notes
 const sortedNotes = computed(() => {
-  if (!book.value?.notes) return []
-  return [...book.value.notes].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const notes = book.value?.Notes || book.value?.notes
+  if (!notes) return []
+  return [...notes].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 })
 
 // Available books for moving notes
@@ -104,6 +105,13 @@ const loadBook = async () => {
     allBooks.value = booksData
 
     const data = await api.getBook(route.params.id)
+    
+    // Normalize API response: Map Notes (capitalized) to notes (lowercase)
+    if (data.Notes) {
+      data.notes = data.Notes
+      delete data.Notes
+    }
+    
     book.value = data
     if (!book.value.tags) book.value.tags = []
     // Ensure these properties are on the book object for InfoModal
