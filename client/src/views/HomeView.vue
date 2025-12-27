@@ -1273,6 +1273,7 @@ onUnmounted(() => {
         :type="infoModalType"
         :item="infoModalItem"
         :tab="infoModalTab"
+        @update:tab="infoModalTab = $event"
         :user="user"
         :user-permissions="infoUserPermissions"
         :user-search-results="infoUserSearchResults"
