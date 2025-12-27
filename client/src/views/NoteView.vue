@@ -446,11 +446,21 @@ const loadNote = async () => {
     isOwner.value = data.isOwner || false
     canEdit.value = data.canEdit || false
     permission.value = data.permission || 'private'
-    book.value = data.book || null
     noteCommentsEnabled.value = data.commentsEnabled !== false
     noteOwner.value = data.owner || null
     lastEditor.value = data.lastEditor || null
     lastContentEditedAt.value = data.lastContentEditedAt || data.updatedAt || null
+    
+    // Fetch book with Notes if note belongs to a book
+    if (data.bookId) {
+      try {
+        book.value = await api.getBook(data.bookId)
+      } catch {
+        book.value = data.book || null
+      }
+    } else {
+      book.value = null
+    }
     
     document.title = `${(data.title || 'Untitled').substring(0, 20)} | NoteHubMD`
     
@@ -1540,9 +1550,35 @@ watch(() => route.params.id, (newId, oldId) => {
         <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0">
           <div class="flex-1 flex items-center space-x-2">
             <template v-if="book">
-              <a :href="'/b/' + book.id" class="hover:text-blue-400 transition">
-                <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
-              </a>
+              <div class="relative group">
+                <a :href="'/b/' + book.id" class="hover:text-blue-400 transition">
+                  <i class="fa-solid fa-book mr-1"></i>{{ book.title }}
+                </a>
+                <!-- Book Notes Tooltip -->
+                <div v-if="book.Notes && book.Notes.length > 0" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                  <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 280px; max-width: 400px;">
+                    <!-- Arrow -->
+                    <div class="absolute top-0 left-4 w-4 h-4 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                    <div class="relative z-10 p-3">
+                      <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                        <i class="fa-solid fa-list mr-2"></i>
+                        書本筆記 ({{ book.Notes.length }})
+                      </div>
+                      <ul class="space-y-1 max-h-64 overflow-y-auto">
+                        <li v-for="bookNote in book.Notes" :key="bookNote.id">
+                          <a 
+                            :href="'/n/' + bookNote.id"
+                            class="flex items-center text-sm py-1.5 px-2 rounded transition"
+                            :class="bookNote.id === note.id ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
+                            <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === note.id ? 'text-white' : 'text-gray-500'"></i>
+                            <span class="truncate" :title="bookNote.title || 'Untitled'">{{ bookNote.title || 'Untitled' }}</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <span class="text-gray-600">/</span>
             </template>
             <span class="text-sm bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
