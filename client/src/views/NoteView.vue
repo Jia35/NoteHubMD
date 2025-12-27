@@ -527,6 +527,215 @@ const syncScrollFromPreview = (e) => {
   isSyncingLeft.value = false
 }
 
+// --- Markdown Toolbar Functions ---
+// Helper: Toggle wrap around selection
+const toggleWrap = (prefix, suffix = prefix) => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from, to } = state.selection.main
+  const text = state.sliceDoc(from, to)
+
+  if (text.startsWith(prefix) && text.endsWith(suffix)) {
+    // Remove wrap
+    view.dispatch({
+      changes: {
+        from: from,
+        to: to,
+        insert: text.slice(prefix.length, -suffix.length)
+      },
+      selection: { anchor: from, head: to - prefix.length - suffix.length }
+    })
+  } else {
+    // Add wrap
+    view.dispatch({
+      changes: {
+        from: from,
+        to: to,
+        insert: prefix + text + suffix
+      },
+      selection: { anchor: from + prefix.length, head: to + prefix.length }
+    })
+  }
+  view.focus()
+}
+
+// Helper: Toggle line prefix
+const toggleLinePrefix = (prefix) => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const line = state.doc.lineAt(from)
+  
+  if (line.text.startsWith(prefix)) {
+    // Remove prefix
+    view.dispatch({
+      changes: {
+        from: line.from,
+        to: line.from + prefix.length,
+        insert: ''
+      }
+    })
+  } else {
+    // Add prefix
+    view.dispatch({
+      changes: {
+        from: line.from,
+        to: line.from,
+        insert: prefix
+      }
+    })
+  }
+  view.focus()
+}
+
+const toggleBold = () => toggleWrap('**')
+const toggleItalic = () => toggleWrap('*')
+const toggleStrikethrough = () => toggleWrap('~~')
+const toggleUnderline = () => toggleWrap('++')
+const toggleSuperscript = () => toggleWrap('^')
+const toggleSubscript = () => toggleWrap('~')
+const toggleInlineCode = () => toggleWrap('`')
+
+const cycleHeading = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const line = state.doc.lineAt(from)
+  
+  const match = line.text.match(/^(#{1,6})\s/)
+  let changes
+  
+  if (!match) {
+    // No heading -> H1
+    changes = { from: line.from, to: line.from, insert: '# ' }
+  } else if (match[1].length < 6) {
+    // Increment level
+    changes = { from: line.from, to: line.from, insert: '#' }
+  } else {
+    // H6 -> remove
+    changes = { from: line.from, to: line.from + 7, insert: '' }
+  }
+  
+  view.dispatch({ changes })
+  view.focus()
+}
+
+const toggleBlockquote = () => toggleLinePrefix('> ')
+const toggleUnorderedList = () => toggleLinePrefix('- ')
+
+const toggleOrderedList = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const line = state.doc.lineAt(from)
+  
+  const match = line.text.match(/^\d+\.\s/)
+  if (match) {
+    view.dispatch({ changes: { from: line.from, to: line.from + match[0].length, insert: '' } })
+  } else {
+    view.dispatch({ changes: { from: line.from, to: line.from, insert: '1. ' } })
+  }
+  view.focus()
+}
+
+const insertCodeBlock = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const insert = '\n```\n\n```\n'
+  view.dispatch({
+    changes: { from: from, insert: insert },
+    selection: { anchor: from + 5 }
+  })
+  view.focus()
+}
+
+const insertTable = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { from } = view.state.selection.main
+  const insert = '\n| 標題 1 | 標題 2 | 標題 3 |\n| --- | --- | --- |\n| 內容 | 內容 | 內容 |\n'
+  view.dispatch({
+    changes: { from: from, insert: insert },
+    selection: { anchor: from + 14 }
+  })
+  view.focus()
+}
+
+const toggleLink = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from, to } = state.selection.main
+  const text = state.sliceDoc(from, to)
+  const linkMatch = text.match(/^\[(.+)\]\((.+)\)$/)
+  
+  if (linkMatch) {
+    view.dispatch({
+      changes: { from: from, to: to, insert: linkMatch[1] }
+    })
+  } else if (text) {
+    view.dispatch({
+      changes: { from: from, to: to, insert: '[' + text + '](url)' },
+      selection: { anchor: to + 3, head: to + 6 } // Select 'url'
+    })
+  } else {
+    view.dispatch({
+      changes: { from: from, insert: '[Link](url)' },
+      selection: { anchor: from + 1, head: from + 5 } // Select 'Link'
+    })
+  }
+  view.focus()
+}
+
+const toggleImage = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from, to } = state.selection.main
+  const text = state.sliceDoc(from, to)
+  const imgMatch = text.match(/^!\[(.+)\]\((.+)\)$/)
+  
+  if (imgMatch) {
+     view.dispatch({
+      changes: { from: from, to: to, insert: imgMatch[1] }
+    })
+  } else if (text) {
+    view.dispatch({
+      changes: { from: from, to: to, insert: '![' + text + '](imageUrl)' },
+      selection: { anchor: to + 4, head: to + 12 } 
+    })
+  } else {
+    view.dispatch({
+      changes: { from: from, insert: '![Desc](imageUrl)' },
+       selection: { anchor: from + 2, head: from + 6 }
+    })
+  }
+  view.focus()
+}
+
+const toggleHorizontalRule = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const line = state.doc.lineAt(from)
+  
+  if (line.text.trim() === '---') {
+    view.dispatch({
+      changes: { from: line.from, to: line.to, insert: '' }
+    })
+  } else {
+    view.dispatch({ changes: { from: line.to, insert: '\n---\n' } })
+  }
+  view.focus()
+}
+
 // Relative time for last edited
 const relativeLastEditedTime = computed(() => {
   if (!lastContentEditedAt.value) return null
@@ -901,6 +1110,62 @@ watch(() => route.params.id, (newId, oldId) => {
           <div v-show="showEditor" class="h-full flex flex-col" 
                :class="showPreview ? 'border-r border-gray-300 dark:border-gray-700' : ''"
                :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
+            
+            <!-- Markdown Toolbar -->
+            <div v-if="canEdit" class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1.5 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
+                <button @click="toggleBold" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Bold">
+                    <i class="fa-solid fa-bold"></i>
+                </button>
+                <button @click="toggleItalic" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Italic">
+                    <i class="fa-solid fa-italic"></i>
+                </button>
+                <button @click="toggleStrikethrough" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Strikethrough">
+                    <i class="fa-solid fa-strikethrough"></i>
+                </button>
+                <button @click="toggleUnderline" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Underline">
+                    <i class="fa-solid fa-underline"></i>
+                </button>
+                <button @click="toggleSuperscript" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Superscript">
+                    <i class="fa-solid fa-superscript"></i>
+                </button>
+                <button @click="toggleSubscript" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Subscript">
+                    <i class="fa-solid fa-subscript"></i>
+                </button>
+                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
+                <button @click="cycleHeading" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Heading">
+                    <i class="fa-solid fa-heading"></i>
+                </button>
+                <button @click="toggleBlockquote" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Blockquote">
+                    <i class="fa-solid fa-quote-left"></i>
+                </button>
+                <button @click="toggleUnorderedList" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Unordered List">
+                    <i class="fa-solid fa-list-ul"></i>
+                </button>
+                <button @click="toggleOrderedList" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Ordered List">
+                    <i class="fa-solid fa-list-ol"></i>
+                </button>
+                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
+                <button @click="toggleInlineCode" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Inline Code">
+                    <i class="fa-solid fa-code"></i>
+                </button>
+                <button @click="insertCodeBlock" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Code Block">
+                    <i class="fa-solid fa-file-code"></i>
+                </button>
+                <button @click="insertTable" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Table">
+                    <i class="fa-solid fa-table"></i>
+                </button>
+                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
+                <button @click="toggleLink" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Link">
+                    <i class="fa-solid fa-link"></i>
+                </button>
+                <button @click="toggleImage" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Image">
+                    <i class="fa-solid fa-image"></i>
+                </button>
+                <button @click="toggleHorizontalRule" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Horizontal Rule">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+            </div>
+
             <div v-if="canEdit" ref="editorContainer" class="flex-1 overflow-hidden relative editor-container"></div>
             <div v-else class="flex-1 flex items-center justify-center text-gray-500">
               <i class="fa-solid fa-lock mr-2"></i>您沒有編輯權限
@@ -1120,9 +1385,15 @@ watch(() => route.params.id, (newId, oldId) => {
 .editor-container { height: 100%; }
 .editor-container .cm-editor { height: 100%; }
 .editor-container .cm-scroller { overflow: auto; }
-.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; padding: 16px; }
+.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.6; padding: 16px; }
 .editor-container .cm-line { padding: 0 4px; }
-.editor-container .cm-gutters { background-color: transparent; border-right: 1px solid #e5e5e5; }
+.editor-container .cm-gutters { 
+  font-family: 'Fira Code', monospace; 
+  font-size: 16px; 
+  line-height: 1.6; 
+  background-color: transparent; 
+  border-right: 1px solid #e5e5e5; 
+}
 
 .dark .editor-container .cm-gutters { border-color: #3c3c3c; }
 
