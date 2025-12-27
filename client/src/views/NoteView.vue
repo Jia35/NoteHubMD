@@ -255,6 +255,13 @@ const permissionOptions = [
 // Comments
 const comments = ref([])
 const noteCommentsEnabled = ref(true)
+const newComment = ref('')
+const commentPreviewMode = ref(false)
+const submittingComment = ref(false)
+const editingCommentId = ref(null)
+const editCommentContent = ref('')
+const openMenuId = ref(null)
+const commentTextareaFocused = ref(false)
 
 // Note owner/editor info
 const noteOwner = ref(null)
@@ -1263,10 +1270,117 @@ const handleUserProfileUpdate = (data) => {
 const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
 const getRelativeTime = (date) => dayjs(date).fromNow()
 
+
+// Comment methods
+const topLevelComments = computed(() => {
+  // Assuming API returns flat list, we might need to process it if we want threading
+  // For now, let's assume flat list logic similar to note.html
+  return comments.value.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+})
+
+const renderCommentMarkdown = (text) => {
+  if (!text) return ''
+  return md.render(text)
+}
+
+const formatCommentTime = (time) => {
+  return dayjs(time).fromNow()
+}
+
+const canEditComment = (comment) => {
+  if (!currentUser.value) return false
+  return comment.user.id === currentUser.value.id
+}
+
+const canDeleteComment = (comment) => {
+  if (!currentUser.value) return false
+  return comment.user.id === currentUser.value.id || isOwner.value
+}
+
+const toggleCommentMenu = (id) => {
+  if (openMenuId.value === id) {
+    openMenuId.value = null
+  } else {
+    openMenuId.value = id
+  }
+}
+
+// Close menu when clicking outside
+const closeCommentMenu = () => {
+    openMenuId.value = null
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim() || submittingComment.value) return
+  submittingComment.value = true
+  try {
+    const comment = await api.createComment(note.value.id, { content: newComment.value })
+    comments.value.unshift(comment) // Add to top
+    newComment.value = ''
+    commentPreviewMode.value = false
+  } catch (e) {
+    showAlert?.('留言失敗', 'error')
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+const deleteComment = async (id) => {
+  if (!await showConfirm?.('確定要刪除這則留言嗎？')) return
+  try {
+    await api.deleteComment(note.value.id, id)
+    comments.value = comments.value.filter(c => c.id !== id)
+  } catch (e) {
+    showAlert?.('刪除失敗', 'error')
+  }
+}
+
+const startEditComment = (comment) => {
+  editingCommentId.value = comment.id
+  editCommentContent.value = comment.content
+  openMenuId.value = null
+}
+
+const cancelEditComment = () => {
+  editingCommentId.value = null
+  editCommentContent.value = ''
+}
+
+const updateComment = async (id) => {
+  if (!editCommentContent.value.trim()) return
+  try {
+    const updated = await api.updateComment(note.value.id, id, { content: editCommentContent.value })
+    const idx = comments.value.findIndex(c => c.id === id)
+    if (idx !== -1) {
+      comments.value[idx] = updated
+    }
+    editingCommentId.value = null
+    editCommentContent.value = ''
+  } catch (e) {
+    showAlert?.('更新留言失敗', 'error')
+  }
+}
+
+const autoGrowCommentTextarea = (e) => {
+  const el = e.target
+  el.style.height = 'auto'
+  el.style.height = el.scrollHeight + 'px'
+}
+
+const handleCommentBlur = () => {
+  commentTextareaFocused.value = false
+}
+
 // Lifecycle
 onMounted(() => {
   // Global Ctrl+S handler
   window.addEventListener('keydown', handleGlobalSave)
+  // Close menu on click outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-comment-menu]')) {
+      closeCommentMenu()
+    }
+  })
 
   updateHighlightStyle(theme.value)
   loadNote()
@@ -1604,6 +1718,126 @@ watch(() => route.params.id, (newId, oldId) => {
               <div class="markdown-body dark:text-gray-300"
                    :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}">
                 <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent" v-html="renderedContent"></div>
+              </div>
+
+              <!-- Comments Section (hidden when commentsDisabled) -->
+              <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                   :class="{'flex justify-center': !showEditor}">
+                <div :class="{'w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
+                  <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
+                    <i class="fa-solid fa-comments mr-2"></i>留言 ({{ comments.length }})
+                  </h3>
+                  
+                  <!-- Comment Form (only if logged in and comments enabled) -->
+                  <div v-if="currentUser" class="mb-6">
+                    <div class="flex items-start space-x-3">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden bg-blue-600 text-white text-sm">
+                        <img v-if="currentUser.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="">
+                        <span v-else>{{ currentUser.username?.charAt(0).toUpperCase() || '?' }}</span>
+                      </div>
+                      <div class="flex-1">
+                        <!-- Textarea for editing -->
+                        <textarea v-show="!commentPreviewMode" v-model="newComment" 
+                            placeholder="寫下你的留言..."
+                            ref="commentTextarea"
+                            @focus="commentTextareaFocused = true"
+                            @blur="handleCommentBlur"
+                            @input="autoGrowCommentTextarea"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
+                            :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
+                            :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
+                        <!-- Preview area -->
+                        <div v-if="commentPreviewMode && newComment.trim()" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-auto"
+                            style="min-height: 76px; max-height: 192px;"
+                            v-html="renderCommentMarkdown(newComment)"></div>
+                        <div v-if="commentPreviewMode && !newComment.trim()" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 italic"
+                            style="min-height: 76px;">
+                            沒有內容可預覽
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                          <div class="text-xs text-gray-400"><span v-show="commentTextareaFocused">支援 Markdown 語法</span></div>
+                          <div class="flex gap-2">
+                            <button @click="commentPreviewMode = !commentPreviewMode"
+                                :class="commentPreviewMode ? 'bg-gray-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                class="px-3 py-1.5 text-sm rounded-lg hover:opacity-80 transition">
+                                <i class="fa-solid fa-eye mr-1"></i>{{ commentPreviewMode ? '編輯' : '預覽' }}
+                            </button>
+                            <button @click="submitComment" 
+                                :disabled="!newComment.trim() || submittingComment"
+                                class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                <i v-if="submittingComment" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                                送出留言
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Login prompt -->
+                  <div v-else class="mb-6 text-center py-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <p class="text-gray-500 dark:text-gray-400">
+                      <i class="fa-solid fa-lock mr-1"></i>請先 <a :href="'/login?redirect=/n/' + note?.id" class="text-blue-500 hover:underline">登入</a> 後才能留言
+                    </p>
+                  </div>
+
+                  <!-- Comment List -->
+                  <div class="space-y-4">
+                    <template v-for="comment in topLevelComments" :key="comment.id">
+                      <!-- Main Comment -->
+                      <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-start space-x-3">
+                          <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden text-white text-sm"
+                               :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
+                            <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                            <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                              <div class="flex items-center space-x-2">
+                                <span class="font-medium text-gray-800 dark:text-white text-sm">
+                                  {{ comment.user?.name || comment.user?.username || '匿名' }}
+                                </span>
+                                <span class="text-xs text-gray-400">{{ formatCommentTime(comment.createdAt) }}</span>
+                              </div>
+                              <!-- Dropdown Menu -->
+                              <div v-if="canEditComment(comment) || canDeleteComment(comment)" class="relative">
+                                <button @click.stop="toggleCommentMenu(comment.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <div v-if="openMenuId === comment.id" 
+                                    class="comment-menu-dropdown absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10" style="min-width: 100px;">
+                                  <button v-if="canEditComment(comment)" @click="startEditComment(comment)" 
+                                      class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                    <i class="fa-solid fa-pen mr-2"></i>編輯
+                                  </button>
+                                  <button v-if="canDeleteComment(comment)" @click="deleteComment(comment.id)" 
+                                      class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                    <i class="fa-solid fa-trash mr-2"></i>刪除
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            <!-- Edit Mode -->
+                            <div v-if="editingCommentId === comment.id">
+                              <textarea v-model="editCommentContent" 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all mb-2"
+                                rows="3"></textarea>
+                              <div class="flex justify-end gap-2">
+                                <button @click="cancelEditComment" class="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:opacity-80">取消</button>
+                                <button @click="updateComment(comment.id)" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">儲存</button>
+                              </div>
+                            </div>
+                            <!-- Valid Content -->
+                            <div v-else class="text-gray-700 dark:text-gray-300 text-sm markdown-body comment-body" v-html="renderCommentMarkdown(comment.content)"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
               </div>
             </div>
             
