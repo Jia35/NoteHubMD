@@ -66,6 +66,20 @@ const api = {
         return res.json()
     },
 
+    async uploadImage(file) {
+        const formData = new FormData()
+        formData.append('image', file)
+        const res = await fetch('/api/upload/image', {
+            method: 'POST',
+            body: formData
+        })
+        if (!res.ok) {
+            const result = await res.json()
+            throw new Error(result.error || 'Failed to upload image')
+        }
+        return res.json()
+    },
+
     async createNote() {
         const res = await fetch('/api/notes', {
             method: 'POST',

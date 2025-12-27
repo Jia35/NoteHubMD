@@ -15,7 +15,7 @@ dayjs.extend(relativeTimePlugin)
 dayjs.locale('zh-tw')
 
 // Components
-import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, CreateBookModal, RevisionsModal } from '@/components'
+import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, CreateBookModal, RevisionsModal, ImageLightbox } from '@/components'
 
 // CodeMirror 6
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
@@ -38,6 +38,8 @@ import markdownItMark from 'markdown-it-mark'
 import markdownItSub from 'markdown-it-sub'
 import markdownItSup from 'markdown-it-sup'
 import markdownItIns from 'markdown-it-ins'
+import markdownItContainer from 'markdown-it-container'
+import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
 // Highlight.js
@@ -302,6 +304,36 @@ const md = new MarkdownIt({
   .use(markdownItSup)
   .use(markdownItIns)
   .use(markdownItTaskLists, { enabled: true, label: true })
+  .use(markdownItImsize)
+
+// Containers
+;['success', 'info', 'warning', 'danger'].forEach(type => {
+  md.use(markdownItContainer, type, {
+    render: function (tokens, idx) {
+      const m = tokens[idx].info.trim().match(new RegExp(`^${type}\\s*(.*)$`))
+      if (tokens[idx].nesting === 1) {
+        return '<div class="alert alert-' + type + '">\n' +
+          (m[1] ? '<strong>' + md.utils.escapeHtml(m[1]) + '</strong>' : '')
+      } else {
+        return '</div>\n'
+      }
+    }
+  })
+})
+// Spoiler
+md.use(markdownItContainer, 'spoiler', {
+  validate: function (params) {
+    return params.trim().match(/^spoiler\s+(.*)$/)
+  },
+  render: function (tokens, idx) {
+    var m = tokens[idx].info.trim().match(/^spoiler\s+(.*)$/)
+    if (tokens[idx].nesting === 1) {
+      return '<details><summary>' + md.utils.escapeHtml(m[1]) + '</summary>\n'
+    } else {
+      return '</details>\n'
+    }
+  }
+})
 
 // Load note
 const loadNote = async () => {
@@ -441,7 +473,9 @@ const initEditor = () => {
           syncScrollFromEditor(event.target)
           isSyncingRight.value = false
         }
-      }
+      },
+      paste: handlePaste,
+      drop: handleDrop
     })
   ]
   
@@ -504,6 +538,105 @@ const scrollToHeading = (id) => {
   const el = document.getElementById(id)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+// Image Lightbox Logic
+const lightboxImage = ref(null)
+const lightboxZoom = ref(1)
+const MIN_ZOOM = 0.25
+const MAX_ZOOM = 5
+const ZOOM_STEP = 0.25
+
+const handlePreviewClick = (event) => {
+  const target = event.target
+  
+  // Handle task list checkbox click (if we implement it later)
+  
+  // Handle image clicks
+  if (target.tagName === 'IMG' && !target.closest('.mermaid')) {
+    lightboxImage.value = target.src
+    lightboxZoom.value = 1
+  }
+}
+
+const closeLightbox = () => {
+    lightboxImage.value = null
+    lightboxZoom.value = 1
+}
+
+const zoomIn = () => {
+    if (lightboxZoom.value < MAX_ZOOM) {
+        lightboxZoom.value = Math.min(MAX_ZOOM, lightboxZoom.value + ZOOM_STEP)
+    }
+}
+
+const zoomOut = () => {
+    if (lightboxZoom.value > MIN_ZOOM) {
+        lightboxZoom.value = Math.max(MIN_ZOOM, lightboxZoom.value - ZOOM_STEP)
+    }
+}
+
+const handleLightboxWheel = (event) => {
+    if (event.deltaY < 0) {
+        zoomIn()
+    } else {
+        zoomOut()
+    }
+}
+
+// Paste Handling
+const handlePaste = async (event, view) => {
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+      const file = item.getAsFile()
+      if (!file) continue
+
+      try {
+        const res = await api.uploadImage(file)
+        const markdown = `![image](${res.url})`
+        const transaction = view.state.update({
+          changes: { from: view.state.selection.main.from, insert: markdown }
+        })
+        view.dispatch(transaction)
+      } catch (error) {
+        console.error('Image upload failed:', error)
+        showAlert?.('圖片上傳失敗：' + error.message, 'error')
+      }
+      return true
+    }
+  }
+}
+
+const handleDrop = async (event, view) => {
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+
+  const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+  if (imageFiles.length === 0) return
+
+  event.preventDefault()
+  
+  for (const file of imageFiles) {
+    try {
+      const res = await api.uploadImage(file)
+      const markdown = `![${file.name}](${res.url})`
+      
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+      const insertPos = pos ? pos : view.state.selection.main.from
+      
+      const transaction = view.state.update({
+        changes: { from: insertPos, insert: markdown + '\n' }
+      })
+      view.dispatch(transaction)
+    } catch (error) {
+       console.error('Image upload failed:', error)
+       showAlert?.('圖片上傳失敗：' + error.message, 'error')
+    }
   }
 }
 
@@ -1194,7 +1327,7 @@ watch(() => route.params.id, (newId, oldId) => {
           <!-- Preview with TOC -->
           <div v-show="showPreview" class="h-full flex min-w-0 flex-1">
             <!-- Preview Content -->
-            <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer" @scroll="syncScrollFromPreview">
+            <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer" @scroll="syncScrollFromPreview" @click="handlePreviewClick">
               <!-- Preview Info Bar -->
               <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0 sticky top-0 z-20"
                    :class="{'flex justify-center': !showEditor}">
@@ -1356,6 +1489,15 @@ watch(() => route.params.id, (newId, oldId) => {
       @add-user-permission="addUserPermission"
       @remove-user-permission="removeUserPermission"
       @update-user-permission="updateUserPermissionLevel"
+    />
+
+    <ImageLightbox 
+      :image="lightboxImage"
+      :zoom="lightboxZoom"
+      @close="closeLightbox"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @wheel="handleLightboxWheel"
     />
   </div>
 </template>
