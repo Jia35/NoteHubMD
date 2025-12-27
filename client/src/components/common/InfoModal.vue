@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import api from '@/composables/useApi'
 
 const props = defineProps({
   show: Boolean,
@@ -22,7 +23,7 @@ const props = defineProps({
 const emit = defineEmits([
   'close', 'save', 'update:tab', 'update:title', 'update:description', 'update:permission',
   'update:commentsEnabled', 'update:newTag', 'update:newUserPermission',
-  'update:isPublic', 'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
+  'update:isPublic', 'update:shareId', 'update:shareAlias', 'add-tag', 'remove-tag', 'search-users', 'add-user-permission',
   'remove-user-permission', 'update-user-permission', 'move-note'
 ])
 
@@ -53,6 +54,140 @@ const getPermissionLabel = (permission) => {
 
 const moveNote = () => {
   emit('move-note', selectedMoveBookId.value || null)
+}
+
+// Share functionality
+const copyStatus = ref('')
+const resettingShare = ref(false)
+const generatingShare = ref(false)
+const shareCopied = ref(false)
+
+// Alias functionality
+const aliasEnabled = ref(false)
+const aliasInput = ref('')
+const aliasError = ref('')
+const aliasSaving = ref(false)
+const currentAlias = ref('')
+const aliasCopied = ref(false)
+
+const shareUrl = computed(() => {
+  if (!props.item?.shareId) return ''
+  return `${window.location.origin}/s/${props.item.shareId}`
+})
+
+const aliasUrl = computed(() => {
+  if (!currentAlias.value) return ''
+  return `${window.location.origin}/s/${currentAlias.value}`
+})
+
+// Initialize alias state when item changes
+watch(() => props.item, (newItem) => {
+  if (newItem) {
+    currentAlias.value = newItem.shareAlias || ''
+    aliasInput.value = newItem.shareAlias || ''
+    aliasEnabled.value = !!newItem.shareAlias
+  }
+}, { immediate: true })
+
+const copyShareLink = async () => {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    shareCopied.value = true
+    setTimeout(() => { shareCopied.value = false }, 2000)
+  } catch (e) {
+    console.error('Failed to copy:', e)
+  }
+}
+
+const resetShareLink = async () => {
+  if (!props.item?.id) return
+  resettingShare.value = true
+  try {
+    const result = await api.resetShareId(props.item.id)
+    emit('update:shareId', result.shareId)
+    // Reset alias when share link is reset
+    currentAlias.value = ''
+    aliasInput.value = ''
+    aliasEnabled.value = false
+  } catch (e) {
+    console.error('Failed to reset share link:', e)
+  } finally {
+    resettingShare.value = false
+  }
+}
+
+const generateShareLink = async () => {
+  if (!props.item?.id) return
+  generatingShare.value = true
+  try {
+    const result = await api.generateShareId(props.item.id)
+    emit('update:shareId', result.shareId)
+  } catch (e) {
+    console.error('Failed to generate share link:', e)
+  } finally {
+    generatingShare.value = false
+  }
+}
+
+const toggleAlias = () => {
+  aliasEnabled.value = !aliasEnabled.value
+  if (!aliasEnabled.value && currentAlias.value) {
+    // Clear alias when disabled
+    clearAlias()
+  }
+}
+
+const saveAlias = async () => {
+  if (!props.item?.id) return
+  
+  const alias = aliasInput.value.trim()
+  
+  // Validation
+  if (!alias) {
+    aliasError.value = '請輸入別名'
+    return
+  }
+  
+  if (!/^[a-z0-9_-]+$/.test(alias)) {
+    aliasError.value = '只能使用小寫英文、數字、連字號(-)和底線(_)'
+    return
+  }
+  
+  aliasSaving.value = true
+  aliasError.value = ''
+  
+  try {
+    await api.setShareAlias(props.item.id, alias)
+    currentAlias.value = alias
+    emit('update:shareAlias', alias)
+  } catch (e) {
+    aliasError.value = e.message || '儲存失敗'
+  } finally {
+    aliasSaving.value = false
+  }
+}
+
+const clearAlias = async () => {
+  if (!props.item?.id) return
+  
+  try {
+    await api.clearShareAlias(props.item.id)
+    currentAlias.value = ''
+    aliasInput.value = ''
+    emit('update:shareAlias', '')
+  } catch (e) {
+    console.error('Failed to clear alias:', e)
+  }
+}
+
+const copyAliasUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(aliasUrl.value)
+    aliasCopied.value = true
+    setTimeout(() => { aliasCopied.value = false }, 2000)
+  } catch (e) {
+    console.error('Failed to copy alias URL:', e)
+  }
 }
 </script>
 
@@ -282,7 +417,101 @@ const moveNote = () => {
 
           <!-- Share Tab Content -->
           <div v-show="tab === 'share' && type === 'note'" class="p-4">
-            <slot name="share-content"></slot>
+            <!-- Share Link Section -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">分享連結</label>
+              
+              <div v-if="shareUrl">
+                <div class="flex items-center gap-2 mb-2">
+                  <input type="text" :value="shareUrl" readonly
+                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                
+                <div class="flex gap-2">
+                  <button @click="copyShareLink" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i :class="shareCopied ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
+                    {{ shareCopied ? '已複製' : '複製連結' }}
+                  </button>
+                  <a :href="shareUrl" target="_blank" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    開啟分享頁面
+                  </a>
+                </div>
+              </div>
+              
+              <div v-else class="flex flex-col items-center justify-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 text-2xl">
+                  <i class="fa-solid fa-share-nodes"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-2">尚未建立分享連結</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6 max-w-xs">
+                  透過分享連結進入的頁面，更適合閱讀。
+                </p>
+                <button @click="generateShareLink" :disabled="generatingShare" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex items-center cursor-pointer disabled:opacity-50">
+                  <i v-if="generatingShare" class="fa-solid fa-spinner fa-spin mr-2"></i>
+                  <i v-else class="fa-solid fa-link mr-2"></i>
+                  建立分享連結
+                </button>
+              </div>
+            </div>
+            
+            <!-- Alias Section -->
+            <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">自訂別名</label>
+                <button @click="toggleAlias" 
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
+                  :class="aliasEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'">
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="aliasEnabled ? 'translate-x-6' : 'translate-x-1'"></span>
+                </button>
+              </div>
+              
+              <div v-if="aliasEnabled" class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">/s/</span>
+                  <input type="text" v-model="aliasInput" 
+                    @input="aliasError = ''"
+                    placeholder="my-tutorial"
+                    class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    :class="{'border-red-500 dark:border-red-500': aliasError}">
+                  <button v-if="currentAlias" @click="copyAliasUrl" 
+                    class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm cursor-pointer"
+                    :title="aliasCopied ? '已複製' : '複製別名網址'">
+                    <i :class="aliasCopied ? 'fa-solid fa-check text-green-500' : 'fa-regular fa-copy'"></i>
+                  </button>
+                  <button @click="saveAlias" 
+                    :disabled="aliasSaving"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm cursor-pointer disabled:opacity-50">
+                    <i v-if="aliasSaving" class="fa-solid fa-spinner fa-spin"></i>
+                    <span v-else>儲存</span>
+                  </button>
+                </div>
+                <p v-if="aliasError" class="text-xs text-red-500">{{ aliasError }}</p>
+                <p v-if="currentAlias && !aliasError" class="text-xs text-green-600 dark:text-green-400">
+                  <i class="fa-solid fa-check mr-1"></i>
+                  別名網址可用: /s/{{ currentAlias }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  只能使用小寫英文、數字、連字號(-)和底線(_)
+                </p>
+              </div>
+            </div>
+            
+            <!-- Reset Share Link Section -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div class="flex flex-col gap-2">
+                <p class="text-xs text-amber-600 dark:text-amber-500">
+                  <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                  重設連結後，原有的分享連結將立即失效，無法再存取。
+                </p>
+                <button @click="resetShareLink" :disabled="resettingShare" class="w-full px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50">
+                  <i v-if="resettingShare" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-arrows-rotate"></i>
+                  重設分享連結
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

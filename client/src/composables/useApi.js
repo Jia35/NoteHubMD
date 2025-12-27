@@ -357,11 +357,40 @@ const api = {
     },
 
     // Share link
+    async generateShareId(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/share', {
+            method: 'POST'
+        })
+        if (!res.ok) throw new Error('Failed to generate share ID')
+        return res.json()
+    },
+
     async resetShareId(noteId) {
-        const res = await fetch('/api/notes/' + noteId + '/reset-share-id', {
+        const res = await fetch('/api/notes/' + noteId + '/reset-share', {
             method: 'POST'
         })
         if (!res.ok) throw new Error('Failed to reset share ID')
+        return res.json()
+    },
+
+    async setShareAlias(noteId, alias) {
+        const res = await fetch('/api/notes/' + noteId + '/alias', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alias })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to set alias')
+        }
+        return res.json()
+    },
+
+    async clearShareAlias(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/alias', {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to clear alias')
         return res.json()
     },
 

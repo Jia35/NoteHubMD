@@ -1362,6 +1362,7 @@ router.post('/books', async (req, res) => {
     }
 
     let id = generateId();
+    let shareId = generateId(7);
     let retry = 0;
     while (retry < 5) {
         try {
@@ -1369,7 +1370,8 @@ router.post('/books', async (req, res) => {
                 id: id,
                 title: (req.body && req.body.title) || 'Untitled Book',
                 description: (req.body && req.body.description) || '',
-                ownerId: req.session.userId || null
+                ownerId: req.session.userId || null,
+                shareId: shareId  // Auto-generated share link
             };
             // Add optional fields if provided
             if (permission !== undefined) bookData.permission = permission;
@@ -1380,6 +1382,7 @@ router.post('/books', async (req, res) => {
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
                 id = generateId();
+                shareId = generateId(7);
                 retry++;
             } else {
                 return res.status(500).json({ error: e.message });
