@@ -105,7 +105,23 @@ const canEdit = ref(false)
 const permission = ref('private')
 
 // View mode
-const mode = ref('edit')
+// View mode
+const getInitialMode = () => {
+  if (route.query.edit !== undefined) return 'edit'
+  if (route.query.view !== undefined) return 'view'
+  if (route.query.both !== undefined) return 'both'
+  return 'both' // Default
+}
+const mode = ref(getInitialMode())
+
+watch(mode, (newMode) => {
+  const query = { ...route.query }
+  delete query.edit
+  delete query.view
+  delete query.both
+  query[newMode] = null
+  router.replace({ query })
+})
 const showSidebar = ref(false)
 const editorWidth = ref(50)
 
@@ -119,6 +135,10 @@ const renderedContent = ref('')
 // Stats
 const charCount = computed(() => content.value.length)
 const lineCount = computed(() => content.value.split('\n').length)
+const selectedLines = ref(0)
+const selectedChars = ref(0)
+const isSyncingLeft = ref(false)
+const isSyncingRight = ref(false)
 
 // Socket
 const { socket, joinNote, leaveNote, editNote, onNoteUpdated, offNoteUpdated, onUsersInNote, offUsersInNote } = useSocket()
@@ -400,6 +420,28 @@ const initEditor = () => {
           editNote(note.value.id, content.value)
         }
       }
+      
+      // Update selection stats
+      if (update.selectionSet) {
+        const selection = update.state.selection.main
+        selectedChars.value = selection.to - selection.from
+        if (selectedChars.value > 0) {
+          const startLine = update.state.doc.lineAt(selection.from).number
+          const endLine = update.state.doc.lineAt(selection.to).number
+          selectedLines.value = endLine - startLine + 1
+        } else {
+          selectedLines.value = 0
+        }
+      }
+    }),
+    EditorView.domEventHandlers({
+      scroll: (event, view) => {
+        if (!isSyncingLeft.value) {
+          isSyncingRight.value = true
+          syncScrollFromEditor(event.target)
+          isSyncingRight.value = false
+        }
+      }
     })
   ]
   
@@ -463,6 +505,26 @@ const scrollToHeading = (id) => {
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+}
+
+// Sync Scroll
+const syncScrollFromEditor = (target) => {
+  if (!previewContainer.value || mode.value !== 'both') return
+  const percentage = target.scrollTop / (target.scrollHeight - target.clientHeight)
+  const preview = previewContainer.value
+  preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight)
+}
+
+const syncScrollFromPreview = (e) => {
+  if (!editorView.value || isSyncingRight.value || mode.value !== 'both') return
+  isSyncingLeft.value = true
+  const preview = e.target
+  const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
+  const scroller = editorView.value.scrollDOM
+  if (scroller) {
+    scroller.scrollTop = percentage * (scroller.scrollHeight - scroller.clientHeight)
+  }
+  isSyncingLeft.value = false
 }
 
 // Relative time for last edited
@@ -845,9 +907,12 @@ watch(() => route.params.id, (newId, oldId) => {
             </div>
             <!-- Editor Footer -->
             <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-between items-center text-xs z-10 shrink-0">
-              <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400 px-2">
-                <span>字數: {{ charCount }}</span>
-                <span>行數: {{ lineCount }}</span>
+              <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400 px-2 min-w-0">
+                <span class="whitespace-nowrap">字數: {{ charCount }}</span>
+                <span class="whitespace-nowrap">行數: {{ lineCount }}</span>
+                <span v-if="selectedChars > 0 || selectedLines > 0">|</span>
+                <span v-if="selectedLines > 0" class="whitespace-nowrap">已選擇 {{ selectedLines }} 行</span>
+                <span v-if="selectedChars > 0" class="whitespace-nowrap">已選擇 {{ selectedChars }} 個字</span>
               </div>
               <select v-model="selectedEditorTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer mr-2">
                 <option v-for="t in editorThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
@@ -864,7 +929,7 @@ watch(() => route.params.id, (newId, oldId) => {
           <!-- Preview with TOC -->
           <div v-show="showPreview" class="h-full flex min-w-0 flex-1">
             <!-- Preview Content -->
-            <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer">
+            <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer" @scroll="syncScrollFromPreview">
               <!-- Preview Info Bar -->
               <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0 sticky top-0 z-20"
                    :class="{'flex justify-center': !showEditor}">
