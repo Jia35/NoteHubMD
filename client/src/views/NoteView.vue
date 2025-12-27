@@ -270,6 +270,8 @@ const lastContentEditedAt = ref(null)
 
 // TOC
 const toc = ref([])
+const activeHeadingId = ref(null)
+let tocObserver = null
 
 // Resizable
 const isResizing = ref(false)
@@ -452,7 +454,7 @@ const loadNote = async () => {
     
     document.title = `${(data.title || 'Untitled').substring(0, 20)} | NoteHubMD`
     
-    renderMarkdown()
+    // renderMarkdown will be called in finally block after DOM update
     
     if (canEdit.value) {
       // Delay editor init to ensure DOM is ready
@@ -484,6 +486,11 @@ const loadNote = async () => {
     showAlert?.('載入筆記失敗', 'error')
   } finally {
     loading.value = false
+    
+    // Ensure DOM is updated before rendering markdown (specifically for TOC generation which needs elements)
+    nextTick(() => {
+      renderMarkdown()
+    })
     
     if (note.value && canEdit.value) {
       const username = currentUser.value?.username || 'Guest'
@@ -592,16 +599,27 @@ const renderMarkdown = () => {
   // Generate TOC from headings and render mermaid diagrams
   nextTick(async () => {
     if (previewContent.value) {
-      const headings = previewContent.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
+      const headings = previewContent.value.querySelectorAll('h1, h2, h3')
       toc.value = Array.from(headings).map((h, idx) => ({
         id: h.id || `heading-${idx}`,
         text: h.textContent,
         level: parseInt(h.tagName[1])
       }))
+      
       // Ensure all headings have IDs
       headings.forEach((h, idx) => {
         if (!h.id) h.id = `heading-${idx}`
       })
+      
+      // Set initial active heading if none or at top
+      if (toc.value.length > 0) {
+        // If at top or no active heading, default to first
+        if (!activeHeadingId.value || (previewContainer.value && previewContainer.value.scrollTop < 30)) {
+          activeHeadingId.value = toc.value[0].id
+        }
+      }
+
+      setupIntersectionObserver()
       
       // Render mermaid diagrams
       const mermaidDivs = previewContent.value.querySelectorAll('.mermaid')
@@ -820,9 +838,15 @@ const syncScrollFromEditor = (target) => {
 }
 
 const syncScrollFromPreview = (e) => {
+  const preview = e.target
+  
+  // Handle TOC active state at top
+  if (preview.scrollTop < 30 && toc.value.length > 0) {
+    activeHeadingId.value = toc.value[0].id
+  }
+
   if (!editorView.value || isSyncingRight.value || mode.value !== 'both') return
   isSyncingLeft.value = true
-  const preview = e.target
   const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
   const scroller = editorView.value.scrollDOM
   if (scroller) {
@@ -1371,6 +1395,49 @@ const handleCommentBlur = () => {
   commentTextareaFocused.value = false
 }
 
+const setupIntersectionObserver = () => {
+  if (tocObserver) tocObserver.disconnect()
+  
+  if (!previewContainer.value) return
+
+  tocObserver = new IntersectionObserver((entries) => {
+    // Find all intersecting entries
+    const visibleEntries = entries.filter(e => e.isIntersecting)
+    if (visibleEntries.length > 0) {
+      // Sort by DOM position (assuming entries order might not be guaranteed, though usually is)
+      // Actually, we can just find which one corresponds to the earliest TOC item
+      // For simplicity, let's just use the first intersecting one if multiple
+      // But we need to check if we are overwriting an existing earlier one?
+      // IntersectionObserver usually triggers for everything crossing the threshold.
+      
+      // Let's rely on the fact that we want the TOPMOST visible item.
+      // We can map ids to indices.
+      const firstVisible = visibleEntries.reduce((prev, curr) => {
+        const prevIdx = toc.value.findIndex(t => t.id === prev.target.id)
+        const currIdx = toc.value.findIndex(t => t.id === curr.target.id)
+        return (prevIdx !== -1 && currIdx !== -1 && prevIdx < currIdx) ? prev : curr
+      })
+      
+      activeHeadingId.value = firstVisible.target.id
+    }
+  }, {
+    root: previewContainer.value,
+    rootMargin: '0px 0px -120% 0px',
+    threshold: 0
+  })
+
+  // Observe all headings
+  const headings = previewContent.value.querySelectorAll('h1, h2, h3')
+  headings.forEach(h => tocObserver.observe(h))
+}
+
+watch(showPreview, (val) => {
+  if (val) {
+    // Force re-render/scan when preview becomes visible
+    nextTick(() => renderMarkdown())
+  }
+})
+
 // Lifecycle
 onMounted(() => {
   // Global Ctrl+S handler
@@ -1390,6 +1457,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalSave)
   if (saveTimeout) clearTimeout(saveTimeout)
   if (renderTimeout) clearTimeout(renderTimeout)
+  if (tocObserver) tocObserver.disconnect()
   if (editorView.value) {
     editorView.value.destroy()
     editorView.value = null
@@ -1716,7 +1784,8 @@ watch(() => route.params.id, (newId, oldId) => {
               </div>
               <!-- Preview Content -->
               <div class="markdown-body dark:text-gray-300"
-                   :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}">
+                   :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}"
+                   :style="toc.length > 0 && mode === 'view' && !showEditor ? 'padding-right: 15rem' : ''">
                 <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent" v-html="renderedContent"></div>
               </div>
 
@@ -1839,25 +1908,28 @@ watch(() => route.params.id, (newId, oldId) => {
                   </div>
                 </div>
               </div>
+
+              <!-- TOC Sidebar (only in view mode) - positioned relative to content -->
+              <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
+                  class="fixed w-56 overflow-y-auto p-3 hidden lg:block note-toc"
+                  style="right: 2rem; top: 8rem; max-height: calc(100vh - 12rem);">
+                <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
+                  <i class="fa-solid fa-list mr-2"></i>目錄
+                </h3>
+                <nav class="space-y-1">
+                  <a v-for="item in toc" :key="item.id" 
+                  @click.prevent="scrollToHeading(item.id)"
+                  class="block py-0.5 text-sm cursor-pointer truncate transition border-l-2"
+                  :class="activeHeadingId === item.id ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-black' : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent'"
+                  :style="{ paddingLeft: ((item.level - 1) * 12 + 4) + 'px' }"
+                  :title="item.text">
+                      {{ item.text }}
+                  </a>
+                </nav>
+              </div>
             </div>
-            
-            <!-- TOC Sidebar (only in view mode, no editor) -->
-            <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
-                 class="w-56 shrink-0 overflow-y-auto p-3 hidden lg:block border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-              <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
-                <i class="fa-solid fa-list mr-1"></i> 目錄
-              </h3>
-              <nav class="space-y-1">
-                <a v-for="item in toc" :key="item.id"
-                   @click.prevent="scrollToHeading(item.id)"
-                   class="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer truncate transition-colors"
-                   :style="{ paddingLeft: ((item.level - 1) * 12) + 'px' }">
-                  {{ item.text }}
-                </a>
-              </nav>
             </div>
           </div>
-        </div>
       </template>
 
       <!-- Not Found -->
@@ -1980,11 +2052,12 @@ watch(() => route.params.id, (newId, oldId) => {
 .dark .editor-container .cm-gutters { border-color: #3c3c3c; }
 
 .markdown-body { font-size: 16px; line-height: 1.6; }
-.markdown-body h1 { font-size: 2em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-body h3 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
+.markdown-body h1 { font-size: 2em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; scroll-margin-top: 3rem; }
+.markdown-body h4, .markdown-body h5, .markdown-body h6 { scroll-margin-top: 3rem; }
 .markdown-body p { margin: 1em 0; }
-.markdown-body ul, .markdown-body ol { margin: 1em 0; padding-left: 2em; }
+.markdown-body ul, .markdown-body ol { margin: 0.2em 0; padding-left: 2em; }
 .markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; }
