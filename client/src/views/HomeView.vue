@@ -789,55 +789,71 @@ onUnmounted(() => {
 <template>
   <div class="px-8 py-5 container mx-auto">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-        <i v-if="isUncategorizedPage" class="fa-solid fa-file-circle-question mr-3"></i>
-        <i v-else class="fa-solid fa-house mr-3"></i>
-        {{ isUncategorizedPage ? '未分類筆記' : 'Home' }}
-      </h1>
-
-      <div class="flex items-center space-x-3">
-        <!-- Display Mode Toggle -->
-        <div class="bg-white dark:bg-dark-surface rounded-lg shadow p-1 flex items-center border border-gray-200 dark:border-gray-700">
-          <button
-            @click="displayMode = 'grid'; saveDisplayMode()"
-            class="p-2 rounded transition"
-            :class="displayMode === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
-            title="格狀顯示"
-          >
-            <i class="fa-solid fa-border-all"></i>
-          </button>
-          <button
-            @click="displayMode = 'list'; saveDisplayMode()"
-            class="p-2 rounded transition"
-            :class="displayMode === 'list' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
-            title="清單顯示"
-          >
-            <i class="fa-solid fa-list"></i>
-          </button>
+    <template v-if="!isUncategorizedPage">
+        <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+            <span>Home</span>
         </div>
         
-        <!-- Sort Options -->
-        <div class="bg-white dark:bg-dark-surface rounded-lg shadow p-1 flex items-center border border-gray-200 dark:border-gray-700">
-          <select
-            v-model="sortBy"
-            @change="saveSortSettings"
-            class="bg-transparent text-sm font-medium text-gray-600 dark:text-gray-300 border-none focus:ring-0 cursor-pointer py-1 pl-2 pr-8"
-          >
-            <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-          <button
-            @click="toggleSortOrder"
-            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-            :title="sortOrder === 'asc' ? '升冪' : '降冪'"
-          >
-            <i class="fa-solid" :class="sortOrder === 'asc' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short'"></i>
-          </button>
+        <div class="mb-6 flex flex-wrap gap-4 items-center justify-end">
+            <div class="flex items-center gap-2 ml-auto">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+                <select v-model="sortBy" @change="saveSortSettings"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                    </option>
+                </select>
+                <button @click="toggleSortOrder"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                        :title="sortOrder === 'asc' ? '升冪' : '降冪'">
+                    <i class="fa-solid" :class="sortOrder === 'asc' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short'"></i>
+                </button>
+            </div>
         </div>
-      </div>
-    </div>
+    </template>
+
+    <template v-else>
+        <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+            <router-link to="/" class="hover:text-blue-500">Home</router-link>
+            <span class="mx-2">/</span>
+            <span>未分類筆記</span>
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                <i class="fa-solid fa-inbox mr-2"></i>未分類筆記
+            </h1>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+                <select v-model="sortBy" @change="saveSortSettings"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                    </option>
+                </select>
+                <button @click="toggleSortOrder"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                        :title="sortOrder === 'asc' ? '升冪' : '降冪'">
+                    <i class="fa-solid" :class="sortOrder === 'asc' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short'"></i>
+                </button>
+                
+                <div class="border-l border-gray-300 dark:border-gray-600 h-6 mx-2"></div>
+
+                <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 text-sm">
+                    <button type="button" @click="displayMode = 'grid'; saveDisplayMode()"
+                        :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'grid', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'grid'}"
+                        class="px-2 py-1 rounded transition" title="格狀顯示">
+                        <i class="fa-solid fa-border-all pointer-events-none"></i>
+                    </button>
+                    <button type="button" @click="displayMode = 'list'; saveDisplayMode()"
+                        :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'list', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'list'}"
+                        class="px-2 py-1 rounded transition" title="清單顯示">
+                        <i class="fa-solid fa-list pointer-events-none"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
     <div>
       <!-- Books Section (not shown on uncategorized page) -->
       <section v-if="!isUncategorizedPage" class="mb-6">
@@ -870,7 +886,23 @@ onUnmounted(() => {
 
       <!-- Notes Section (Uncategorized) -->
       <section>
-        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">{{ isUncategorizedPage ? '未分類筆記' : 'Notes' }}</h2>
+        <div v-if="!isUncategorizedPage" class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+                <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">Notes</h2>
+            </div>
+            <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 text-sm">
+                <button type="button" @click="displayMode = 'grid'; saveDisplayMode()"
+                    :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'grid', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'grid'}"
+                    class="px-2 py-1 rounded transition" title="格狀顯示">
+                    <i class="fa-solid fa-border-all pointer-events-none"></i>
+                </button>
+                <button type="button" @click="displayMode = 'list'; saveDisplayMode()"
+                    :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'list', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'list'}"
+                    class="px-2 py-1 rounded transition" title="清單顯示">
+                    <i class="fa-solid fa-list pointer-events-none"></i>
+                </button>
+            </div>
+        </div>
 
         <!-- Empty State - Grid Mode -->
         <div v-if="sortedNotes.length === 0 && displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

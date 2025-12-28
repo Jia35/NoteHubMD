@@ -93,7 +93,6 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString('zh-TW')
 }
 
-
 onMounted(loadData)
 </script>
 
@@ -107,77 +106,72 @@ onMounted(loadData)
     <!-- Content -->
     <div v-else class="h-full">
       <!-- Header -->
-      <div class="mb-6">
-        <!-- Breadcrumb -->
-        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-          <router-link to="/" class="hover:text-blue-500">Home</router-link>
-          <span class="mx-2">/</span>
-          <span class="text-gray-800 dark:text-white font-medium">垃圾桶</span>
-        </div>
-
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
-          <i class="fa-solid fa-trash-alt text-red-600"></i>
-          垃圾桶
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400">這裡顯示已刪除的書本和筆記，您可以還原或永久刪除它們。</p>
+      <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
+        <router-link to="/" class="hover:text-blue-500">Home</router-link>
+        <span class="mx-2">/</span>
+        <span>垃圾桶</span>
       </div>
 
+      <h1 class="text-4xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
+        <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
+      </h1>
+
       <!-- Content Grid -->
-      <div class="space-y-8">
+      <div>
         <!-- Deleted Books -->
-        <div v-if="books.length > 0">
-          <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b border-gray-300 dark:border-gray-700 pb-2">
-            <i class="fa-solid fa-book mr-2"></i>已刪除的書本 ({{ books.length }})
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="book in books" :key="book.id" class="bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div class="flex justify-between items-start mb-2">
-                <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate flex-1" :title="book.title">{{ book.title }}</h3>
-                <span class="text-xs text-gray-400 whitespace-nowrap ml-2">{{ formatDate(book.deletedAt) }}</span>
-              </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 h-10">{{ book.description || '無描述' }}</p>
-              <div class="flex justify-end gap-2">
-                <button @click="restoreBook(book.id)" class="text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded hover:bg-green-200 transition cursor-pointer">
-                  <i class="fa-solid fa-rotate-left mr-1"></i>還原
-                </button>
-                <button @click="forceDeleteBook(book.id)" class="text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 transition cursor-pointer">
-                  <i class="fa-solid fa-trash-can mr-1"></i>永久刪除
-                </button>
-              </div>
+        <div class="mb-8">
+            <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Books</h2>
+            <div v-if="books.length === 0" class="text-gray-400 italic">(無已刪除的 Book)</div>
+            <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div v-for="book in books" :key="book.id" class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center">
+                    <div class="flex-1 min-w-0 mr-4">
+                        <div class="flex items-center">
+                            <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-book"></i></span>
+                            <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="book.title">{{ book.title }}</span>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                            <span>刪除時間: {{ formatDate(book.deletedAt) }}</span>
+                            <span v-if="book.deletedBy" class="ml-3">刪除者: {{ book.deletedBy.username }}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button @click="restoreBook(book.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" title="還原">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> 還原
+                        </button>
+                        <button @click="forceDeleteBook(book.id)" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" title="永久刪除">
+                            <i class="fa-solid fa-trash mr-1"></i> 永久刪除
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
 
         <!-- Deleted Notes -->
-        <div v-if="notes.length > 0">
-          <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b border-gray-300 dark:border-gray-700 pb-2">
-            <i class="fa-solid fa-note-sticky mr-2"></i>已刪除的筆記 ({{ notes.length }})
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div v-for="note in notes" :key="note.id" class="bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div class="flex justify-between items-start mb-2">
-                <h3 class="font-bold text-gray-800 dark:text-white truncate flex-1" :title="note.title">{{ note.title || 'Untitled' }}</h3>
-              </div>
-              <div class="text-xs text-gray-500 mb-4">
-                <div v-if="note.Book">書本: {{ note.Book.title }}</div>
-                <div>刪除於: {{ formatDate(note.deletedAt) }}</div>
-              </div>
-              <div class="flex justify-end gap-2">
-                <button @click="restoreNote(note.id)" class="text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded hover:bg-green-200 transition cursor-pointer">
-                  <i class="fa-solid fa-rotate-left mr-1"></i>還原
-                </button>
-                <button @click="forceDeleteNote(note.id)" class="text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 transition cursor-pointer">
-                  <i class="fa-solid fa-trash-can mr-1"></i>永久刪除
-                </button>
-              </div>
+        <div>
+            <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">已刪除的 Notes</h2>
+            <div v-if="notes.length === 0" class="text-gray-400 italic">(無已刪除的 Note)</div>
+            <div v-else class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div v-for="note in notes" :key="note.id" class="p-4 border-b border-gray-300 dark:border-gray-700 last:border-b-0 flex justify-between items-center">
+                    <div class="flex-1 min-w-0 mr-4">
+                        <div class="flex items-center">
+                            <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
+                            <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate" :title="note.title">{{ note.title }}</span>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                            <span>刪除時間: {{ formatDate(note.deletedAt) }}</span>
+                            <span v-if="note.deletedBy" class="ml-3">刪除者: {{ note.deletedBy.username }}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button @click="restoreNote(note.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" title="還原">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> 還原
+                        </button>
+                        <button @click="forceDeleteNote(note.id)" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" title="永久刪除">
+                            <i class="fa-solid fa-trash mr-1"></i> 永久刪除
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="books.length === 0 && notes.length === 0" class="text-center py-12">
-          <i class="fa-regular fa-trash-can text-6xl text-gray-300 mb-4"></i>
-          <p class="text-gray-500 dark:text-gray-400">垃圾桶是空的</p>
         </div>
       </div>
     </div>
