@@ -895,12 +895,26 @@ onUnmounted(() => {
         <section>
           <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">{{ isUncategorizedPage ? '未分類筆記' : 'Notes' }}</h2>
 
-          <!-- Empty State -->
-          <div v-if="sortedNotes.length === 0"
+          <!-- Empty State - Grid Mode -->
+          <div v-if="sortedNotes.length === 0 && displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div
                @click="createNote"
-               class="flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 min-h-[120px]">
-            <i class="fa-solid fa-plus text-3xl text-blue-500 mb-3"></i>
-            <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
+               class="flex flex-col items-center justify-center bg-white dark:bg-dark-surface rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[140px]">
+              <i class="fa-solid fa-plus text-3xl text-blue-500 mb-2"></i>
+              <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
+            </div>
+          </div>
+
+          <!-- Empty State - List Mode -->
+          <div v-else-if="sortedNotes.length === 0 && displayMode === 'list'" class="flex flex-col gap-2">
+            <div
+               @click="createNote"
+               class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[70px]">
+              <div class="w-10 text-center text-xl mr-3 text-blue-500 flex-shrink-0">
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
+            </div>
           </div>
 
           <!-- Grid View -->
