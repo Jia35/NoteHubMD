@@ -1,0 +1,11 @@
+node_modules
+client/node_modules
+.git
+.vscode
+.idea
+_uploads
+dist
+public_dist
+coverage
+*.log
+.env
