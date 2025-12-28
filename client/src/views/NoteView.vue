@@ -22,6 +22,7 @@ import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, high
 import { EditorState, Compartment } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { autocompletion } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
 import {
   androidstudio, atomone, aura, copilot, darcula, eclipse, githubLight,
@@ -526,6 +527,144 @@ const loadNote = async () => {
   }
 }
 
+// --- Markdown Autocomplete Hints ---
+const markdownHints = [
+  // Headings
+  { text: '# ', displayText: '# 標題 1', trigger: '#' },
+  { text: '## ', displayText: '## 標題 2', trigger: '#' },
+  { text: '### ', displayText: '### 標題 3', trigger: '#' },
+  { text: '#### ', displayText: '#### 標題 4', trigger: '#' },
+  { text: '##### ', displayText: '##### 標題 5', trigger: '#' },
+  { text: '###### ', displayText: '###### 標題 6', trigger: '#' },
+  { text: "###### tags: `標籤1`、`標籤2`、`標籤3`", displayText: "###### tags: `標籤1`、`標籤2`...", trigger: '#' },
+  // Containers
+  { text: '::: success\n\n:::', displayText: '::: success (成功提示)', trigger: ':::' },
+  { text: '::: info\n\n:::', displayText: '::: info (資訊提示)', trigger: ':::' },
+  { text: '::: warning\n\n:::', displayText: '::: warning (警告提示)', trigger: ':::' },
+  { text: '::: danger\n\n:::', displayText: '::: danger (危險提示)', trigger: ':::' },
+  { text: '::: spoiler 點擊展開\n\n:::', displayText: '::: spoiler (折疊區塊)', trigger: ':::' },
+  // Code blocks
+  { text: '```\n\n```', displayText: '``` 程式碼區塊', trigger: '`' },
+  { text: '```javascript\n\n```', displayText: '```javascript', trigger: '`' },
+  { text: '```python\n\n```', displayText: '```python', trigger: '`' },
+  { text: '```html\n\n```', displayText: '```html', trigger: '`' },
+  { text: '```css\n\n```', displayText: '```css', trigger: '`' },
+  { text: '```sql\n\n```', displayText: '```sql', trigger: '`' },
+  { text: '```bash\n\n```', displayText: '```bash', trigger: '`' },
+  { text: '```mermaid\n\n```', displayText: '```mermaid (流程圖)', trigger: '`' },
+  // Links and images
+  { text: '[](url)', displayText: '[]() 連結', trigger: '[' },
+  { text: '![](image_url)', displayText: '![]() 圖片', trigger: '!' },
+  // Lists
+  { text: '- [ ] ', displayText: '- [ ] 待辦事項 (未完成)', trigger: '-' },
+  { text: '- [x] ', displayText: '- [x] 待辦事項 (已完成)', trigger: '-' },
+  // Text formatting
+  { text: '**粗體**', displayText: '**粗體**', trigger: '*' },
+  { text: '*斜體*', displayText: '*斜體*', trigger: '*' },
+  { text: '~~刪除線~~', displayText: '~~刪除線~~', trigger: '~' },
+  { text: '==標記==', displayText: '==標記/螢光==', trigger: '=' },
+  { text: '^上標^', displayText: '^上標^', trigger: '^' },
+  // Tables
+  { text: '| 欄位1 | 欄位2 | 欄位3 |\n| --- | --- | --- |\n| 內容1 | 內容2 | 內容3 |', displayText: '| 表格 |', trigger: '|' },
+]
+
+const markdownCompletionSource = (context) => {
+  const line = context.state.doc.lineAt(context.pos)
+  const lineStart = line.text.substring(0, context.pos - line.from)
+  
+  let matchingHints = []
+  let from = line.from
+  
+  // Check for heading pattern at line start
+  const headingMatch = lineStart.match(/^(#{1,6})$/)
+  if (headingMatch) {
+    from = line.from
+    const prefix = headingMatch[1]
+    matchingHints = markdownHints.filter(h => h.trigger === '#' && h.text.startsWith(prefix))
+  }
+  
+  // Check for container pattern at line start
+  const containerMatch = lineStart.match(/^(:{1,3})$/)
+  if (containerMatch) {
+    from = line.from
+    matchingHints = markdownHints.filter(h => h.trigger === ':::')
+  }
+  
+  // Check for code block pattern at line start
+  const codeMatch = lineStart.match(/^(`{1,3})$/)
+  if (codeMatch) {
+    from = line.from
+    matchingHints = markdownHints.filter(h => h.trigger === '`')
+  }
+  
+  // Check for list pattern at line start
+  const listMatch = lineStart.match(/^(-)$/)
+  if (listMatch) {
+    from = line.from
+    matchingHints = markdownHints.filter(h => h.trigger === '-')
+  }
+  
+  // Check for link pattern
+  const linkMatch = lineStart.match(/(\[)$/)
+  if (linkMatch) {
+    from = context.pos - 1
+    matchingHints = markdownHints.filter(h => h.trigger === '[')
+  }
+  
+  // Check for image pattern
+  const imageMatch = lineStart.match(/(!)$/)
+  if (imageMatch) {
+    from = context.pos - 1
+    matchingHints = markdownHints.filter(h => h.trigger === '!')
+  }
+  
+  // Check for bold/italic pattern
+  const boldMatch = lineStart.match(/(\*{1,2})$/)
+  if (boldMatch) {
+    from = context.pos - boldMatch[1].length
+    matchingHints = markdownHints.filter(h => h.trigger === '*')
+  }
+  
+  // Check for strikethrough pattern
+  const strikeMatch = lineStart.match(/(~{1,2})$/)
+  if (strikeMatch) {
+    from = context.pos - strikeMatch[1].length
+    matchingHints = markdownHints.filter(h => h.trigger === '~')
+  }
+  
+  // Check for mark pattern
+  const markMatch = lineStart.match(/(={1,2})$/)
+  if (markMatch) {
+    from = context.pos - markMatch[1].length
+    matchingHints = markdownHints.filter(h => h.trigger === '=')
+  }
+  
+  // Check for superscript pattern
+  const supMatch = lineStart.match(/(\^)$/)
+  if (supMatch) {
+    from = context.pos - 1
+    matchingHints = markdownHints.filter(h => h.trigger === '^')
+  }
+  
+  // Check for table pattern
+  const tableMatch = lineStart.match(/(\|)$/)
+  if (tableMatch) {
+    from = context.pos - 1
+    matchingHints = markdownHints.filter(h => h.trigger === '|')
+  }
+  
+  if (matchingHints.length === 0) return null
+  
+  return {
+    from,
+    options: matchingHints.map(hint => ({
+      label: hint.displayText,
+      apply: hint.text
+    })),
+    filter: false
+  }
+}
+
 // Init CodeMirror
 const initEditor = () => {
   if (!editorContainer.value) {
@@ -580,6 +719,10 @@ const initEditor = () => {
       },
       paste: handlePaste,
       drop: handleDrop
+    }),
+    autocompletion({
+      override: [markdownCompletionSource],
+      activateOnTyping: true
     })
   ]
   
@@ -2213,5 +2356,56 @@ watch(() => route.params.id, (newId, oldId) => {
     color: #6e7681;
     background-color: rgba(255, 255, 255, 0.05);
     border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+/* CM6 Autocomplete Hints Customization - Legacy Style Match */
+.cm-tooltip.cm-tooltip-autocomplete {
+    background-color: #ffffff !important;
+    border: 1px solid #e1e4e8 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    padding: 2px !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: 14px !important;
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+    padding: 6px 12px !important;
+    color: #24292e !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: background-color 0.1s ease !important;
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+/* Dark mode overrides */
+.dark .cm-tooltip.cm-tooltip-autocomplete {
+    background-color: #1f2937 !important;
+    border: 1px solid #374151 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+    color: #e5e7eb !important;
+}
+
+.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+/* Hide completion type icon/info if present to match legacy text-only look */
+.cm-completionIcon {
+    display: none !important;
+}
+.cm-completionDetail {
+    color: #6b7280;
+    margin-left: 0.5em;
+    font-style: italic;
+    opacity: 0.8;
 }
 </style>
