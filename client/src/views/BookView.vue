@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, inject, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav, NoteCard, InfoModal } from '@/components'
+import { SidebarNav, NoteCard, InfoModal, CreateBookModal } from '@/components'
 
 const route = useRoute()
 const router = useRouter()
@@ -542,5 +542,12 @@ watch(() => route.params.id, () => {
     />
       </div>
     </div>
+    
+    <!-- Create Book Modal -->
+    <CreateBookModal
+      :show="showCreateBookModal"
+      @close="showCreateBookModal = false"
+      @book-created="(book) => { showCreateBookModal = false; window.location.href = '/b/' + book.id }"
+    />
   </div>
 </template>
