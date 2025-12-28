@@ -341,54 +341,76 @@ const md = new MarkdownIt({
   linkify: true,
   typographer: true,
   breaks: true,
-  highlight: (str, lang) => {
-    const parsed = parseCodeBlockInfo(lang)
-    const actualLang = parsed.language.toLowerCase()
-
-    // Handle mermaid code blocks specially
-    if (actualLang === 'mermaid') {
-      return '<div class="mermaid">' + str + '</div>'
-    }
-
-    // Build CSS classes
-    const classes = ['hljs']
-    if (parsed.wordWrap) classes.push('code-wrap')
-    if (parsed.lineNumbers) classes.push('has-line-numbers')
-
-    let highlightedCode
-    if (parsed.language && hljs.getLanguage(parsed.language)) {
-      try {
-        highlightedCode = hljs.highlight(str, { language: parsed.language, ignoreIllegals: true }).value
-      } catch {
-        highlightedCode = md.utils.escapeHtml(str)
-      }
-    } else {
-      highlightedCode = md.utils.escapeHtml(str)
-    }
-
-    // If line numbers are enabled, wrap with line number display
-    if (parsed.lineNumbers) {
-      const lines = highlightedCode.split('\n')
-      // Remove trailing empty line if present
-      if (lines.length > 0 && lines[lines.length - 1] === '') {
-        lines.pop()
-      }
-
-      const lineNumbersHtml = lines.map((_, i) =>
-        `<span class="code-line-number">${parsed.startLine + i}</span>`
-      ).join('')
-
-      const codeHtml = lines.map(line =>
-        `<span class="code-line">${line || ' '}</span>`
-      ).join('')
-
-      return `<pre class="${classes.join(' ')}"><code><div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div></code></pre>`
-    }
-
-    return `<pre class="${classes.join(' ')}"><code>${highlightedCode}</code></pre>`
-  }
+  breaks: true
 })
-  .use(markdownItAnchor, { permalink: false })
+
+// Custom fence renderer to support language headers and wrappers
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const token = tokens[idx]
+  const info = token.info ? md.utils.unescapeAll(token.info).trim() : ''
+  const content = token.content
+
+  const parsed = parseCodeBlockInfo(info)
+  const actualLang = parsed.language.toLowerCase()
+
+  // Handle mermaid code blocks specially
+  if (actualLang === 'mermaid') {
+    return '<div class="mermaid">' + content + '</div>'
+  }
+
+  // Build CSS classes
+  const classes = ['hljs']
+  if (parsed.wordWrap) classes.push('code-wrap')
+  if (parsed.lineNumbers) classes.push('has-line-numbers')
+  if (actualLang) classes.push('language-' + actualLang)
+
+  let highlightedCode
+  if (parsed.language && hljs.getLanguage(parsed.language)) {
+    try {
+      highlightedCode = hljs.highlight(content, { language: parsed.language, ignoreIllegals: true }).value
+    } catch {
+      highlightedCode = md.utils.escapeHtml(content)
+    }
+  } else {
+    highlightedCode = md.utils.escapeHtml(content)
+  }
+
+  let finalCodeHtml = highlightedCode
+
+  // If line numbers are enabled, wrap with line number display
+  if (parsed.lineNumbers) {
+    const lines = highlightedCode.split('\n')
+    // Remove trailing empty line if present
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop()
+    }
+
+    const lineNumbersHtml = lines.map((_, i) =>
+      `<span class="code-line-number">${parsed.startLine + i}</span>`
+    ).join('')
+
+    const codeHtml = lines.map(line =>
+      `<span class="code-line">${line || ' '}</span>`
+    ).join('')
+
+    finalCodeHtml = `<div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div>`
+  }
+
+  // Construct HTML
+  let output = '<div class="code-block-wrapper">'
+  
+  // Add header if language is present
+  if (actualLang) {
+    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span></div>`
+  }
+
+  output += `<pre class="${classes.join(' ')}"><code>${finalCodeHtml}</code></pre>`
+  output += '</div>'
+
+  return output
+}
+
+md.use(markdownItAnchor, { permalink: false })
   .use(markdownItEmoji)
   .use(markdownItMark)
   .use(markdownItSub)
@@ -2438,5 +2460,42 @@ watch(() => route.params.id, (newId, oldId) => {
     margin-left: 0.5em;
     font-style: italic;
     opacity: 0.8;
+}
+
+/* Code Block Wrapper & Header */
+.code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+    border-radius: 6px;
+    background-color: #282c34; /* Match OneDark background */
+    overflow: hidden; /* Ensure header radius is respected */
+}
+
+/* Override default pre margin since wrapper handles it */
+.markdown-body .code-block-wrapper pre {
+    margin: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: flex-start;
+    background-color: #f4f4f4;
+    padding: 4px 12px;
+    border-bottom: 1px solid #d3d3d3;
+    font-size: 0.75rem;
+}
+.dark .code-block-header {
+    background-color: #21252b;
+    border-bottom: 1px solid #181a1f;
+}
+
+.code-lang {
+    color: #8a9298;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+.dark .code-lang {
+    color: #abb2bf;
 }
 </style>
