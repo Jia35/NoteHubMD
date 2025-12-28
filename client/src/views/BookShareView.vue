@@ -25,6 +25,12 @@ const loadBook = async () => {
     const shareId = route.params.shareId
     const data = await api.getSharedBook(shareId)
     
+    // Normalize API response: Map Notes (capitalized) to notes (lowercase)
+    if (data.Notes) {
+      data.notes = data.Notes
+      delete data.Notes
+    }
+    
     book.value = data
     notes.value = data.notes || []
     canEdit.value = data.canEdit || false
