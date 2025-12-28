@@ -731,10 +731,17 @@ watch(() => route.params.shareId, () => {
 
 /* Mermaid */
 .mermaid {
-    display: flex;
-    justify-content: center;
+    display: block;
+    text-align: center;
     background-color: transparent;
     padding: 10px;
+    width: 100%;
+    overflow-x: auto;
+}
+.mermaid svg {
+    max-width: 100%;
+    height: auto;
+    display: inline-block;
 }
 
 /* Alerts */
