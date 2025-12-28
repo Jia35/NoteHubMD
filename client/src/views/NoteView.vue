@@ -1630,28 +1630,30 @@ watch(showPreview, (val) => {
 })
 
 // Lifecycle
+// Named handler for proper cleanup (prevent memory leak)
+const handleDocumentClick = (e) => {
+  // Close comment menu
+  if (!e.target.closest('[data-comment-menu]') && !e.target.closest('.comment-menu-dropdown')) {
+    if (openMenuId.value !== null) {
+      closeCommentMenu()
+    }
+  }
+  
+  // Close online users popup
+  if (showOnlineUsersPopup.value) {
+    const isOnlineUsersBtn = e.target.closest('[data-online-users-btn]')
+    const isOnlineUsersPopup = e.target.closest('[data-online-users-popup]')
+    if (!isOnlineUsersBtn && !isOnlineUsersPopup) {
+      showOnlineUsersPopup.value = false
+    }
+  }
+}
+
 onMounted(() => {
   // Global Ctrl+S handler
   window.addEventListener('keydown', handleGlobalSave)
-  // Close menu on click outside
   // Close menu/popups on click outside
-  document.addEventListener('click', (e) => {
-    // Close comment menu
-    if (!e.target.closest('[data-comment-menu]') && !e.target.closest('.comment-menu-dropdown')) {
-      if (openMenuId.value !== null) {
-        closeCommentMenu()
-      }
-    }
-    
-    // Close online users popup
-    if (showOnlineUsersPopup.value) {
-      const isOnlineUsersBtn = e.target.closest('[data-online-users-btn]')
-      const isOnlineUsersPopup = e.target.closest('[data-online-users-popup]')
-      if (!isOnlineUsersBtn && !isOnlineUsersPopup) {
-        showOnlineUsersPopup.value = false
-      }
-    }
-  })
+  document.addEventListener('click', handleDocumentClick)
 
   updateHighlightStyle(theme.value)
   loadNote()
@@ -1659,6 +1661,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalSave)
+  document.removeEventListener('click', handleDocumentClick)
   if (saveTimeout) clearTimeout(saveTimeout)
   if (renderTimeout) clearTimeout(renderTimeout)
   if (tocObserver) tocObserver.disconnect()
