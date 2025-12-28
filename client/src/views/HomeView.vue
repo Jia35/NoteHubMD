@@ -3,8 +3,7 @@ import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import { BookCard, NoteCard, InfoModal } from '@/components'
-import Cropper from 'cropperjs'
-import 'cropperjs/dist/cropper.css'
+
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +21,9 @@ const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
 
 // Inject global view mode from App.vue
 const globalViewMode = inject('globalViewMode')
+
+// Inject global actions
+const openCreateBookModal = inject('openCreateBookModal')
 
 // Local state
 const loading = ref(true)
@@ -127,28 +129,7 @@ const openMenuId = ref(null)
 
 // Settings Modal
 const showSettings = ref(false)
-const theme = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-const appVersion = ref('')
-
-// Profile Modal
-const showUserProfileModal = ref(false)
-const editableName = ref('')
-const avatarPreview = ref('')
-const savingProfile = ref(false)
-const avatarFile = ref(null)  // { cropped: File, original: File, cropData: object }
-const avatarRemoved = ref(false)
-
-// Avatar Cropper Modal
-const showCropperModal = ref(false)
-const cropperImageSrc = ref('')
-const cropperImageRef = ref(null)
-let cropperInstance = null
-let pendingAvatarFile = null  // Original file before cropping
-
-// Create Book Modal
-const showCreateBookModal = ref(false)
-const newBookTitle = ref('')
-const newBookDescription = ref('')
+// Modals are managed by App.vue (Settings, Profile, CreateBook)
 
 // Info Modal State
 const showInfoModal = ref(false)
@@ -167,12 +148,7 @@ const infoUserSearchResults = ref([])
 const infoNewUserPermission = ref('edit')
 const infoLoadingUserPermissions = ref(false)
 
-// Export/Import Notes
-const exportingNotes = ref(false)
-const importingNotes = ref(false)
-const showImportMenu = ref(false)
-const importFileInput = ref(null)
-const importFolderInput = ref(null)
+// Export/Import Notes logic moved to App.vue
 
 // About Modal
 const showAboutModal = ref(false)
@@ -342,25 +318,7 @@ const setGlobalViewMode = (mode) => {
 }
 
 // Set theme
-const setTheme = (newTheme) => {
-  theme.value = newTheme
-  localStorage.setItem('NoteHubMD-theme', newTheme)
-  if (newTheme === 'dark') {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
-}
-
-// Load app version
-const loadAppVersion = async () => {
-  try {
-    const data = await api.getAppVersion()
-    appVersion.value = data.version || ''
-  } catch (e) {
-    appVersion.value = ''
-  }
-}
+// Functions for global modals are injected or handled by App.vue
 
 // Create note
 const createNote = async () => {
@@ -372,30 +330,7 @@ const createNote = async () => {
   }
 }
 
-// Open create book modal
-const openCreateBookModal = () => {
-  newBookTitle.value = ''
-  newBookDescription.value = ''
-  showCreateBookModal.value = true
-}
-
-// Create book
-const createBook = async () => {
-  if (!newBookTitle.value.trim()) {
-    showAlert?.('請輸入書本標題', 'warning')
-    return
-  }
-  try {
-    const book = await api.createBook({
-      title: newBookTitle.value.trim(),
-      description: newBookDescription.value.trim()
-    })
-    showCreateBookModal.value = false
-    router.push('/b/' + book.id)
-  } catch (e) {
-    showAlert?.('建立書本失敗', 'error')
-  }
-}
+// Create Book logic moved to App.vue
 
 // Open note
 const openNote = (note) => {
@@ -475,198 +410,7 @@ const isPinned = (type, id) => {
   return pinnedItems.value.some(p => p.type === type && p.id === id)
 }
 
-// Open profile modal
-const openUserProfileModal = () => {
-  if (!user.value) return
-  editableName.value = user.value.name || ''
-  avatarPreview.value = user.value.avatar || ''
-  avatarFile.value = null
-  avatarRemoved.value = false
-  showUserProfileModal.value = true
-}
-
-// Save profile
-const saveProfile = async () => {
-  savingProfile.value = true
-  try {
-    let avatarUrl = user.value.avatar
-    let avatarOriginalUrl = user.value.avatarOriginal
-    
-    if (avatarRemoved.value) {
-      avatarUrl = null
-      avatarOriginalUrl = null
-    } else if (avatarFile.value) {
-      // Upload cropped avatar
-      if (avatarFile.value.cropped) {
-        const croppedResult = await api.uploadAvatar(avatarFile.value.cropped)
-        avatarUrl = croppedResult.url
-        
-        // Upload original if available
-        if (avatarFile.value.original) {
-          const originalResult = await api.uploadAvatar(avatarFile.value.original)
-          avatarOriginalUrl = originalResult.url
-        }
-      }
-    }
-    
-    await api.updateProfile({
-      name: editableName.value,
-      avatar: avatarUrl,
-      avatarOriginal: avatarOriginalUrl
-    })
-    
-    user.value.name = editableName.value
-    user.value.avatar = avatarUrl
-    user.value.avatarOriginal = avatarOriginalUrl
-    
-    avatarFile.value = null
-    avatarRemoved.value = false
-    pendingAvatarFile = null
-    showUserProfileModal.value = false
-  } catch (e) {
-    showAlert?.('儲存失敗', 'error')
-  } finally {
-    savingProfile.value = false
-  }
-}
-
-// Handle avatar file change
-const handleAvatarChange = (event) => {
-  const file = event.target.files?.[0]
-  if (!file) return
-  
-  pendingAvatarFile = file
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    cropperImageSrc.value = e.target.result
-    showCropperModal.value = true
-    
-    // Initialize cropper after modal opens
-    setTimeout(() => {
-      if (cropperImageRef.value) {
-        cropperInstance = new Cropper(cropperImageRef.value, {
-          aspectRatio: 1,
-          viewMode: 1,
-          dragMode: 'move',
-          autoCropArea: 0.9,
-          cropBoxMovable: true,
-          cropBoxResizable: true,
-          background: false
-        })
-      }
-    }, 100)
-  }
-  reader.readAsDataURL(file)
-  event.target.value = '' // Reset input
-}
-
-// Close cropper modal
-const closeCropperModal = () => {
-  showCropperModal.value = false
-  if (cropperInstance) {
-    cropperInstance.destroy()
-    cropperInstance = null
-  }
-  cropperImageSrc.value = ''
-  pendingAvatarFile = null
-}
-
-// Rotate cropper
-const rotateCropper = (degree) => {
-  if (cropperInstance) {
-    cropperInstance.rotate(degree)
-  }
-}
-
-// Apply crop - save file locally, will upload on save
-const applyCrop = async () => {
-  if (!cropperInstance) return
-  
-  try {
-    const cropData = cropperInstance.getData()
-    const canvas = cropperInstance.getCroppedCanvas({
-      width: 256,
-      height: 256,
-      imageSmoothingEnabled: true,
-      imageSmoothingQuality: 'high'
-    })
-    
-    // Convert canvas to blob
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
-    const croppedFile = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
-    
-    // Store for save operation
-    avatarFile.value = {
-      cropped: croppedFile,
-      original: pendingAvatarFile,
-      cropData: cropData
-    }
-    avatarRemoved.value = false
-    
-    // Update preview
-    avatarPreview.value = canvas.toDataURL('image/jpeg', 0.9)
-    
-    closeCropperModal()
-  } catch (e) {
-    showAlert?.('裁切失敗', 'error')
-  }
-}
-
-// Open re-crop modal with existing avatar or pending file
-const openReCropModal = () => {
-  // Use pending original file, saved original, or current preview
-  let imageSrc = null
-  if (avatarFile.value?.original) {
-    // Read pending original file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      cropperImageSrc.value = e.target.result
-      showCropperModal.value = true
-      initCropperWithDelay()
-    }
-    reader.readAsDataURL(avatarFile.value.original)
-    return
-  } else if (user.value?.avatarOriginal) {
-    imageSrc = user.value.avatarOriginal
-  } else if (avatarPreview.value) {
-    imageSrc = avatarPreview.value
-  }
-  
-  if (!imageSrc) return
-  
-  cropperImageSrc.value = imageSrc
-  showCropperModal.value = true
-  initCropperWithDelay()
-}
-
-// Helper to init cropper after delay
-const initCropperWithDelay = () => {
-  setTimeout(() => {
-    if (cropperImageRef.value) {
-      cropperInstance = new Cropper(cropperImageRef.value, {
-        aspectRatio: 1,
-        viewMode: 1,
-        dragMode: 'move',
-        autoCropArea: 0.9,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        background: false
-      })
-    }
-  }, 100)
-}
-
-// Open edit avatar modal (alias for re-crop)
-const openEditAvatarModal = () => {
-  openReCropModal()
-}
-
-// Remove avatar (marks for removal, actual delete on save)
-const removeAvatar = () => {
-  avatarPreview.value = ''
-  avatarFile.value = null
-  avatarRemoved.value = true
-}
+// Profile & Cropper functions removed (moved to UserProfileModal)
 
 // Logout
 const logout = async () => {
@@ -674,111 +418,12 @@ const logout = async () => {
   window.location.href = '/login'
 }
 
-// Export Notes
-const exportNotes = async () => {
-  if (exportingNotes.value) return
-  exportingNotes.value = true
-  try {
-    const response = await fetch('/api/export/my-notes')
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Export failed')
-    }
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const contentDisposition = response.headers.get('Content-Disposition')
-    const filenameMatch = contentDisposition?.match(/filename="(.+)"/)
-    a.download = filenameMatch ? filenameMatch[1] : 'notes_export.zip'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  } catch (e) {
-    showAlert?.('匯出失敗：' + e.message, 'error')
-  } finally {
-    exportingNotes.value = false
-  }
-}
-
-// Import Notes from file
-const handleImportFile = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  importingNotes.value = true
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch('/api/import/notes', {
-      method: 'POST',
-      body: formData
-    })
-
-    const result = await response.json()
-    if (!response.ok) {
-      throw new Error(result.error || 'Import failed')
-    }
-
-    showAlert?.(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
-    await loadData()
-  } catch (e) {
-    showAlert?.('匯入失敗：' + e.message, 'error')
-  } finally {
-    importingNotes.value = false
-    event.target.value = ''
-  }
-}
-
-// Import Notes from folder
-const handleImportFolder = async (event) => {
-  const files = event.target.files
-  if (!files || files.length === 0) return
-
-  const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.md'))
-  if (mdFiles.length === 0) {
-    showAlert?.('資料夾中沒有找到 .md 檔案', 'warning')
-    event.target.value = ''
-    return
-  }
-
-  importingNotes.value = true
-  try {
-    const formData = new FormData()
-    mdFiles.forEach(file => {
-      formData.append('files', file)
-    })
-
-    const response = await fetch('/api/import/notes-folder', {
-      method: 'POST',
-      body: formData
-    })
-
-    const result = await response.json()
-    if (!response.ok) {
-      throw new Error(result.error || 'Import failed')
-    }
-
-    showAlert?.(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
-    await loadData()
-  } catch (e) {
-    showAlert?.('匯入失敗：' + e.message, 'error')
-  } finally {
-    importingNotes.value = false
-    event.target.value = ''
-  }
-}
+// Export/Import functions moved to App.vue
 
 // Handle click outside to close menu
 onMounted(() => {
   loadData()
-  loadAppVersion()
   document.addEventListener('click', closeMenu)
-  
-  // Sync theme state with DOM
-  theme.value = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 })
 
 onUnmounted(() => {

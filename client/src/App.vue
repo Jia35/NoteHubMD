@@ -166,6 +166,107 @@ provide('openCreateBookModal', () => showCreateBookModal.value = true)
 provide('openSettingsModal', () => showSettings.value = true)
 provide('openUserProfileModal', () => showUserProfileModal.value = true)
 
+// Import/Export Logic
+const exportingNotes = ref(false)
+const importingNotes = ref(false)
+
+const exportNotes = async () => {
+  if (exportingNotes.value) return
+  exportingNotes.value = true
+  try {
+    const response = await fetch('/api/export/my-notes')
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Export failed')
+    }
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const filenameMatch = contentDisposition?.match(/filename="(.+)"/)
+    a.download = filenameMatch ? filenameMatch[1] : 'notes_export.zip'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    showAlert('匯出失敗：' + e.message, 'error')
+  } finally {
+    exportingNotes.value = false
+  }
+}
+
+const handleImportFile = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  importingNotes.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/import/notes', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error || 'Import failed')
+    }
+
+    showAlert(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
+    // Reload sidebar to reflect changes
+    await loadSidebarData(true)
+    // If on home page or similar, reload might be needed, but sidebar update handles the menu
+    // If current view depends on sidebar data (like HomeView), it reactively updates
+  } catch (e) {
+    showAlert('匯入失敗：' + e.message, 'error')
+  } finally {
+    importingNotes.value = false
+    event.target.value = ''
+  }
+}
+
+const handleImportFolder = async (event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.md'))
+  if (mdFiles.length === 0) {
+    showAlert('資料夾中沒有找到 .md 檔案', 'warning')
+    event.target.value = ''
+    return
+  }
+
+  importingNotes.value = true
+  try {
+    const formData = new FormData()
+    mdFiles.forEach(file => {
+      formData.append('files', file)
+    })
+
+    const response = await fetch('/api/import/notes-folder', {
+      method: 'POST',
+      body: formData
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      throw new Error(result.error || 'Import failed')
+    }
+
+    showAlert(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
+    await loadSidebarData(true)
+  } catch (e) {
+    showAlert('匯入失敗：' + e.message, 'error')
+  } finally {
+    importingNotes.value = false
+    event.target.value = ''
+  }
+}
+
 // Filtered sidebar books logic
 const filteredSidebarBooks = computed(() => {
   if (globalViewMode.value === 'my') {
@@ -282,6 +383,9 @@ onMounted(async () => {
       @close="showSettings = false"
       @set-theme="setTheme"
       @logout="handleLogout"
+      @export-notes="exportNotes"
+      @import-file="handleImportFile"
+      @import-folder="handleImportFolder"
     />
 
     <UserProfileModal 
