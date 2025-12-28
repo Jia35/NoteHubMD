@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav } from '@/components'
 
 const router = useRouter()
 const route = useRoute()
@@ -10,33 +9,12 @@ const showAlert = inject('showAlert')
 
 // Inject global sidebar data from App.vue
 const user = inject('sidebarUser')
-const books = inject('sidebarBooks')
-const pinnedItems = inject('sidebarPinnedItems')
 const loadSidebarData = inject('loadSidebarData')
-const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
-
-const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
-const currentRoute = computed(() => route.path)
-
-// Settings Modal
-const showSettings = ref(false)
-const showUserProfileModal = ref(false)
-const showCreateBookModal = ref(false)
 
 // Admin state (local)
 const users = ref([])
 const loading = ref(true)
 const isAdmin = ref(false)
-
-// Filtered sidebar books
-const filteredSidebarBooks = computed(() => {
-  if (globalViewMode.value === 'my') {
-    return books.value.filter(book => book.isOwner)
-  }
-  return books.value.filter(book => book.isPublic)
-})
-const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
-const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
 
 // Format date time
 const formatDateTime = (dateStr) => {
@@ -121,143 +99,128 @@ const loadData = async () => {
   }
 }
 
-// Sidebar handlers
-const setGlobalViewMode = (mode) => {
-  globalViewMode.value = mode
-  localStorage.setItem('NoteHubMD-viewMode', mode)
-}
-
-const unpinItem = async (type, id) => {
-  try {
-    await api.removePin(type, id)
-    // Update global pinned items
-    const updatedItems = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
-    updateSidebarPinnedItems(updatedItems)
-  } catch (e) {
-    showAlert?.('取消釘選失敗', 'error')
-  }
-}
-
-const createNote = async () => {
-  try {
-    const note = await api.createNote()
-    window.location.href = '/n/' + note.id
-  } catch (e) {
-    showAlert?.('建立筆記失敗', 'error')
-  }
-}
 
 onMounted(loadData)
 </script>
 
 <template>
-  <div class="h-full flex bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-    <!-- Sidebar -->
-    <SidebarNav
-      :user="user"
-      :books="limitedSidebarBooks"
-      :pinned-items="pinnedItems"
-      :show-pinned="true"
-      :show-more-books="hasMoreBooks"
-      :current-route="currentRoute"
-      :global-view-mode="globalViewMode"
-      @unpin="unpinItem"
-      @view-mode-change="setGlobalViewMode"
-      @create-note="createNote"
-      @create-book="showCreateBookModal = true"
-      @open-profile="showUserProfileModal = true"
-      @open-settings="showSettings = true"
-    />
+  <div class="h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text container mx-auto px-8 py-5 flex-1 overflow-y-auto">
+    <!-- Loading -->
+    <div v-if="loading" class="flex items-center justify-center h-full">
+      <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i>
+    </div>
 
-    <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto">
-      <div class="px-8 py-5 container mx-auto">
-        <!-- Breadcrumb -->
-        <div class="mb-6 flex items-center text-gray-500 dark:text-gray-400">
-          <router-link to="/" class="hover:text-blue-500">Home</router-link>
-          <span class="mx-2">/</span>
-          <span>管理後台</span>
+    <!-- Admin Content -->
+    <div v-else class="h-full">
+      <div v-if="isAdmin">
+        <!-- Header -->
+        <div class="mb-6">
+          <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <router-link to="/" class="hover:text-blue-500">Home</router-link>
+            <span class="mx-2">/</span>
+            <span class="text-gray-800 dark:text-white font-medium">系統管理</span>
+          </div>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
+            <i class="fa-solid fa-user-shield text-purple-600"></i>
+            系統管理
+          </h1>
         </div>
 
-        <h1 class="text-3xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
-          <i class="fa-solid fa-user-shield mr-3"></i> 管理後台
-        </h1>
-
-        <!-- Loading -->
-        <div v-if="loading" class="text-gray-500 dark:text-gray-400">
-          <i class="fa-solid fa-spinner fa-spin mr-2"></i> 載入中...
+        <!-- System Stats (Mockup) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-gray-500 dark:text-gray-400 font-medium">總用戶數</h3>
+              <i class="fa-solid fa-users text-blue-500 text-xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ users.length }}</p>
+          </div>
+          <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-gray-500 dark:text-gray-400 font-medium">線上用戶</h3>
+              <i class="fa-solid fa-circle text-green-500 text-xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white">1</p>
+          </div>
+          <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-gray-500 dark:text-gray-400 font-medium">資料庫狀態</h3>
+              <i class="fa-solid fa-database text-purple-500 text-xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800 dark:text-white text-sm pt-2">正常</p>
+          </div>
         </div>
 
-        <!-- Access Denied -->
-        <div v-else-if="!isAdmin" class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded">
-          <i class="fa-solid fa-ban mr-2"></i> 您沒有權限進入此頁面
-        </div>
-
-        <!-- Admin Content -->
-        <div v-else>
-          <h2 class="text-xl font-bold mb-4 text-gray-700 dark:text-gray-300">
-            <i class="fa-solid fa-users mr-2"></i> 使用者列表
-          </h2>
-
-          <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-            <table class="w-full">
-              <thead class="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">使用者</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">身分</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">加入時間</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">上次活動</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">書/筆記</th>
+        <!-- User Management -->
+        <div class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">用戶管理</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm uppercase">
+                  <th class="px-6 py-3 font-semibold">用戶</th>
+                  <th class="px-6 py-3 font-semibold">角色</th>
+                  <th class="px-6 py-3 font-semibold">狀態</th>
+                  <th class="px-6 py-3 font-semibold">最後登入</th>
+                  <th class="px-6 py-3 font-semibold">註冊時間</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ u.id }}</td>
-                  <td class="px-4 py-3">
+                <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition0">
+                  <td class="px-6 py-4">
                     <div class="flex items-center">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 shrink-0 overflow-hidden bg-blue-600 text-white text-sm">
-                        <img v-if="u.avatar" :src="u.avatar" class="w-full h-full object-cover" alt="">
-                        <span v-else>{{ u.username?.charAt(0).toUpperCase() }}</span>
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden text-white text-xs mr-3"
+                            :class="u.username === 'admin' ? 'bg-purple-600' : 'bg-blue-600'">
+                        <img v-if="u.avatar" :src="u.avatar" class="w-full h-full object-cover">
+                        <span v-else>{{ u.username.charAt(0).toUpperCase() }}</span>
                       </div>
                       <div>
-                        <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ u.name || u.username }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">@{{ u.username }}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">{{ u.name || u.username }}</div>
+                        <div class="text-xs text-gray-500">{{ u.username }}</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-4 py-3">
-                    <select v-if="canChangeRole(u)"
-                            v-model="u.role"
-                            @change="updateRole(u)"
-                            class="text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-200 cursor-pointer">
-                      <option value="super-admin" :disabled="user?.role !== 'super-admin'">super-admin</option>
-                      <option value="admin">admin</option>
-                      <option value="user">user</option>
+                  <td class="px-6 py-4">
+                    <select 
+                      v-model="u.role" 
+                      @change="updateRole(u)"
+                      :disabled="!canChangeRole(u)"
+                      class="bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="super-admin" :disabled="user?.role !== 'super-admin'">Super Admin</option>
                     </select>
-                    <span v-else class="text-sm px-2 py-1 rounded"
-                          :class="{
-                            'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300': u.role === 'super-admin',
-                            'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': u.role === 'admin',
-                            'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': u.role === 'user'
-                          }">
-                      {{ u.role }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                      Active
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {{ formatRelativeTime(u.lastActiveAt) }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {{ formatDateTime(u.createdAt) }}
-                  </td>
-                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                    {{ u.lastActiveAt ? formatRelativeTime(u.lastActiveAt) : '從未' }}
-                  </td>
-                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                    <span class="mr-2"><i class="fa-solid fa-book mr-1"></i>{{ u.bookCount }}</span>
-                    <span><i class="fa-solid fa-note-sticky mr-1"></i>{{ u.noteCount }}</span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Unauthorized -->
+      <div v-else class="flex items-center justify-center h-full">
+        <div class="text-center">
+          <i class="fa-solid fa-lock text-6xl text-gray-300 mb-4"></i>
+          <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">權限不足</h2>
+          <p class="text-gray-500">您沒有權限訪問此頁面。</p>
+          <router-link to="/" class="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            回首頁
+          </router-link>
         </div>
       </div>
     </div>

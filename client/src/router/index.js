@@ -16,37 +16,38 @@ const routes = [
         path: '/',
         name: 'home',
         component: HomeView,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, showSidebar: true }
     },
     {
         path: '/books',
         name: 'books',
         component: HomeView,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, showSidebar: true }
     },
     {
         path: '/b/:id',
         name: 'book',
-        component: BookView
+        component: BookView,
         // No requiresAuth - API handles permission; public-view/public-edit books don't require login
+        meta: { showSidebar: true }
     },
     {
         path: '/uncategorized',
         name: 'uncategorized',
         component: HomeView,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, showSidebar: true }
     },
     {
         path: '/trash',
         name: 'trash',
         component: TrashView,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, showSidebar: true }
     },
     {
         path: '/admin',
         name: 'admin',
         component: AdminView,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, showSidebar: true }
     },
     {
         path: '/n/:id',

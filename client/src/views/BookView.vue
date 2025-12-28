@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, inject, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav, NoteCard, InfoModal, CreateBookModal } from '@/components'
+import { NoteCard, InfoModal } from '@/components'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,21 +25,7 @@ const loadSidebarData = inject('loadSidebarData')
 const updateSidebarBooks = inject('updateSidebarBooks')
 const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
 
-const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const currentRoute = computed(() => route.path)
-const showSettings = ref(false)
-const showUserProfileModal = ref(false)
-const showCreateBookModal = ref(false)
-
-// Filtered sidebar books
-const filteredSidebarBooks = computed(() => {
-  if (globalViewMode.value === 'my') {
-    return sidebarBooks.value.filter(b => b.isOwner)
-  }
-  return sidebarBooks.value.filter(b => b.isPublic)
-})
-const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
-const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
 
 // Display mode
 const displayMode = ref(localStorage.getItem('NoteHubMD-bookDisplayMode') || 'list')
@@ -89,8 +75,7 @@ const permissionLabel = computed(() => {
 
 // Check if item is pinned
 const isPinned = (type, id) => {
-  // TODO: implement pinned items check
-  return false
+  return pinnedItems?.value?.some(p => p.type === type && p.id === id) || false
 }
 
 // Load book data (sidebar data is managed by App.vue)
@@ -371,176 +356,146 @@ watch(() => route.params.id, () => {
 </script>
 
 <template>
-  <div class="h-full flex bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
-    <!-- Sidebar -->
-    <SidebarNav
-      :user="user"
-      :books="limitedSidebarBooks"
-      :pinned-items="pinnedItems"
-      :show-pinned="true"
-      :show-more-books="hasMoreBooks"
-      :current-route="currentRoute"
-      :global-view-mode="globalViewMode"
-      @unpin="unpinItem"
-      @view-mode-change="setGlobalViewMode"
-      @create-note="createSidebarNote"
-      @create-book="showCreateBookModal = true"
-      @open-profile="showUserProfileModal = true"
-      @open-settings="showSettings = true"
-    />
-
-    <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto">
-      <div class="px-8 py-5 container mx-auto">
-        <!-- Breadcrumb -->
-        <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
-          <router-link to="/" class="hover:text-blue-500">Home</router-link>
-          <span class="mx-2">/</span>
-          <span>{{ book?.title || 'Loading...' }}</span>
-        </div>
-
-        <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center h-64">
+  <div class="h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text container mx-auto px-8 py-5 flex-1 overflow-y-auto">
+    <!-- Loading -->
+    <div v-if="loading" class="flex items-center justify-center h-full">
       <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i>
     </div>
 
-    <!-- Book Content -->
-    <template v-else-if="book">
-      <!-- Book Header -->
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-          <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
-        </h1>
-        <div class="flex items-center gap-3">
-          <button v-if="canAddNote" @click="createNote"
-                  class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition cursor-pointer">
-            <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
-          </button>
-          <!-- Permission Button (Owner only) / Display (Non-owner) -->
-          <button v-if="isOwner" @click="openInfoModal(book, 'permission', 'book')"
-                  class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
-                  title="點擊設定權限">
-            <i class="fa-solid fa-lock text-xs"></i>
-            <span>{{ permissionLabel }}</span>
-          </button>
-          <span v-else class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-600 dark:text-gray-400">
-            <i class="fa-solid fa-lock text-xs"></i>
-            <span>{{ permissionLabel }}</span>
-          </span>
-          <!-- Book Info Button -->
-          <button @click="openInfoModal(book, 'info', 'book')"
-                  class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
-                  title="書本設定">
-            <i class="fa-solid fa-cog text-xs"></i>
-            <span>書本設定</span>
-          </button>
-          <!-- Share Button -->
-          <button v-if="canEdit" @click="openInfoModal(book, 'share', 'book')"
-                  class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-sm text-white transition cursor-pointer"
-                  title="分享書本">
-            <i class="fa-solid fa-share-nodes text-xs"></i>
-            <span>分享</span>
-          </button>
+    <!-- Content -->
+    <div v-else-if="book" class="h-full">
+      <!-- Header -->
+      <div class="mb-6">
+        <!-- Breadcrumb -->
+        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <router-link to="/" class="hover:text-blue-500">Home</router-link>
+          <span class="mx-2">/</span>
+          <span class="text-gray-800 dark:text-white font-medium truncate max-w-xs">{{ book.title }}</span>
         </div>
-      </div>
 
-      <!-- Read-only Info Display -->
-      <div class="mb-4 bg-white dark:bg-dark-surface p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <!-- Tags (read-only) -->
-        <div class="flex items-center mb-3">
-          <i class="fa-solid fa-tags text-gray-400 mr-2"></i>
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-3">標籤</span>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="tag in book.tags" :key="tag"
-                  class="px-3 py-1 text-sm rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
-              {{ tag }}
-            </span>
-            <span v-if="!book.tags || book.tags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
-          </div>
-        </div>
-        <!-- Description (read-only) -->
-        <div class="flex items-start">
-          <i class="fa-solid fa-align-left text-gray-400 mr-2 mt-1"></i>
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-3">描述</span>
-          <p class="text-gray-700 dark:text-gray-300 text-sm flex-1">{{ book.description || '無描述' }}</p>
-        </div>
-      </div>
-
-      <!-- Notes List -->
-      <div class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div v-for="note in sortedNotes" :key="note.id"
-             class="p-4 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center"
-             @click="openNote(note)">
-          <!-- Drag handle (only show if canEdit) -->
-          <span v-if="canEdit" class="cursor-move text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3 px-1" @click.stop>
-            <i class="fa-solid fa-grip-vertical"></i>
-          </span>
-          <!-- Note Icon and Title/Tags -->
-          <div class="flex items-center flex-1 min-w-0">
-            <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
-            <div class="flex-1 min-w-0">
-              <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate block" :title="note.title">{{ note.title || 'Untitled' }}</span>
-              <!-- Tags below title -->
-              <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1 mt-1">
-                <span v-for="tag in note.tags.slice(0, 6)" :key="tag"
-                      class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
+              <i class="fa-solid fa-book text-blue-600"></i>
+              {{ book.title }}
+              <span v-if="!isOwner && permission === 'private'" class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded ml-2">Private</span>
+              <span v-if="permission === 'public'" class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded ml-2">Public</span>
+            </h1>
+            <p v-if="book.description" class="text-gray-600 dark:text-gray-400 mb-2 max-w-2xl">{{ book.description }}</p>
+            
+            <div class="flex flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <span v-if="book.tags && book.tags.length > 0" class="flex items-center gap-2 mr-4">
+                <i class="fa-solid fa-tags"></i>
+                <span v-for="tag in book.tags" :key="tag" class="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">
                   {{ tag }}
                 </span>
-                <span v-if="note.tags.length > 6"
-                      class="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                      :title="note.tags.slice(6).join(', ')">
-                  +{{ note.tags.length - 6 }}
-                </span>
-              </div>
+              </span>
+              <span class="mr-4"><i class="fa-regular fa-clock mr-1"></i>更新於 {{ formatDate(book.updatedAt) }}</span>
+              <span v-if="book.User"><i class="fa-regular fa-user mr-1"></i>{{ book.User.name || book.User.username }}</span>
             </div>
           </div>
-          <!-- Date and Author (right side) -->
-          <div class="text-right shrink-0 ml-4 text-xs text-gray-500 dark:text-gray-400">
-            <div>{{ formatDate(note.lastEditedAt || note.updatedAt) }}</div>
-            <div v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username }}</div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-3">
+            <button @click="openInfoModal('info')" 
+                    class="flex items-center space-x-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 px-3 py-1.5 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer shadow-sm">
+              <i class="fa-solid fa-cog"></i>
+              <span>書本設定</span>
+            </button>
+            <button v-if="canEdit" @click="openInfoModal('share')"
+                    class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded text-sm text-white transition cursor-pointer shadow-sm"
+                    title="分享書本">
+              <i class="fa-solid fa-share-nodes"></i>
+              <span>分享</span>
+            </button>
+            
+            <!-- Book Display Mode -->
+            <div class="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 p-0.5">
+              <button @click="displayMode = 'grid'; saveDisplayMode()" 
+                      class="px-2 py-1 rounded transition text-sm cursor-pointer"
+                      :class="displayMode === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'">
+                <i class="fa-solid fa-border-all"></i>
+              </button>
+              <button @click="displayMode = 'list'; saveDisplayMode()" 
+                      class="px-2 py-1 rounded transition text-sm cursor-pointer"
+                      :class="displayMode === 'list' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'">
+                <i class="fa-solid fa-list"></i>
+              </button>
+            </div>
           </div>
         </div>
-        <div v-if="!sortedNotes || sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-          這本書裡還沒有筆記。
-          <button v-if="canAddNote" @click="createNote"
-                  class="block mx-auto mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer">
-            <i class="fa-solid fa-plus mr-1"></i>建立第一篇筆記
-          </button>
+      </div>
+
+      <!-- Add Note (if owner or can edit) -->
+      <div v-if="canAddNote" class="mb-6">
+        <button @click="createNoteInBook" class="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition flex items-center justify-center gap-2 font-medium cursor-pointer">
+          <i class="fa-solid fa-plus-circle"></i>
+          在本書中新增筆記
+        </button>
+      </div>
+
+      <!-- Notes Grid/List -->
+      <div v-if="sortedNotes.length > 0" :class="displayMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'flex flex-col gap-2'">
+        <div v-for="note in sortedNotes" :key="note.id" 
+             class="group relative"
+             :draggable="isOwner || canEdit"
+             @dragstart="onDragStart($event, note)"
+             @dragover.prevent
+             @drop="onDrop($event, note)">
+             
+          <NoteCard 
+            :note="note" 
+            :display-mode="displayMode"
+            :show-book-info="false"
+            @delete="confirmDeleteNote"
+            @move="openMoveNoteModal"
+          />
         </div>
       </div>
-    </template>
 
-    <!-- Info Modal -->
-    <InfoModal
-      :show="showInfoModal"
-      :type="infoModalType"
-      :item="infoModalItem"
-      :tab="infoModalTab"
-      :editable-description="editableDescription"
-      :editable-tags="editableTags"
-      :new-tag-input="newTag"
-      :editable-permission="editablePermission"
-      :comments-enabled="infoCommentsEnabled"
-      :books="availableBooks"
-      @close="showInfoModal = false"
-      @move-note="handleMoveNoteFromInfo"
-      @update:tab="infoModalTab = $event"
-      @update:description="autoSaveBookDescription"
-      @update:newTag="newTag = $event"
-      @add-tag="addEditableTag"
-      @remove-tag="removeEditableTag"
-      @update:permission="autoSavePermission"
-      @update:commentsEnabled="autoSaveCommentsEnabled"
-      @update:isPublic="autoSaveIsPublic"
-    />
+      <!-- Empty State -->
+      <div v-else class="text-center py-12 bg-white dark:bg-dark-surface rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-2">這本書還沒有筆記</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">開始記錄你的想法吧！</p>
+        <button v-if="canAddNote" @click="createNoteInBook" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer">
+          <i class="fa-solid fa-plus mr-2"></i>新增筆記
+        </button>
       </div>
     </div>
-    
-    <!-- Create Book Modal -->
-    <CreateBookModal
-      :show="showCreateBookModal"
-      @close="showCreateBookModal = false"
-      @book-created="(book) => { showCreateBookModal = false; window.location.href = '/b/' + book.id }"
-    />
+
+    <!-- Not Found -->
+    <div v-else class="flex items-center justify-center h-full">
+      <div class="text-center">
+        <i class="fa-solid fa-book-skull text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">找不到此書本或沒有權限</p>
+        <router-link to="/" class="mt-4 inline-block text-blue-500 hover:underline">回首頁</router-link>
+      </div>
+    </div>
   </div>
+  <InfoModal
+    :show="showInfoModal"
+    :type="infoModalType"
+    :item="infoModalItem"
+    :tab="infoModalTab"
+    :editable-description="editableDescription"
+    :editable-tags="editableTags"
+    :new-tag-input="newTag"
+    :editable-permission="editablePermission"
+    :comments-enabled="infoCommentsEnabled"
+    :books="availableBooks"
+    @close="showInfoModal = false"
+    @move-note="handleMoveNoteFromInfo"
+    @update:tab="infoModalTab = $event"
+    @update:description="autoSaveBookDescription"
+    @update:newTag="newTag = $event"
+    @add-tag="addEditableTag"
+    @remove-tag="removeEditableTag"
+    @update:permission="autoSavePermission"
+    @update:commentsEnabled="autoSaveCommentsEnabled"
+    @update:isPublic="autoSaveIsPublic"
+  />
 </template>
+```

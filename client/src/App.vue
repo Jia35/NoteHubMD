@@ -1,7 +1,11 @@
 <script setup>
-import { ref, provide, onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { ref, computed, provide, onMounted, inject } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
+import { SidebarNav, CreateBookModal, SettingsModal, UserProfileModal, InfoModal } from '@/components'
+
+const route = useRoute()
+const router = useRouter()
 
 // Global Modal State
 const modal = ref({
@@ -120,19 +124,173 @@ provide('updateSidebarPinnedItems', updateSidebarPinnedItems)
 provide('updateSidebarUser', updateSidebarUser)
 provide('clearSidebarData', clearSidebarData)
 
-// Apply theme on mount
-onMounted(() => {
-  const theme = localStorage.getItem('NoteHubMD-theme') || 'dark'
-  if (theme === 'dark') {
+// ========================================
+// Sidebar UI Logic & Handlers
+// ========================================
+
+// Computed: Show Sidebar based on route meta
+const showSidebar = computed(() => route.meta.showSidebar === true)
+
+// Global View Mode
+const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
+
+const setGlobalViewMode = (mode) => {
+  globalViewMode.value = mode
+  localStorage.setItem('NoteHubMD-viewMode', mode)
+}
+
+provide('globalViewMode', globalViewMode)
+provide('setGlobalViewMode', setGlobalViewMode)
+
+// Theme State
+const theme = ref(localStorage.getItem('NoteHubMD-theme') || 'dark')
+const appVersion = ref('')
+
+const setTheme = (newTheme) => {
+  theme.value = newTheme
+  localStorage.setItem('NoteHubMD-theme', newTheme)
+  if (newTheme === 'dark') {
     document.documentElement.classList.add('dark')
   } else {
     document.documentElement.classList.remove('dark')
   }
+}
+
+// Modal States
+const showCreateBookModal = ref(false)
+const showSettings = ref(false)
+const showUserProfileModal = ref(false)
+
+// Provide open modal functions (optional, if needed by children)
+provide('openCreateBookModal', () => showCreateBookModal.value = true)
+provide('openSettingsModal', () => showSettings.value = true)
+provide('openUserProfileModal', () => showUserProfileModal.value = true)
+
+// Filtered sidebar books logic
+const filteredSidebarBooks = computed(() => {
+  if (globalViewMode.value === 'my') {
+    return sidebarBooks.value.filter(book => book.isOwner)
+  } else {
+    return sidebarBooks.value.filter(book => book.isPublic)
+  }
+})
+
+const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
+const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
+const currentRoutePath = computed(() => route.path)
+
+// Handlers
+const createNote = async () => {
+  try {
+    const note = await api.createNote()
+    window.location.href = '/n/' + note.id
+  } catch (e) {
+    showAlert('建立筆記失敗', 'error')
+  }
+}
+
+const unpinItem = async (type, id) => {
+  try {
+    await api.removePin(type, id)
+    // Update global pinned items
+    const updatedItems = sidebarPinnedItems.value.filter(p => !(p.type === type && p.id === id))
+    sidebarPinnedItems.value = updatedItems
+  } catch (e) {
+    showAlert('取消釘選失敗', 'error')
+  }
+}
+
+const handleBookCreated = (newBook) => {
+  // Add new book to sidebar list
+  const newBooks = [newBook, ...sidebarBooks.value]
+  sidebarBooks.value = newBooks
+  showCreateBookModal.value = false
+  showAlert('新增書本成功', 'success')
+  router.push(`/b/${newBook.id}`)
+}
+
+const handleLogout = async () => {
+  const confirmed = await showConfirm('確定要登出嗎？')
+  if (!confirmed) return
+
+  try {
+    await api.logout()
+    clearSidebarData()
+    showSettings.value = false
+    router.push('/login')
+  } catch (e) {
+    console.error('Logout failed:', e)
+    router.push('/login')
+  }
+}
+
+// Apply theme on mount and load version
+onMounted(async () => {
+  // Theme
+  const storedTheme = localStorage.getItem('NoteHubMD-theme') || 'dark'
+  setTheme(storedTheme)
+
+  // Version
+  const versionData = await api.getAppVersion()
+  appVersion.value = versionData.version
 })
 </script>
 
 <template>
-  <RouterView />
+  <div class="h-full w-full">
+    <!-- Layout with Sidebar -->
+    <div v-if="showSidebar" class="h-full flex bg-gray-100 dark:bg-dark-bg transition-colors duration-200">
+      <!-- Sidebar -->
+      <SidebarNav
+        :user="sidebarUser"
+        :books="limitedSidebarBooks"
+        :pinned-items="sidebarPinnedItems"
+        :show-pinned="true"
+        :show-more-books="hasMoreBooks"
+        :current-route="currentRoutePath"
+        :global-view-mode="globalViewMode"
+        :app-version="appVersion"
+        @unpin="unpinItem"
+        @view-mode-change="setGlobalViewMode"
+        @create-note="createNote"
+        @create-book="showCreateBookModal = true"
+        @open-profile="showUserProfileModal = true"
+        @open-settings="showSettings = true"
+      />
+
+      <!-- Main Content Area -->
+      <div class="flex-1 overflow-y-auto w-full relative">
+        <RouterView />
+      </div>
+    </div>
+
+    <!-- Layout without Sidebar (Login, NoteView, etc.) -->
+    <RouterView v-else />
+
+    <!-- Global Modals -->
+    <CreateBookModal 
+      v-if="showCreateBookModal" 
+      @close="showCreateBookModal = false" 
+      @book-created="handleBookCreated" 
+    />
+
+    <SettingsModal 
+      :show="showSettings" 
+      :user="sidebarUser" 
+      :theme="theme" 
+      :app-version="appVersion"
+      @close="showSettings = false"
+      @set-theme="setTheme"
+      @logout="handleLogout"
+    />
+
+    <UserProfileModal 
+      :show="showUserProfileModal" 
+      :user="sidebarUser" 
+      @close="showUserProfileModal = false" 
+      @updated="updateSidebarUser" 
+    />
+  </div>
 
   <!-- Global Modal -->
   <Teleport to="body">
