@@ -508,7 +508,22 @@ const loadNote = async () => {
       joinNote(note.value.id, username)
       
       onUsersInNote((users) => {
-        onlineUsers.value = users
+        // Deduplicate users by username (except 'Guest')
+        const uniqueUsers = []
+        const seenUsernames = new Set()
+        
+        users.forEach(user => {
+          const name = user.username || 'Guest'
+          if (name === 'Guest') {
+            uniqueUsers.push(user)
+          } else {
+            if (!seenUsernames.has(name)) {
+              seenUsernames.add(name)
+              uniqueUsers.push(user)
+            }
+          }
+        })
+        onlineUsers.value = uniqueUsers
       })
       
       onNoteUpdated((newContent) => {
@@ -1597,9 +1612,22 @@ onMounted(() => {
   // Global Ctrl+S handler
   window.addEventListener('keydown', handleGlobalSave)
   // Close menu on click outside
+  // Close menu/popups on click outside
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('[data-comment-menu]')) {
-      closeCommentMenu()
+    // Close comment menu
+    if (!e.target.closest('[data-comment-menu]') && !e.target.closest('.comment-menu-dropdown')) {
+      if (openMenuId.value !== null) {
+        closeCommentMenu()
+      }
+    }
+    
+    // Close online users popup
+    if (showOnlineUsersPopup.value) {
+      const isOnlineUsersBtn = e.target.closest('[data-online-users-btn]')
+      const isOnlineUsersPopup = e.target.closest('[data-online-users-popup]')
+      if (!isOnlineUsersBtn && !isOnlineUsersPopup) {
+        showOnlineUsersPopup.value = false
+      }
     }
   })
 
@@ -1752,11 +1780,14 @@ watch(() => route.params.id, (newId, oldId) => {
             <!-- Online Users -->
             <div class="relative">
               <button @click="toggleOnlineUsersPopup" 
+                      data-online-users-btn
                       class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
                 <i class="fa-solid fa-users text-xs"></i>
                 <span class="font-medium">{{ onlineUsers.length }}</span>
               </button>
-              <div v-if="showOnlineUsersPopup" class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-50">
+              <div v-if="showOnlineUsersPopup" 
+                   data-online-users-popup
+                   class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-50">
                 <div class="p-3">
                   <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">
                     <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
