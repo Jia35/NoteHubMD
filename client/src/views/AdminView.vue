@@ -8,10 +8,13 @@ const router = useRouter()
 const route = useRoute()
 const showAlert = inject('showAlert')
 
-// User & Sidebar state
-const user = ref(null)
-const books = ref([])
-const pinnedItems = ref([])
+// Inject global sidebar data from App.vue
+const user = inject('sidebarUser')
+const books = inject('sidebarBooks')
+const pinnedItems = inject('sidebarPinnedItems')
+const loadSidebarData = inject('loadSidebarData')
+const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const currentRoute = computed(() => route.path)
 
@@ -20,7 +23,7 @@ const showSettings = ref(false)
 const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 
-// Admin state
+// Admin state (local)
 const users = ref([])
 const loading = ref(true)
 const isAdmin = ref(false)
@@ -91,29 +94,22 @@ const updateRole = async (targetUser) => {
   }
 }
 
-// Load data
+// Load data (admin-specific - sidebar data is managed by App.vue)
 const loadData = async () => {
   loading.value = true
   try {
-    // Load current user
-    const me = await api.getMe()
-    user.value = me
-    isAdmin.value = me?.role === 'super-admin' || me?.role === 'admin'
-
-    // Load sidebar data
-    const [booksData, pinnedData] = await Promise.all([
-      api.getBooks(),
-      api.getPinnedItems().catch(() => [])
-    ])
-    books.value = booksData
-    pinnedItems.value = pinnedData
+    // Load sidebar data if not already loaded
+    await loadSidebarData()
+    
+    // Check if current user is admin
+    isAdmin.value = user.value?.role === 'super-admin' || user.value?.role === 'admin'
 
     if (!isAdmin.value) {
       loading.value = false
       return
     }
 
-    // Fetch users
+    // Fetch users (admin-specific data)
     const response = await fetch('/api/admin/users')
     if (!response.ok) throw new Error('Failed to load users')
     users.value = await response.json()
@@ -134,7 +130,9 @@ const setGlobalViewMode = (mode) => {
 const unpinItem = async (type, id) => {
   try {
     await api.removePin(type, id)
-    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+    // Update global pinned items
+    const updatedItems = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+    updateSidebarPinnedItems(updatedItems)
   } catch (e) {
     showAlert?.('取消釘選失敗', 'error')
   }

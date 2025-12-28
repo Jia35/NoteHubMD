@@ -12,10 +12,13 @@ const route = useRoute()
 const showAlert = inject('showAlert')
 const showConfirm = inject('showConfirm')
 
-// User & Sidebar state
-const user = ref(null)
-const sidebarBooks = ref([])
-const pinnedItems = ref([])
+// Inject global sidebar data from App.vue
+const user = inject('sidebarUser')
+const sidebarBooks = inject('sidebarBooks')
+const pinnedItems = inject('sidebarPinnedItems')
+const loadSidebarData = inject('loadSidebarData')
+const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const currentRoute = computed(() => route.path)
 
@@ -24,7 +27,7 @@ const showSettings = ref(false)
 const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 
-// Trash data
+// Trash data (local state)
 const loading = ref(true)
 const books = ref([])
 const notes = ref([])
@@ -39,21 +42,15 @@ const filteredSidebarBooks = computed(() => {
 const limitedSidebarBooks = computed(() => filteredSidebarBooks.value.slice(0, 20))
 const hasMoreBooks = computed(() => filteredSidebarBooks.value.length > 20)
 
-// Load data
+// Load data (trash only - sidebar data is managed by App.vue)
 const loadData = async () => {
   loading.value = true
   try {
-    // Load user and sidebar data
-    const [userData, booksData, pinnedData, trashData] = await Promise.all([
-      api.getMe().catch(() => null),
-      api.getBooks(),
-      api.getPinnedItems().catch(() => []),
-      api.getTrash()
-    ])
+    // Load sidebar data if not already loaded
+    await loadSidebarData()
     
-    user.value = userData
-    sidebarBooks.value = booksData
-    pinnedItems.value = pinnedData
+    // Load trash data (local to this view)
+    const trashData = await api.getTrash()
     books.value = trashData.books || []
     notes.value = trashData.notes || []
   } catch (e) {
@@ -128,7 +125,9 @@ const setGlobalViewMode = (mode) => {
 const unpinItem = async (type, id) => {
   try {
     await api.removePin(type, id)
-    pinnedItems.value = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+    // Update global pinned items
+    const updatedItems = pinnedItems.value.filter(p => !(p.type === type && p.id === id))
+    updateSidebarPinnedItems(updatedItems)
   } catch (e) {
     showAlert?.('取消釘選失敗', 'error')
   }

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, provide, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
+import api from '@/composables/useApi'
 
 // Global Modal State
 const modal = ref({
@@ -53,6 +54,71 @@ provide('modal', modal)
 provide('showAlert', showAlert)
 provide('showConfirm', showConfirm)
 provide('closeModal', closeModal)
+
+// ========================================
+// Global Sidebar State (shared across pages)
+// ========================================
+const sidebarUser = ref(null)
+const sidebarBooks = ref([])
+const sidebarPinnedItems = ref([])
+const sidebarLoading = ref(true)
+const sidebarLoaded = ref(false)
+
+// Load sidebar data (called once on first authenticated page)
+const loadSidebarData = async (force = false) => {
+  // Skip if already loaded and not forcing refresh (don't touch loading state)
+  if (sidebarLoaded.value && !force) return
+  
+  // Only set loading true if we're actually going to load
+  sidebarLoading.value = true
+  try {
+    const [userData, booksData, pinnedData] = await Promise.all([
+      api.getMe().catch(() => null),
+      api.getBooks().catch(() => []),
+      api.getPinnedItems().catch(() => [])
+    ])
+    sidebarUser.value = userData
+    sidebarBooks.value = booksData
+    sidebarPinnedItems.value = pinnedData
+    sidebarLoaded.value = true
+  } catch (e) {
+    console.error('Failed to load sidebar data:', e)
+  } finally {
+    sidebarLoading.value = false
+  }
+}
+
+// Update functions for sidebar data
+const updateSidebarBooks = (books) => {
+  sidebarBooks.value = books
+}
+
+const updateSidebarPinnedItems = (items) => {
+  sidebarPinnedItems.value = items
+}
+
+const updateSidebarUser = (user) => {
+  sidebarUser.value = user
+}
+
+// Clear sidebar data (for logout)
+const clearSidebarData = () => {
+  sidebarUser.value = null
+  sidebarBooks.value = []
+  sidebarPinnedItems.value = []
+  sidebarLoaded.value = false
+}
+
+// Provide sidebar state and functions
+provide('sidebarUser', sidebarUser)
+provide('sidebarBooks', sidebarBooks)
+provide('sidebarPinnedItems', sidebarPinnedItems)
+provide('sidebarLoading', sidebarLoading)
+provide('loadSidebarData', loadSidebarData)
+provide('updateSidebarBooks', updateSidebarBooks)
+provide('updateSidebarPinnedItems', updateSidebarPinnedItems)
+provide('updateSidebarUser', updateSidebarUser)
+provide('clearSidebarData', clearSidebarData)
 
 // Apply theme on mount
 onMounted(() => {

@@ -11,14 +11,19 @@ const router = useRouter()
 const showAlert = inject('showAlert')
 const showConfirm = inject('showConfirm')
 
-// User state
-const user = ref(null)
-const loading = ref(true)
+// Inject global sidebar data from App.vue
+const user = inject('sidebarUser')
+const books = inject('sidebarBooks')
+const pinnedItems = inject('sidebarPinnedItems')
+const loadSidebarData = inject('loadSidebarData')
+const updateSidebarBooks = inject('updateSidebarBooks')
+const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+const updateSidebarUser = inject('updateSidebarUser')
+const clearSidebarData = inject('clearSidebarData')
 
-// Data
-const books = ref([])
+// Local state
+const loading = ref(true)
 const notes = ref([])
-const pinnedItems = ref([])
 
 // View mode
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
@@ -319,24 +324,30 @@ const handleMoveNote = async (bookId) => {
   }
 }
 
-// Load data
+// Load data (notes only - sidebar data is managed by App.vue)
 const loadData = async () => {
   loading.value = true
   try {
-    const [userData, booksData, notesData, pinnedData] = await Promise.all([
-      api.getMe().catch(() => null),
-      api.getBooks(),
-      api.getNotes(),
-      api.getPinnedItems().catch(() => [])
-    ])
-    user.value = userData
-    books.value = booksData
+    // Load sidebar data if not already loaded
+    await loadSidebarData()
+    
+    // Load notes (local to this view)
+    const notesData = await api.getNotes()
     notes.value = notesData
-    pinnedItems.value = pinnedData
   } catch (e) {
     console.error('Failed to load data:', e)
   } finally {
     loading.value = false
+  }
+}
+
+// Refresh books data (called after book operations)
+const refreshBooks = async () => {
+  try {
+    const booksData = await api.getBooks()
+    updateSidebarBooks(booksData)
+  } catch (e) {
+    console.error('Failed to refresh books:', e)
   }
 }
 

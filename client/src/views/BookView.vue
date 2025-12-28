@@ -17,10 +17,14 @@ const isOwner = ref(false)
 const canEdit = ref(false)
 const canAddNote = ref(false)
 
-// User & Sidebar state
-const user = ref(null)
-const sidebarBooks = ref([])
-const pinnedItems = ref([])
+// Inject global sidebar data from App.vue
+const user = inject('sidebarUser')
+const sidebarBooks = inject('sidebarBooks')
+const pinnedItems = inject('sidebarPinnedItems')
+const loadSidebarData = inject('loadSidebarData')
+const updateSidebarBooks = inject('updateSidebarBooks')
+const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const currentRoute = computed(() => route.path)
 const showSettings = ref(false)
@@ -89,20 +93,13 @@ const isPinned = (type, id) => {
   return false
 }
 
-// Load book data
+// Load book data (sidebar data is managed by App.vue)
 const loadBook = async () => {
   loading.value = true
   try {
-    // Load user and sidebar data
-    const [userData, booksData, pinnedData] = await Promise.all([
-      api.getMe().catch(() => null),
-      api.getBooks(),
-      api.getPinnedItems().catch(() => [])
-    ])
-    user.value = userData
-    sidebarBooks.value = booksData
-    pinnedItems.value = pinnedData
-    allBooks.value = booksData
+    // Load sidebar data if not already loaded
+    await loadSidebarData()
+    allBooks.value = sidebarBooks.value
 
     const data = await api.getBook(route.params.id)
     
