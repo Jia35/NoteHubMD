@@ -51,8 +51,7 @@ const routes = [
     {
         path: '/n/:id',
         name: 'note',
-        component: NoteView,
-        meta: { requiresAuth: true }
+        component: NoteView
     },
     {
         path: '/login',
