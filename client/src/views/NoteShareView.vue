@@ -167,13 +167,13 @@ const loadNote = async () => {
     
     document.title = `${title.value.substring(0, 30)} | NoteHubMD`
     
-    // Render content
-    nextTick(() => renderContent())
   } catch (e) {
     console.error('Failed to load note:', e)
     error.value = e.message || '無法載入筆記'
   } finally {
     loading.value = false
+    // Render content after DOM update
+    nextTick(() => renderContent())
   }
 }
 
