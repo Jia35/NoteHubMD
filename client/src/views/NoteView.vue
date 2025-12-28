@@ -250,7 +250,8 @@ const permissionOptions = [
   { value: 'auth-edit', label: '可編輯(需登入)' },
   { value: 'public-view', label: '唯讀' },
   { value: 'auth-view', label: '唯讀(需登入)' },
-  { value: 'private', label: '私人' }
+  { value: 'private', label: '私人' },
+  { value: 'inherit', label: '繼承書本' }
 ]
 
 // Comments

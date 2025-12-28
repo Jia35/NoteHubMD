@@ -66,9 +66,11 @@ const availableBooks = computed(() => {
 
 // Permission options
 const permissionOptions = [
-  { value: 'private', label: '私人' },
-  { value: 'public', label: '公開' },
-  { value: 'shared', label: '共享' }
+  { value: 'public-edit', label: '可編輯' },
+  { value: 'auth-edit', label: '可編輯(需登入)' },
+  { value: 'public-view', label: '公開' },
+  { value: 'auth-view', label: '唯讀(需登入)' },
+  { value: 'private', label: '私人' }
 ]
 
 const permissionLabel = computed(() => {
@@ -416,9 +418,17 @@ watch(() => route.params.id, () => {
       </div>
 
       <div class="flex justify-between items-center mb-4">
-          <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-              <span class="mr-3"><i class="fa-solid fa-book"></i></span> {{ book.title }}
-          </h1>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
+              <i class="fa-solid fa-book text-blue-600"></i>
+              {{ book.title }}
+              <span v-if="!isOwner || permission !== 'private'" class="text-xs px-2 py-0.5 rounded ml-2"
+                :class="{
+                  'bg-red-100 text-red-600': permission === 'private',
+                  'bg-green-100 text-green-600': permission !== 'private'
+                }">
+                {{ permissionOptions.find(o => o.value === permission)?.label || permission }}
+              </span>
+            </h1>
           <div class="flex items-center gap-3">
               <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition cursor-pointer">
                   <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
