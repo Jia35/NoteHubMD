@@ -1983,8 +1983,14 @@ router.delete('/books/:id/share', async (req, res) => {
 // Get book by share ID (for public sharing page)
 router.get('/book-share/:shareId', async (req, res) => {
     try {
+        const param = req.params.shareId;
         const book = await db.Book.findOne({
-            where: { shareId: req.params.shareId },
+            where: {
+                [db.Sequelize.Op.or]: [
+                    { shareId: param },
+                    { shareAlias: param }
+                ]
+            },
             include: [
                 {
                     model: db.Note,
@@ -2039,6 +2045,86 @@ router.get('/book-share/:shareId', async (req, res) => {
             isOwner,
             canEdit
         });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Set share alias for a book
+router.put('/books/:id/alias', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
+        // Only owner or explicitly allowed editor can set alias
+        if (!isOwner && userPermOverride !== 'edit') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const { alias } = req.body;
+        if (!alias || !/^[a-z0-9_-]+$/.test(alias)) {
+            return res.status(400).json({ error: 'Invalid alias format. Use lowercase letters, numbers, hyphens, and underscores only.' });
+        }
+
+        // Check uniqueness against both Note and Book aliases/shareIds
+        const existingNote = await db.Note.findOne({
+            where: {
+                [db.Sequelize.Op.or]: [
+                    { shareId: alias },
+                    { shareAlias: alias }
+                ]
+            }
+        });
+        if (existingNote) return res.status(409).json({ error: '此別名已被筆記使用，請選擇其他名稱。' });
+
+        const existingBook = await db.Book.findOne({
+            where: {
+                [db.Sequelize.Op.or]: [
+                    { shareId: alias },
+                    { shareAlias: alias }
+                ],
+                id: { [db.Sequelize.Op.ne]: book.id } // Exclude self
+            }
+        });
+        if (existingBook) return res.status(409).json({ error: '此別名已被其他書本使用，請選擇其他名稱。' });
+
+        await book.update({ shareAlias: alias });
+        res.json({
+            shareAlias: alias,
+            aliasUrl: `/v/${alias}`
+        });
+    } catch (e) {
+        if (e.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ error: '此別名已被使用，請選擇其他名稱。' });
+        }
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Clear share alias for a book
+router.delete('/books/:id/alias', async (req, res) => {
+    try {
+        const book = await db.Book.findByPk(req.params.id);
+        if (!book) return res.status(404).json({ error: 'Book not found' });
+
+        const userId = req.session.userId;
+        if (!userId) return res.status(401).json({ error: 'Login required' });
+
+        const isOwner = book.ownerId && book.ownerId === userId;
+        const userPermOverride = await getUserPermission('book', book.id, userId);
+
+        if (!isOwner && userPermOverride !== 'edit') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        await book.update({ shareAlias: null });
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

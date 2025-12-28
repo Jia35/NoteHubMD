@@ -8,7 +8,7 @@ const props = defineProps({
   show: Boolean
 })
 
-const emit = defineEmits(['close', 'create'])
+const emit = defineEmits(['close', 'book-created'])
 
 const title = ref('')
 const description = ref('')
@@ -25,7 +25,7 @@ watch(() => props.show, (newVal) => {
 
 const handleCreate = () => {
   if (!title.value.trim()) return
-  emit('create', {
+  emit('book-created', {
     title: title.value.trim(),
     description: description.value.trim()
   })

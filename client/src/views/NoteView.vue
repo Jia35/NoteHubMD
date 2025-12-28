@@ -1261,6 +1261,12 @@ const relativeLastEditedTime = computed(() => {
   return dayjs(lastContentEditedAt.value).fromNow()
 })
 
+// Extract title from first H1 heading
+const extractTitle = (text) => {
+  const match = text.match(/^#\s+(.+)$/m)
+  return match ? match[1] : 'Untitled'
+}
+
 // Debounced save
 let saveTimeout = null
 const debouncedSave = () => {
@@ -1273,7 +1279,8 @@ const saveNote = async () => {
   if (!note.value || !canEdit.value) return
   saving.value = true
   try {
-    await api.updateNote(note.value.id, { content: content.value })
+    const newTitle = extractTitle(content.value)
+    await api.updateNote(note.value.id, { content: content.value, title: newTitle })
   } catch (e) {
     console.error('Failed to save note:', e)
   } finally {
@@ -2201,7 +2208,7 @@ watch(() => route.params.id, (newId, oldId) => {
     <CreateBookModal 
       :show="showCreateBookModal"
       @close="showCreateBookModal = false"
-      @create="handleCreateBook"
+      @book-created="handleCreateBook"
     />
     
     <RevisionsModal 

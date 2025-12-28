@@ -197,26 +197,16 @@ const deleteNote = async (noteId) => {
   }
 }
 
-// Open info modal
-// Open info modal
-const openInfoModal = (item, tab = 'info', typeOverride = null) => {
-  // Determine if item is a book or note
-  const isBook = typeOverride === 'book' || (!typeOverride && item.notes !== undefined)
-  infoModalType.value = isBook ? 'book' : 'note'
-  
-  if (isBook) {
-    // Set book-specific editable fields
-    editableDescription.value = item.description || ''
-    editableTags.value = [...(item.tags || [])]
-    newTag.value = ''
-  }
-  
-  infoModalItem.value = item
-  editablePermission.value = item.permission || 'inherit'
-  infoCommentsEnabled.value = item.commentsEnabled !== false
+// Open Info Modal
+const openInfoModal = (item, tab = 'info', type = 'book') => {
+  if (!book.value) return
+  infoModalType.value = type
+  infoModalItem.value = item || book.value
   infoModalTab.value = tab
+  editableDescription.value = book.value.description || ''
+  editableTags.value = book.value.tags ? [...book.value.tags] : []
+  editablePermission.value = book.value.permission || 'private'
   showInfoModal.value = true
-  closeMenu()
 }
 
 // Auto save book description
@@ -277,9 +267,15 @@ const autoSavePermission = async (newPermission) => {
   if (!infoModalItem.value) return
   editablePermission.value = newPermission
   try {
-    await api.updateNotePermission(infoModalItem.value.id, newPermission)
-    const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
-    if (note) note.permission = newPermission
+    if (infoModalType.value === 'book') {
+      await api.updateBookPermission(infoModalItem.value.id, newPermission)
+      if (book.value) book.value.permission = newPermission
+      permission.value = newPermission
+    } else {
+      await api.updatePermission(infoModalItem.value.id, newPermission)
+      const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
+      if (note) note.permission = newPermission
+    }
   } catch (e) {
     showAlert?.('更新權限失敗', 'error')
   }
@@ -442,7 +438,7 @@ watch(() => route.params.id, () => {
             <span>書本設定</span>
           </button>
           <!-- Share Button -->
-          <button v-if="canEdit" @click="shareBook"
+          <button v-if="canEdit" @click="openInfoModal(book, 'share', 'book')"
                   class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-sm text-white transition cursor-pointer"
                   title="分享書本">
             <i class="fa-solid fa-share-nodes text-xs"></i>

@@ -27,8 +27,8 @@ const routes = [
     {
         path: '/b/:id',
         name: 'book',
-        component: BookView,
-        meta: { requiresAuth: true }
+        component: BookView
+        // No requiresAuth - API handles permission; public-view/public-edit books don't require login
     },
     {
         path: '/uncategorized',

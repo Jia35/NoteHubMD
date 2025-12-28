@@ -72,12 +72,14 @@ const aliasCopied = ref(false)
 
 const shareUrl = computed(() => {
   if (!props.item?.shareId) return ''
-  return `${window.location.origin}/s/${props.item.shareId}`
+  const prefix = props.type === 'book' ? '/v/' : '/s/'
+  return `${window.location.origin}${prefix}${props.item.shareId}`
 })
 
 const aliasUrl = computed(() => {
   if (!currentAlias.value) return ''
-  return `${window.location.origin}/s/${currentAlias.value}`
+  const prefix = props.type === 'book' ? '/v/' : '/s/'
+  return `${window.location.origin}${prefix}${currentAlias.value}`
 })
 
 // Initialize alias state when item changes
@@ -103,7 +105,9 @@ const resetShareLink = async () => {
   if (!props.item?.id) return
   resettingShare.value = true
   try {
-    const result = await api.resetShareId(props.item.id)
+    const result = props.type === 'book' 
+      ? await api.resetBookShareId(props.item.id)
+      : await api.resetShareId(props.item.id)
     emit('update:shareId', result.shareId)
     // Reset alias when share link is reset
     currentAlias.value = ''
@@ -120,7 +124,9 @@ const generateShareLink = async () => {
   if (!props.item?.id) return
   generatingShare.value = true
   try {
-    const result = await api.generateShareId(props.item.id)
+    const result = props.type === 'book'
+      ? await api.generateBookShareId(props.item.id)
+      : await api.generateShareId(props.item.id)
     emit('update:shareId', result.shareId)
   } catch (e) {
     console.error('Failed to generate share link:', e)
@@ -157,7 +163,11 @@ const saveAlias = async () => {
   aliasError.value = ''
   
   try {
-    await api.setShareAlias(props.item.id, alias)
+    if (props.type === 'book') {
+      await api.setBookShareAlias(props.item.id, alias)
+    } else {
+      await api.setShareAlias(props.item.id, alias)
+    }
     currentAlias.value = alias
     emit('update:shareAlias', alias)
   } catch (e) {
@@ -171,7 +181,11 @@ const clearAlias = async () => {
   if (!props.item?.id) return
   
   try {
-    await api.clearShareAlias(props.item.id)
+    if (props.type === 'book') {
+      await api.clearBookShareAlias(props.item.id)
+    } else {
+      await api.clearShareAlias(props.item.id)
+    }
     currentAlias.value = ''
     aliasInput.value = ''
     emit('update:shareAlias', '')
@@ -224,12 +238,12 @@ const copyAliasUrl = async () => {
             <i class="fa-solid fa-lock mr-2"></i>權限設定
           </button>
           <button
-            v-if="type === 'note'"
+            v-if="type === 'note' || type === 'book'"
             @click="emit('update:tab', 'share')"
             :class="tab === 'share' ? 'text-blue-600 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'"
             class="w-full px-4 py-3 text-left text-sm font-medium transition flex items-center cursor-pointer"
           >
-            <i class="fa-solid fa-share-nodes mr-2"></i>分享筆記
+            <i class="fa-solid fa-share-nodes mr-2"></i>{{ type === 'book' ? '分享書本' : '分享筆記' }}
           </button>
         </div>
 
@@ -416,7 +430,7 @@ const copyAliasUrl = async () => {
           </div>
 
           <!-- Share Tab Content -->
-          <div v-show="tab === 'share' && type === 'note'" class="p-4">
+          <div v-show="tab === 'share' && (type === 'note' || type === 'book')" class="p-4">
             <!-- Share Link Section -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">分享連結</label>
@@ -469,7 +483,7 @@ const copyAliasUrl = async () => {
               
               <div v-if="aliasEnabled" class="space-y-2">
                 <div class="flex items-center gap-2">
-                  <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">/s/</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ type === 'book' ? '/v/' : '/s/' }}</span>
                   <input type="text" v-model="aliasInput" 
                     @input="aliasError = ''"
                     placeholder="my-tutorial"
@@ -490,7 +504,7 @@ const copyAliasUrl = async () => {
                 <p v-if="aliasError" class="text-xs text-red-500">{{ aliasError }}</p>
                 <p v-if="currentAlias && !aliasError" class="text-xs text-green-600 dark:text-green-400">
                   <i class="fa-solid fa-check mr-1"></i>
-                  別名網址可用: /s/{{ currentAlias }}
+                  別名網址可用: {{ type === 'book' ? '/v/' : '/s/' }}{{ currentAlias }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   只能使用小寫英文、數字、連字號(-)和底線(_)

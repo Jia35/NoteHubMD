@@ -394,6 +394,45 @@ const api = {
         return res.json()
     },
 
+    // Book Share Alias
+    async setBookShareAlias(bookId, alias) {
+        const res = await fetch('/api/books/' + bookId + '/alias', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alias })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to set alias')
+        }
+        return res.json()
+    },
+
+    async clearBookShareAlias(bookId) {
+        const res = await fetch('/api/books/' + bookId + '/alias', {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to clear alias')
+        return res.json()
+    },
+
+    // Book Share Link
+    async generateBookShareId(bookId) {
+        const res = await fetch('/api/books/' + bookId + '/share', {
+            method: 'POST'
+        })
+        if (!res.ok) throw new Error('Failed to generate share ID')
+        return res.json()
+    },
+
+    async resetBookShareId(bookId) {
+        const res = await fetch('/api/books/' + bookId + '/share', {
+            method: 'DELETE'
+        })
+        if (!res.ok) throw new Error('Failed to reset share ID')
+        return res.json()
+    },
+
     // Get shared note
     async getSharedNote(shareId) {
         const res = await fetch('/api/share/' + shareId)
