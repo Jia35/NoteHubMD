@@ -406,7 +406,7 @@ const api = {
 
     // Get shared book
     async getSharedBook(shareId) {
-        const res = await fetch('/api/share/book/' + shareId)
+        const res = await fetch('/api/book-share/' + shareId)
         if (!res.ok) {
             const data = await res.json()
             throw new Error(data.error || 'Book not found')
