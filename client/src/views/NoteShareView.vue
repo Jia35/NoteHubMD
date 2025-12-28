@@ -23,6 +23,9 @@ import markdownItSub from 'markdown-it-sub'
 import markdownItSup from 'markdown-it-sup'
 import markdownItIns from 'markdown-it-ins'
 import markdownItTaskLists from 'markdown-it-task-lists'
+import markdownItContainer from 'markdown-it-container'
+import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
+import mermaid from 'mermaid'
 
 // Highlight.js
 import hljs from 'highlight.js/lib/core'
@@ -57,6 +60,37 @@ dayjs.locale('zh-tw')
 
 const route = useRoute()
 const router = useRouter()
+
+// Parse extended code block syntax: language + modifiers (!, =, =N)
+// Examples: python!, javascript=, python!=30, =10
+const parseCodeBlockInfo = (info) => {
+  const result = {
+    language: '',
+    wordWrap: false,
+    lineNumbers: false,
+    startLine: 1
+  }
+
+  if (!info) return result
+
+  // Match pattern: [language][!][=][startLineNumber]
+  // Examples: python, python!, python=, python=10, python!=, python!=10, !=, =10, !
+  const match = info.match(/^([a-zA-Z0-9_+-]*)(!?)(=?)(\d*)$/)
+  if (match) {
+    result.language = match[1] || ''
+    result.wordWrap = match[2] === '!'
+    result.lineNumbers = match[3] === '='
+    if (match[4]) {
+      result.startLine = parseInt(match[4], 10)
+      result.lineNumbers = true // If start number specified, enable line numbers
+    }
+  } else {
+    // Fallback: treat as language only
+    result.language = info
+  }
+
+  return result
+}
 
 // Note data
 const loading = ref(true)
@@ -97,23 +131,112 @@ const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
-  breaks: true,
-  highlight: (str, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
-      } catch {}
-    }
-    return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`
-  }
+  breaks: true
 })
-  .use(markdownItAnchor, { permalink: false })
+
+// Custom fence renderer to support language headers and wrappers
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const token = tokens[idx]
+  const info = token.info ? md.utils.unescapeAll(token.info).trim() : ''
+  const content = token.content
+
+  const parsed = parseCodeBlockInfo(info)
+  const actualLang = parsed.language.toLowerCase()
+
+  // Handle mermaid code blocks specially
+  if (actualLang === 'mermaid') {
+    return '<div class="mermaid">' + content + '</div>'
+  }
+
+  // Build CSS classes
+  const classes = ['hljs']
+  if (parsed.wordWrap) classes.push('code-wrap')
+  if (parsed.lineNumbers) classes.push('has-line-numbers')
+  if (actualLang) classes.push('language-' + actualLang)
+
+  let highlightedCode
+  if (parsed.language && hljs.getLanguage(parsed.language)) {
+    try {
+      highlightedCode = hljs.highlight(content, { language: parsed.language, ignoreIllegals: true }).value
+    } catch {
+      highlightedCode = md.utils.escapeHtml(content)
+    }
+  } else {
+    highlightedCode = md.utils.escapeHtml(content)
+  }
+
+  let finalCodeHtml = highlightedCode
+
+  // If line numbers are enabled, wrap with line number display
+  if (parsed.lineNumbers) {
+    const lines = highlightedCode.split('\n')
+    // Remove trailing empty line if present
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop()
+    }
+
+    const lineNumbersHtml = lines.map((_, i) =>
+      `<span class="code-line-number">${parsed.startLine + i}</span>`
+    ).join('')
+
+    const codeHtml = lines.map(line =>
+      `<span class="code-line">${line || ' '}</span>`
+    ).join('')
+
+    finalCodeHtml = `<div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div>`
+  }
+
+  // Construct HTML
+  let output = '<div class="code-block-wrapper">'
+  
+  // Add header if language is present
+  if (actualLang) {
+    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span></div>`
+  }
+
+  output += `<pre class="${classes.join(' ')}"><code>${finalCodeHtml}</code></pre>`
+  output += '</div>'
+
+  return output
+}
+
+md.use(markdownItAnchor, { permalink: false })
   .use(markdownItEmoji)
   .use(markdownItMark)
   .use(markdownItSub)
   .use(markdownItSup)
   .use(markdownItIns)
   .use(markdownItTaskLists, { enabled: true, label: true })
+  .use(markdownItImsize)
+
+// Containers
+;['success', 'info', 'warning', 'danger'].forEach(type => {
+  md.use(markdownItContainer, type, {
+    render: function (tokens, idx) {
+      const m = tokens[idx].info.trim().match(new RegExp(`^${type}\\s*(.*)$`))
+      if (tokens[idx].nesting === 1) {
+        return '<div class="alert alert-' + type + '">\n' +
+          (m[1] ? '<strong>' + md.utils.escapeHtml(m[1]) + '</strong>' : '')
+      } else {
+        return '</div>\n'
+      }
+    }
+  })
+})
+// Spoiler
+md.use(markdownItContainer, 'spoiler', {
+  validate: function (params) {
+    return params.trim().match(/^spoiler\s+(.*)$/)
+  },
+  render: function (tokens, idx) {
+    var m = tokens[idx].info.trim().match(/^spoiler\s+(.*)$/)
+    if (tokens[idx].nesting === 1) {
+      return '<details><summary>' + md.utils.escapeHtml(m[1]) + '</summary>\n'
+    } else {
+      return '</details>\n'
+    }
+  }
+})
 
 // Computed
 const relativeLastEditedTime = computed(() => {
@@ -194,6 +317,25 @@ const renderContent = () => {
       lightboxImage.value = img.src
     })
   })
+  
+  // Render mermaid diagrams
+  const mermaidDivs = previewContent.value.querySelectorAll('.mermaid')
+  if (mermaidDivs.length > 0) {
+    try {
+      const isDark = document.documentElement.classList.contains('dark')
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDark ? 'dark' : 'default',
+        securityLevel: 'loose',
+        fontFamily: 'inherit'
+      })
+      setTimeout(() => {
+        mermaid.run({ nodes: mermaidDivs })
+      }, 50)
+    } catch (e) {
+      console.warn('Mermaid rendering error:', e)
+    }
+  }
 }
 
 // Extract TOC from headings
@@ -563,22 +705,215 @@ watch(() => route.params.shareId, () => {
 
 <style>
 /* Markdown styles - same as NoteView */
-.markdown-body h1 { font-size: 2em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-body h3 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
+.markdown-body { font-size: 16px; line-height: 1.6; }
+.markdown-body h1 { font-size: 2em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h3 { font-size: 1.25em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; scroll-margin-top: 3rem; }
+.markdown-body h4, .markdown-body h5, .markdown-body h6 { scroll-margin-top: 3rem; }
 .markdown-body p { margin: 1em 0; }
-.markdown-body ul, .markdown-body ol { margin: 1em 0; padding-left: 2em; }
-.markdown-body li { margin: 0.25em 0; }
+.markdown-body ul, .markdown-body ol { margin: 0.2em 0; padding-left: 2em; }
 .markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; }
-.markdown-body pre.hljs { padding: 1em; background: #0d1117; }
+.markdown-body pre.hljs { padding: 1em; }
 .markdown-body blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 1em; color: #666; }
 .markdown-body table { border-collapse: collapse; margin: 1em 0; width: 100%; }
 .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 0.5em 1em; }
+.markdown-body a { color: #0366d6; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
 .markdown-body img { max-width: 100%; border-radius: 4px; }
-.markdown-body a { color: #0366d6; }
-.markdown-body mark { background-color: #fff3b0; padding: 0.1em 0.2em; }
+
+.dark .markdown-body code { background: #2d2d2d; }
+.dark .markdown-body pre.hljs { }
+.dark .markdown-body blockquote { border-color: #444; color: #aaa; }
+.dark .markdown-body th, .dark .markdown-body td { border-color: #444; }
+.dark .markdown-body a { color: #58a6ff; }
+
+/* Mermaid */
+.mermaid {
+    display: flex;
+    justify-content: center;
+    background-color: transparent;
+    padding: 10px;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+.alert-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+.alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+.alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}
+.alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+/* Dark mode alerts */
+.dark .alert-success {
+    color: #dff0d8;
+    background-color: #2e4a33;
+    border-color: #3c5e42;
+}
+.dark .alert-info {
+    color: #d9edf7;
+    background-color: #244b5e;
+    border-color: #2a5d75;
+}
+.dark .alert-warning {
+    color: #fcf8e3;
+    background-color: #5c4f28;
+    border-color: #75612b;
+}
+.dark .alert-danger {
+    color: #f2dede;
+    background-color: #6a3535;
+    border-color: #853e3e;
+}
+
+/* Spoiler */
+details {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5em 0.5em 0;
+    margin-bottom: 1em;
+}
+summary {
+    font-weight: bold;
+    margin: -0.5em -0.5em 0;
+    padding: 0.5em;
+    cursor: pointer;
+}
+details[open] {
+    padding: 0.5em;
+}
+details[open] summary {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 0.5em;
+}
+.dark details {
+    border-color: #444;
+}
+.dark details[open] summary {
+    border-bottom-color: #444;
+}
+
+/* Code Block Word Wrap */
+.hljs.code-wrap,
+.hljs.code-wrap code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+/* Code Block Line Numbers */
+.markdown-body pre.hljs.has-line-numbers {
+    padding: 0;
+}
+
+.hljs.has-line-numbers code {
+    display: flex;
+    padding: 0;
+}
+
+.hljs.has-line-numbers .code-line-numbers {
+    flex-shrink: 0;
+    padding: 16px 12px;
+    text-align: right;
+    user-select: none;
+    color: #6e7681;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line-number {
+    display: block;
+    min-width: 1.5em;
+}
+
+.hljs.has-line-numbers .code-content {
+    flex: 1;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.45;
+}
+
+.hljs.has-line-numbers .code-line {
+    display: block;
+}
+
+/* Word wrap with line numbers */
+.hljs.has-line-numbers.code-wrap .code-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-x: visible;
+}
+
+/* Dark mode line numbers */
+.dark .hljs.has-line-numbers .code-line-numbers {
+    color: #6e7681;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Code Block Wrapper & Header */
+.code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+    border-radius: 6px;
+    background-color: #282c34; /* Match OneDark background */
+    overflow: hidden; /* Ensure header radius is respected */
+}
+
+/* Override default pre margin since wrapper handles it */
+.markdown-body .code-block-wrapper pre {
+    margin: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: flex-start;
+    background-color: #f4f4f4;
+    padding: 4px 12px;
+    border-bottom: 1px solid #d3d3d3;
+    font-size: 0.75rem;
+}
+.dark .code-block-header {
+    background-color: #21252b;
+    border-bottom: 1px solid #181a1f;
+}
+
+.code-lang {
+    color: #8a9298;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+.dark .code-lang {
+    color: #abb2bf;
+}
 
 .dark .markdown-body code { background: #2d2d2d; }
 .dark .markdown-body pre.hljs { background: #1e1e1e; }

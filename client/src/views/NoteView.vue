@@ -2300,6 +2300,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 0.5em 1em; }
 .markdown-body a { color: #0366d6; text-decoration: none; }
 .markdown-body a:hover { text-decoration: underline; }
+.markdown-body img { max-width: 100%; border-radius: 4px; }
 
 .dark .markdown-body code { background: #2d2d2d; }
 .dark .markdown-body pre.hljs { }
