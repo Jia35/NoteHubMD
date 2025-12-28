@@ -2105,21 +2105,31 @@
                 });
             };
 
+            // Named handlers for proper cleanup
+            const handleCommentMenuClick = (e) => {
+                if (openMenuId.value !== null) {
+                    const isMenuButton = e.target.closest('[data-comment-menu]');
+                    const isMenu = e.target.closest('.comment-menu-dropdown');
+                    if (!isMenuButton && !isMenu) {
+                        openMenuId.value = null;
+                    }
+                }
+            };
+
+            // CodeMirror wrapper reference and handlers for cleanup
+            let cmWrapper = null;
+            const handleCmDragOver = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            };
+            const handleCmDrop = (e) => handleImageDrop(cmInstance, e);
+
             onMounted(async () => {
                 // Global Ctrl+S handler
                 window.addEventListener('keydown', handleGlobalSave);
 
                 // Close comment menu on outside click
-                document.addEventListener('click', (e) => {
-                    if (openMenuId.value !== null) {
-                        // Check if click is inside a comment menu button or the menu itself
-                        const isMenuButton = e.target.closest('[data-comment-menu]');
-                        const isMenu = e.target.closest('.comment-menu-dropdown');
-                        if (!isMenuButton && !isMenu) {
-                            openMenuId.value = null;
-                        }
-                    }
-                });
+                document.addEventListener('click', handleCommentMenuClick);
 
                 // Load app version
                 loadAppVersion();
@@ -2242,12 +2252,9 @@
                     });
 
                     // Image upload - drag and drop
-                    const wrapper = cmInstance.getWrapperElement();
-                    wrapper.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'copy';
-                    });
-                    wrapper.addEventListener('drop', (e) => handleImageDrop(cmInstance, e));
+                    cmWrapper = cmInstance.getWrapperElement();
+                    cmWrapper.addEventListener('dragover', handleCmDragOver);
+                    cmWrapper.addEventListener('drop', handleCmDrop);
 
                     // Image upload - paste
                     cmInstance.on('paste', (cm, e) => handleImagePaste(cm, e));
@@ -2315,6 +2322,11 @@
             // Cleanup on unmount
             onUnmounted(() => {
                 window.removeEventListener('keydown', handleGlobalSave);
+                document.removeEventListener('click', handleCommentMenuClick);
+                if (cmWrapper) {
+                    cmWrapper.removeEventListener('dragover', handleCmDragOver);
+                    cmWrapper.removeEventListener('drop', handleCmDrop);
+                }
                 socket.emit('leave-note', noteId.value);
                 socket.off('users-in-note');
                 socket.off('note-updated');
@@ -2700,4 +2712,9 @@
     // Watch for theme changes
     const observer = new MutationObserver(updateHljsTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    // Cleanup observer on page unload
+    window.addEventListener('beforeunload', () => {
+        observer.disconnect();
+    });
 })();
