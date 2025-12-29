@@ -1,5 +1,7 @@
 # NoteHubMD
 
+[繁體中文](README-TW.md)
+
 A modern, self-hosted Markdown note-taking platform with real-time collaboration.
 
 ![Screenshot](docs/images/screenshot.png)
@@ -10,10 +12,11 @@ A modern, self-hosted Markdown note-taking platform with real-time collaboration
 
 - **📝 Markdown Editor** - Full-featured editor with live preview, syntax highlighting, and Mermaid diagram support
 - **👥 Real-time Collaboration** - Multiple users can edit the same note simultaneously via Socket.IO
-- **📚 Books & Notes** - Organize your notes into books with drag-and-drop reordering
+- **📚 Books & Notes** - Organize your notes into books with drag-and-drop reordering. Supports Grid/List views.
 - **🔐 Permission System** - Granular access control (private, public, login-required, per-user permissions)
-- **🔗 Custom Share URLs** - Create memorable aliases for shared notes (e.g., `/s/my-tutorial`)
+- **🔗 Custom Share URLs** - Create memorable aliases for shared notes (e.g., `/s/my-tutorial`) and books.
 - **💬 Comments** - Enable discussions on notes with threaded comments
+- **🔄 Activity Log** - Version control for notes with diff view and restore capability.
 - **🏢 LDAP/AD Integration** - Enterprise-ready with Active Directory authentication
 - **🐳 Docker Ready** - Easy deployment with Docker Compose
 - **🗄️ Database Options** - PostgreSQL (recommended) or SQLite
@@ -33,7 +36,6 @@ cd notehubmd
 
 2. Start the services:
 ```bash
-cd docker
 docker-compose up -d
 ```
 
@@ -41,27 +43,29 @@ docker-compose up -d
 
 ### Development
 
+The project is now structured as a monorepo with `backend` and `frontend` directories.
+
 1. Install dependencies:
 ```bash
-npm install
-cd client && npm install
+npm run install:all
 ```
 
 2. Start development servers:
 ```bash
-# Terminal 1: Backend
-npm start
+# Terminal 1: Backend (Port 3000)
+npm run dev:backend
 
-# Terminal 2: Frontend (Vite)
-npm run client:dev
+# Terminal 2: Frontend (Port 5173)
+npm run dev:frontend
 ```
 Access the application at `http://localhost:5173`.
 
 3. Production Build:
 ```bash
-npm run client:build
-# Start server with Vite build
-export USE_VITE_BUILD=true
+# Build frontend
+npm run build:frontend
+
+# Start backend serving static files
 npm start
 ```
 
@@ -75,32 +79,32 @@ cp .env.example .env
 
 ## ⚙️ Environment Variables
 
-| Variable                  | Description                                    | Default                         |
-| ------------------------- | ---------------------------------------------- | ------------------------------- |
-| `PORT`                    | Server port                                    | `3000`                          |
-| `USE_VITE_BUILD`          | Serve Vite build from `public_dist`            | `false`                         |
-| `SESSION_SECRET`          | Session encryption key (change in production!) | `your-secret-key-here`          |
-| **Database**              |                                                |                                 |
-| `DB_DIALECT`              | Database type (`postgres` or `sqlite`)         | `postgres`                      |
-| `DB_HOST`                 | Database host                                  | `localhost`                     |
-| `DB_PORT`                 | Database port                                  | `5432`                          |
-| `DB_USERNAME`             | Database username                              | `postgres`                      |
-| `DB_PASSWORD`             | Database password                              | -                               |
-| `DB_NAME`                 | Database name                                  | `notehubmd`                     |
-| `DB_STORAGE`              | SQLite file path (when using SQLite)           | `./database/database.sqlite`    |
-| **Permissions**           |                                                |                                 |
-| `DEFAULT_NOTE_PERMISSION` | Default permission for new notes               | `private`                       |
-| `DEFAULT_BOOK_PERMISSION` | Default permission for new books               | `private`                       |
-| **Features**              |                                                |                                 |
-| `FEATURE_COMMENTS`        | Enable comments feature                        | `true`                          |
-| `API_MASTER_KEY`          | Master API key for external access             | -                               |
-| **LDAP (Optional)**       |                                                |                                 |
-| `LDAP_ENABLED`            | Enable LDAP authentication                     | `false`                         |
-| `LDAP_URL`                | LDAP server URL                                | -                               |
-| `LDAP_BIND_DN`            | LDAP bind DN                                   | -                               |
-| `LDAP_BIND_PASSWORD`      | LDAP bind password                             | -                               |
-| `LDAP_SEARCH_BASE`        | LDAP user search base                          | -                               |
-| `LDAP_SEARCH_FILTER`      | LDAP search filter                             | `(sAMAccountName={{username}})` |
+| Variable | Description | Default |
+| --- | --- | --- |
+| `PORT` | Server port | `3000` |
+| `USE_VITE_BUILD` | Serve Vite build from `frontend/dist` | `false` |
+| `SESSION_SECRET` | Session encryption key (change in production!) | `your-secret-key-here` |
+| **Database** | | |
+| `DB_DIALECT` | Database type (`postgres` or `sqlite`) | `postgres` |
+| `DB_HOST` | Database host | `localhost` |
+| `DB_PORT` | Database port | `5432` |
+| `DB_USERNAME` | Database username | `postgres` |
+| `DB_PASSWORD` | Database password | - |
+| `DB_NAME` | Database name | `notehubmd` |
+| `DB_STORAGE` | SQLite file path (when using SQLite) | `./database/database.sqlite` |
+| **Permissions** | | |
+| `DEFAULT_NOTE_PERMISSION` | Default permission for new notes | `private` |
+| `DEFAULT_BOOK_PERMISSION` | Default permission for new books | `private` |
+| **Features** | | |
+| `FEATURE_COMMENTS` | Enable comments feature | `true` |
+| `API_MASTER_KEY` | Master API key for external access | - |
+| **LDAP (Optional)** | | |
+| `LDAP_ENABLED` | Enable LDAP authentication | `false` |
+| `LDAP_URL` | LDAP server URL | - |
+| `LDAP_BIND_DN` | LDAP bind DN | - |
+| `LDAP_BIND_PASSWORD` | LDAP bind password | - |
+| `LDAP_SEARCH_BASE` | LDAP user search base | - |
+| `LDAP_SEARCH_FILTER` | LDAP search filter | `(sAMAccountName={{username}})` |
 
 ## 📄 License
 

@@ -1,31 +1,37 @@
-FROM node:22-alpine
+# ================================
+# Stage 1: Build Frontend
+# ================================
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Install frontend dependencies
+COPY frontend/package*.json ./
+RUN npm ci --retry 3 --network-timeout 30000
+
+# Copy frontend source and build
+COPY frontend ./
+RUN npm run build
+
+# ================================
+# Stage 2: Production
+# ================================
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install backend dependencies only (production)
 COPY backend/package*.json ./backend/
-COPY frontend/package*.json ./frontend/
+RUN cd backend && npm ci --omit=dev
 
-# Install dependencies
-RUN cd backend && npm ci
-RUN cd frontend && npm ci
-
-# Copy application code
+# Copy backend source
 COPY backend ./backend
-COPY frontend ./frontend
-COPY legacy ./legacy
 
-# Build Frontend (Vite)
-RUN cd frontend && npm run build
-
-# Remove dev dependencies for production
-RUN cd backend && npm prune --omit=dev
-# Prune frontend modules as they are compiled
-RUN rm -rf frontend/node_modules
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Expose port
 EXPOSE 3000
 
 # Start command
-CMD ["npm", "start"]
+CMD ["npm", "--prefix", "backend", "start"]
