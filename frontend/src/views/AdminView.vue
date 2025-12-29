@@ -121,7 +121,7 @@ onMounted(loadData)
             <span class="text-gray-800 dark:text-white font-medium">系統管理</span>
           </div>
           <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
-            <i class="fa-solid fa-user-shield text-purple-600"></i>
+            <i class="fa-solid fa-user-shield"></i>
             系統管理
           </h1>
         </div>
@@ -162,6 +162,7 @@ onMounted(loadData)
                 <tr class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm uppercase">
                   <th class="px-6 py-3 font-semibold">用戶</th>
                   <th class="px-6 py-3 font-semibold">角色</th>
+                  <th class="px-6 py-3 font-semibold">內容</th>
                   <th class="px-6 py-3 font-semibold">狀態</th>
                   <th class="px-6 py-3 font-semibold">最後登入</th>
                   <th class="px-6 py-3 font-semibold">註冊時間</th>
@@ -187,12 +188,24 @@ onMounted(loadData)
                       v-model="u.role" 
                       @change="updateRole(u)"
                       :disabled="!canChangeRole(u)"
-                      class="bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                      <option value="super-admin" :disabled="user?.role !== 'super-admin'">Super Admin</option>
+                      <option value="super-admin" class="bg-white dark:bg-gray-800" :disabled="user?.role !== 'super-admin'">Super Admin</option>
+                      <option value="admin" class="bg-white dark:bg-gray-800">Admin</option>
+                      <option value="user" class="bg-white dark:bg-gray-800">User</option>
                     </select>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <span class="flex items-center gap-1" :title="(u.bookCount || 0) + ' 本書本'">
+                        <i class="fa-solid fa-book text-green-500"></i>
+                        {{ u.bookCount || 0 }}
+                      </span>
+                      <span class="flex items-center gap-1" :title="(u.noteCount || 0) + ' 篇筆記'">
+                        <i class="fa-solid fa-note-sticky text-blue-500"></i>
+                        {{ u.noteCount || 0 }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-6 py-4">
                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
