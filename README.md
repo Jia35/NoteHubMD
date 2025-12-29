@@ -39,6 +39,32 @@ docker-compose up -d
 
 3. Access the application at `http://localhost:3000`
 
+### Development
+
+1. Install dependencies:
+```bash
+npm install
+cd client && npm install
+```
+
+2. Start development servers:
+```bash
+# Terminal 1: Backend
+npm start
+
+# Terminal 2: Frontend (Vite)
+npm run client:dev
+```
+Access the application at `http://localhost:5173`.
+
+3. Production Build:
+```bash
+npm run client:build
+# Start server with Vite build
+export USE_VITE_BUILD=true
+npm start
+```
+
 ### Configuration
 
 Create a `.env` file in the project root to customize settings:
@@ -52,6 +78,7 @@ cp .env.example .env
 | Variable                  | Description                                    | Default                         |
 | ------------------------- | ---------------------------------------------- | ------------------------------- |
 | `PORT`                    | Server port                                    | `3000`                          |
+| `USE_VITE_BUILD`          | Serve Vite build from `public_dist`            | `false`                         |
 | `SESSION_SECRET`          | Session encryption key (change in production!) | `your-secret-key-here`          |
 | **Database**              |                                                |                                 |
 | `DB_DIALECT`              | Database type (`postgres` or `sqlite`)         | `postgres`                      |

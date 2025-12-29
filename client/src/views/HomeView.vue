@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted, inject, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import { BookCard, NoteCard, InfoModal } from '@/components'
@@ -31,6 +31,9 @@ const notes = ref([])
 
 // Check if on uncategorized page
 const isUncategorizedPage = computed(() => route.path === '/uncategorized')
+
+// Check if on books list page
+const isBookListPage = computed(() => route.path === '/books')
 
 // Display books (not in trash)
 const displayBooks = computed(() => {
@@ -103,6 +106,9 @@ const paginatedNotes = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return sortedNotes.value.slice(start, start + pageSize)
 })
+
+// Uncategorized notes count (for /books page display)
+const uncategorizedCount = computed(() => displayNotes.value.length)
 
 const totalPages = computed(() => Math.ceil(sortedNotes.value.length / pageSize))
 
@@ -420,6 +426,17 @@ const logout = async () => {
 
 // Export/Import functions moved to App.vue
 
+// Watch for route changes to reload data when navigating between pages
+// that share the same component (/, /books, /uncategorized)
+watch(() => route.path, (newPath, oldPath) => {
+  if (newPath !== oldPath) {
+    // Reset pagination when route changes
+    currentPage.value = 1
+    // Reload data for the new route
+    loadData()
+  }
+})
+
 // Handle click outside to close menu
 onMounted(() => {
   loadData()
@@ -433,8 +450,8 @@ onUnmounted(() => {
 
 <template>
   <div class="px-8 py-5 container mx-auto">
-    <!-- Header -->
-    <template v-if="!isUncategorizedPage">
+    <!-- Header for Home page -->
+    <template v-if="!isUncategorizedPage && !isBookListPage">
         <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
             <span>Home</span>
         </div>
@@ -457,6 +474,51 @@ onUnmounted(() => {
         </div>
     </template>
 
+    <!-- Header for Books List page -->
+    <template v-else-if="isBookListPage">
+        <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
+            <router-link to="/" class="hover:text-blue-500">Home</router-link>
+            <span class="mx-2">/</span>
+            <span>全部書本</span>
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                <i class="fa-solid fa-book mr-2"></i>全部書本
+            </h1>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-sort mr-1"></i>排序：</span>
+                <select v-model="sortBy" @change="saveSortSettings"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                    </option>
+                </select>
+                <button @click="toggleSortOrder"
+                        class="px-3 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                        :title="sortOrder === 'asc' ? '升冪' : '降冪'">
+                    <i class="fa-solid" :class="sortOrder === 'asc' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short'"></i>
+                </button>
+                
+                <div class="border-l border-gray-300 dark:border-gray-600 h-6 mx-2"></div>
+
+                <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 text-sm">
+                    <button type="button" @click="displayMode = 'grid'; saveDisplayMode()"
+                        :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'grid', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'grid'}"
+                        class="px-2 py-1 rounded transition" title="格狀顯示">
+                        <i class="fa-solid fa-border-all pointer-events-none"></i>
+                    </button>
+                    <button type="button" @click="displayMode = 'list'; saveDisplayMode()"
+                        :class="{'bg-white dark:bg-gray-600 text-blue-500 shadow-sm': displayMode === 'list', 'text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': displayMode !== 'list'}"
+                        class="px-2 py-1 rounded transition" title="清單顯示">
+                        <i class="fa-solid fa-list pointer-events-none"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Header for Uncategorized page -->
     <template v-else>
         <div class="mb-4 flex items-center text-gray-500 dark:text-gray-400">
             <router-link to="/" class="hover:text-blue-500">Home</router-link>
@@ -501,9 +563,98 @@ onUnmounted(() => {
     </template>
     <div>
       <!-- Books Section (not shown on uncategorized page) -->
+      <!-- On /books page, show based on displayMode; on home page, show as horizontal scroll -->
       <section v-if="!isUncategorizedPage" class="mb-6">
-        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
-        <div class="flex gap-4 pb-4" style="overflow-x: auto;">
+        <h2 v-if="!isBookListPage" class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">Books</h2>
+        
+        <!-- Books Grid/List for /books page -->
+        <template v-if="isBookListPage">
+          <!-- Empty State - Grid Mode -->
+          <div v-if="sortedBooks.length === 0 && displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div
+              @click="openCreateBookModal"
+              class="flex flex-col items-center justify-center bg-white dark:bg-dark-surface rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[140px]"
+            >
+              <i class="fa-solid fa-plus text-3xl text-green-500 mb-2"></i>
+              <p class="text-gray-600 dark:text-gray-300 font-medium">新增書本</p>
+            </div>
+          </div>
+
+          <!-- Empty State - List Mode -->
+          <div v-else-if="sortedBooks.length === 0 && displayMode === 'list'" class="flex flex-col gap-2">
+            <div
+              @click="openCreateBookModal"
+              class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[70px]"
+            >
+              <div class="w-10 text-center text-xl mr-3 text-green-500 flex-shrink-0">
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <p class="text-gray-600 dark:text-gray-300 font-medium">新增書本</p>
+            </div>
+          </div>
+
+          <!-- Grid View -->
+          <div v-else-if="displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <!-- Uncategorized Notes Card (always first) -->
+            <router-link to="/uncategorized" 
+                class="w-auto group relative bg-white dark:bg-dark-surface p-6 rounded-lg shadow hover:shadow-xl cursor-pointer transition border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center mb-1">
+                    <span class="w-6 mr-2 text-center shrink-0 text-lg"><i class="fa-solid fa-inbox text-gray-500"></i></span>
+                    <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate">未分類筆記 ({{ uncategorizedCount }})</h3>
+                </div>
+                <div class="mb-2">
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">不屬於任何書本的筆記</p>
+                </div>
+            </router-link>
+            <BookCard
+              v-for="book in sortedBooks"
+              :key="book.id"
+              :book="book"
+              mode="grid"
+              :in-grid="true"
+              :show-menu="openMenuId === 'book-' + book.id"
+              :is-pinned="isPinned('book', book.id)"
+              @click="openBook(book)"
+              @toggle-menu="toggleMenu('book-' + book.id)"
+              @open-info="openInfoModal('book', book)"
+              @toggle-pin="togglePin('book', book)"
+              @delete="deleteBook(book)"
+            />
+          </div>
+
+          <!-- List View -->
+          <div v-else class="flex flex-col gap-2">
+            <!-- Uncategorized Notes Card (always first) -->
+            <router-link to="/uncategorized" 
+                class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border border-gray-100 dark:border-gray-700 transition group relative h-[70px]">
+                <div class="w-10 text-center text-xl mr-3 text-gray-500 flex-shrink-0">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-gray-800 dark:text-white truncate text-base mb-1">未分類筆記 ({{ uncategorizedCount }})</h3>
+                    <div class="h-[20px] overflow-hidden">
+                        <p class="text-gray-500 dark:text-gray-400 text-xs">不屬於任何書本的筆記</p>
+                    </div>
+                </div>
+            </router-link>
+            <BookCard
+              v-for="book in sortedBooks"
+              :key="book.id"
+              :book="book"
+              mode="list"
+              :show-menu="openMenuId === 'book-' + book.id"
+              :is-pinned="isPinned('book', book.id)"
+              @click="openBook(book)"
+              @toggle-menu="toggleMenu('book-' + book.id)"
+              @open-info="openInfoModal('book', book)"
+              @toggle-pin="togglePin('book', book)"
+              @delete="deleteBook(book)"
+            />
+          </div>
+        </template>
+        
+        <!-- Books Horizontal Scroll for home page -->
+        <div v-else class="flex gap-4 pb-4" style="overflow-x: auto;">
           <!-- Empty State -->
           <div
             v-if="sortedBooks.length === 0"
@@ -529,8 +680,8 @@ onUnmounted(() => {
         </div>
       </section>
 
-      <!-- Notes Section (Uncategorized) -->
-      <section>
+      <!-- Notes Section (not shown on /books page) -->
+      <section v-if="!isBookListPage">
         <div v-if="!isUncategorizedPage" class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-4">
                 <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">Notes</h2>

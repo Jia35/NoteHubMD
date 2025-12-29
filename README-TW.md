@@ -39,6 +39,32 @@ docker-compose up -d
 
 3. 開啟瀏覽器訪問 `http://localhost:3000`
 
+### 開發指南
+
+1. 安裝依賴套件：
+```bash
+npm install
+cd client && npm install
+```
+
+2. 啟動開發伺服器：
+```bash
+# 終端機 1：後端
+npm start
+
+# 終端機 2：前端 (Vite)
+npm run client:dev
+```
+開發時請訪問 `http://localhost:5173`。
+
+3. 生產環境建置：
+```bash
+npm run client:build
+# 使用 Vite 建置檔啟動伺服器
+export USE_VITE_BUILD=true
+npm start
+```
+
 ### 自訂設定
 
 在專案根目錄建立 `.env` 檔案來自訂設定：
@@ -52,6 +78,7 @@ cp .env.example .env
 | 變數                      | 說明                                     | 預設值                          |
 | ------------------------- | ---------------------------------------- | ------------------------------- |
 | `PORT`                    | 伺服器埠號                               | `3000`                          |
+| `USE_VITE_BUILD`          | 是否使用 `public_dist` 的 Vite 建置檔案  | `false`                         |
 | `SESSION_SECRET`          | Session 加密金鑰（正式環境請務必修改！） | `your-secret-key-here`          |
 | **資料庫**                |                                          |                                 |
 | `DB_DIALECT`              | 資料庫類型（`postgres` 或 `sqlite`）     | `postgres`                      |
