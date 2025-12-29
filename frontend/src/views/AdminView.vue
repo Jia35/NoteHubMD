@@ -199,7 +199,7 @@ onMounted(loadData)
                       Active
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" :title="formatDateTime(u.lastActiveAt)">
                     {{ formatRelativeTime(u.lastActiveAt) }}
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
