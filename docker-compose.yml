@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17.6
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: "notehubmd"
+      POSTGRES_PASSWORD: "notehubmd_password"
+      POSTGRES_DB: "notehubmd"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    image: jia35/notehubmd:0.0.2
+    container_name: notehubmd
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DB_DIALECT: "postgres"
+      DB_HOST: "postgres"
+      DB_PORT: 5432
+      DB_USERNAME: "notehubmd"
+      DB_PASSWORD: "notehubmd_password"
+      DB_NAME: "notehubmd"
+      SESSION_SECRET: "change-this-in-production"
+      USE_VITE_BUILD: "true"
+    depends_on:
+      - db
+    volumes:
+      - uploads_data:/app/_uploads
+
+volumes:
+  postgres_data:
+  uploads_data:

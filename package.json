@@ -1,45 +1,14 @@
 {
   "name": "notehubmd",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "NoteHubMD - A Markdown Note Taking Application",
+  "private": true,
   "scripts": {
-    "start": "node server/index.js",
-    "start:vite": "set USE_VITE_BUILD=true && node server/index.js",
-    "dev": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./public/css/tailwind.input.css -o ./public/css/tailwind.min.css --watch",
-    "build:css": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./public/css/tailwind.input.css -o ./public/css/tailwind.min.css --minify",
-    "client:dev": "cd client && npm run dev",
-    "client:build": "cd client && npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "adm-zip": "^0.5.16",
-    "archiver": "^7.0.1",
-    "base32-decode": "^1.0.0",
-    "base32-encode": "^2.0.0",
-    "bcryptjs": "^3.0.3",
-    "body-parser": "^2.2.1",
-    "compression": "^1.8.1",
-    "cors": "^2.8.5",
-    "diff-match-patch": "^1.0.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "express-session": "^1.18.2",
-    "ldapjs": "^3.0.7",
-    "morgan": "^1.10.1",
-    "multer": "^2.0.2",
-    "nanoid": "^5.1.6",
-    "pg": "^8.16.3",
-    "pg-hstore": "^2.3.4",
-    "reveal.js": "^5.2.1",
-    "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/cli": "^4.1.18",
-    "tailwindcss": "^4.1.18"
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start",
+    "start:vite": "npm --prefix backend run start:vite"
   }
 }
