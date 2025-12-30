@@ -341,6 +341,9 @@ const renderContent = () => {
       console.warn('Mermaid rendering error:', e)
     }
   }
+  
+  // Initialize TOC highlight (default to first heading)
+  handlePreviewScroll()
 }
 
 // Extract TOC from headings
@@ -385,6 +388,11 @@ const handlePreviewScroll = () => {
       activeId = heading.id
     }
   })
+  
+  // If no heading is above the threshold (page at top), default to first heading
+  if (!activeId && headings.length > 0) {
+    activeId = headings[0].id
+  }
   
   activeTocId.value = activeId
 }
@@ -659,7 +667,7 @@ watch(() => route.params.shareId, () => {
 
             <!-- Bottom Navigation -->
             <div v-if="book && bookNotes.length > 1" class="flex justify-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 mt-auto">
-              <div class="w-full px-4 py-2" style="max-width: 900px">
+              <div class="w-full px-4 py-1" style="max-width: 900px">
                 <div class="flex justify-between items-center text-sm">
                   <a v-if="prevNote" :href="getNoteShareLink(prevNote)" class="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition py-2">
                     <i class="fa-solid fa-chevron-left mr-2"></i>
