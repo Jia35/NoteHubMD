@@ -278,18 +278,9 @@ const removeEditableTag = async (tag) => {
   }
 }
 
-// Share book
+// Share book - open info modal with share tab
 const shareBook = () => {
-  if (!book.value?.shareId) {
-    showAlert?.('此書本沒有分享連結', 'error')
-    return
-  }
-  const shareUrl = `${window.location.origin}/v/${book.value.shareId}`
-  navigator.clipboard.writeText(shareUrl).then(() => {
-    showAlert?.('分享連結已複製到剪貼簿', 'success')
-  }).catch(() => {
-    showAlert?.('複製失敗，請手動複製：' + shareUrl, 'info')
-  })
+  openInfoModal(book.value, 'share', 'book')
 }
 
 // Auto save permission
