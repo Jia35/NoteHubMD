@@ -13,11 +13,13 @@ const showConfirm = inject('showConfirm')
 // Inject global sidebar data from App.vue
 const user = inject('sidebarUser')
 const books = inject('sidebarBooks')
-const pinnedItems = inject('sidebarPinnedItems')
+// [DISABLED] 釘選功能暫時停用
+// const pinnedItems = inject('sidebarPinnedItems')
 const loadSidebarData = inject('loadSidebarData')
 const updateSidebarBooks = inject('updateSidebarBooks')
 const updateSidebarUser = inject('updateSidebarUser')
-const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+// [DISABLED] 釘選功能暫時停用
+// const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
 
 // Inject global view mode from App.vue
 const globalViewMode = inject('globalViewMode')
@@ -358,6 +360,7 @@ const closeMenu = () => {
   openMenuId.value = null
 }
 
+/* [DISABLED] 釘選功能暫時停用
 // Unpin item
 const unpinItem = async (type, id) => {
   try {
@@ -384,6 +387,7 @@ const togglePin = async (type, item) => {
     showAlert?.('操作失敗', 'error')
   }
 }
+*/
 
 // Delete book
 const deleteBook = async (book) => {
@@ -411,10 +415,14 @@ const deleteNote = async (note) => {
   }
 }
 
+/* [DISABLED] 釘選功能暫時停用
 // Check if item is pinned
-const isPinned = (type, id) => {
-  return pinnedItems.value.some(p => p.type === type && p.id === id)
-}
+// const isPinned = (type, id) => {
+//   return pinnedItems.value.some(p => p.type === type && p.id === id)
+// }
+*/
+// Stub function to avoid template errors
+const isPinned = () => false
 
 // Profile & Cropper functions removed (moved to UserProfileModal)
 

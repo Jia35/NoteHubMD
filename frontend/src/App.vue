@@ -291,6 +291,7 @@ const createNote = async () => {
   }
 }
 
+/* [DISABLED] 釘選功能暫時停用
 const unpinItem = async (type, id) => {
   try {
     await api.removePin(type, id)
@@ -301,6 +302,7 @@ const unpinItem = async (type, id) => {
     showAlert('取消釘選失敗', 'error')
   }
 }
+*/
 
 const handleBookCreated = (newBook) => {
   // Add new book to sidebar list

@@ -243,7 +243,7 @@ const formatDate = (date) => {
         垃圾桶
       </router-link>
 
-      <!-- Pinned Items -->
+      <!-- [DISABLED] Pinned Items - 釘選功能暫時停用
       <template v-if="showPinned && pinnedItems && pinnedItems.length > 0">
         <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center">
           <span class="w-5 mr-2 text-center shrink-0"><i class="fa-solid fa-thumbtack"></i></span> Pinned
@@ -287,6 +287,7 @@ const formatDate = (date) => {
           </router-link>
         </div>
       </template>
+      -->
 
       <!-- Books Section -->
       <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 flex items-center justify-between">

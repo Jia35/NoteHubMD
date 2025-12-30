@@ -49,12 +49,14 @@ const formatDate = (date) => {
         >
           <i class="fa-solid fa-folder-open w-4 mr-1 inline-block text-center"></i>移動至...
         </button>
+        <!-- [DISABLED] 釘選功能暫時停用
         <button
           @click.stop="emit('toggle-pin')"
           class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
           <i class="fa-solid fa-thumbtack w-4 mr-1 inline-block text-center"></i>{{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
         </button>
+        -->
         <button
           @click.stop="note.canDelete && emit('delete')"
           :class="note.canDelete ? 'text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'text-gray-400 cursor-not-allowed'"
@@ -166,6 +168,7 @@ const formatDate = (date) => {
         >
           <i class="fa-solid fa-circle-info w-4 mr-2 inline-block text-center"></i>資訊
         </button>
+        <!-- [DISABLED] 釘選功能暫時停用
         <button
           @click.stop="emit('toggle-pin')"
           class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
@@ -173,6 +176,7 @@ const formatDate = (date) => {
           <i class="fa-solid fa-thumbtack w-4 mr-2 inline-block text-center"></i>
           {{ isPinned ? '取消釘選' : '釘選到側邊欄' }}
         </button>
+        -->
         <button
           v-if="showMoveOption"
           @click.stop="emit('open-move')"

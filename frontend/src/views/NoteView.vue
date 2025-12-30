@@ -162,7 +162,9 @@ const showOnlineUsersPopup = ref(false)
 
 // Sidebar data
 const books = ref([])
-const pinnedItems = ref([])
+// [DISABLED] 釘選功能暫時停用
+// const pinnedItems = ref([])
+const pinnedItems = ref([]) // 空陣列代替，避免模板報錯
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 
 // Modals
@@ -457,11 +459,14 @@ const loadNote = async () => {
     
     const [booksData, pinnedData, versionData] = await Promise.all([
       api.getBooks().catch(() => []),
-      api.getPinnedItems().catch(() => []),
+      // [DISABLED] 釘選功能暫時停用
+      // api.getPinnedItems().catch(() => []),
+      Promise.resolve([]), // 空陣列代替
       api.getAppVersion().catch(() => ({ version: '' }))
     ])
     books.value = booksData
-    pinnedItems.value = pinnedData
+    // [DISABLED] 釘選功能暫時停用
+    // pinnedItems.value = pinnedData
     appVersion.value = versionData.version || ''
     
     const data = await api.getNote(route.params.id)
@@ -1359,6 +1364,7 @@ const handleCreateBook = async (data) => {
   }
 }
 
+/* [DISABLED] 釘選功能暫時停用
 // Unpin
 const unpinItem = async (type, id) => {
   try {
@@ -1368,6 +1374,7 @@ const unpinItem = async (type, id) => {
     showAlert?.('取消釘選失敗', 'error')
   }
 }
+*/
 
 // Share note
 const shareNote = () => {

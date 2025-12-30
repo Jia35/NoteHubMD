@@ -23,10 +23,12 @@ const canAddNote = ref(false)
 // Inject global sidebar data from App.vue
 const user = inject('sidebarUser')
 const sidebarBooks = inject('sidebarBooks')
-const pinnedItems = inject('sidebarPinnedItems')
+// [DISABLED] 釘選功能暫時停用
+// const pinnedItems = inject('sidebarPinnedItems')
 const loadSidebarData = inject('loadSidebarData')
 const updateSidebarBooks = inject('updateSidebarBooks')
-const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
+// [DISABLED] 釘選功能暫時停用
+// const updateSidebarPinnedItems = inject('updateSidebarPinnedItems')
 
 const currentRoute = computed(() => route.path)
 
@@ -78,10 +80,14 @@ const permissionLabel = computed(() => {
   return opt?.label || permission.value
 })
 
+/* [DISABLED] 釘選功能暫時停用
 // Check if item is pinned
-const isPinned = (type, id) => {
-  return pinnedItems?.value?.some(p => p.type === type && p.id === id) || false
-}
+// const isPinned = (type, id) => {
+//   return pinnedItems?.value?.some(p => p.type === type && p.id === id) || false
+// }
+*/
+// Stub function to avoid template errors
+const isPinned = () => false
 
 // Load book data (sidebar data is managed by App.vue)
 const loadBook = async () => {
@@ -363,6 +369,7 @@ const setGlobalViewMode = (mode) => {
   localStorage.setItem('NoteHubMD-viewMode', mode)
 }
 
+/* [DISABLED] 釘選功能暫時停用
 const unpinItem = async (type, id) => {
   try {
     await api.removePin(type, id)
@@ -371,6 +378,7 @@ const unpinItem = async (type, id) => {
     showAlert?.('取消釘選失敗', 'error')
   }
 }
+*/
 
 const createSidebarNote = async () => {
   try {
