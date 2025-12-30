@@ -1277,7 +1277,7 @@ const extractTitle = (text) => {
 let saveTimeout = null
 const debouncedSave = () => {
   if (saveTimeout) clearTimeout(saveTimeout)
-  saveTimeout = setTimeout(saveNote, 1000)
+  saveTimeout = setTimeout(saveNote, 500)
 }
 
 // Save note

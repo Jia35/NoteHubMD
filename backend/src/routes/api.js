@@ -1282,7 +1282,7 @@ router.get('/share/:shareIdOrAlias', async (req, res) => {
             include: [
                 {
                     model: db.Book,
-                    attributes: ['id', 'title', 'permission'],
+                    attributes: ['id', 'title', 'permission', 'shareId', 'shareAlias'],
                     include: [
                         { model: db.Note, attributes: ['id', 'title', 'order', 'shareId', 'shareAlias'], order: [['order', 'ASC']] }
                     ]

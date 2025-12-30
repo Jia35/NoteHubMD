@@ -280,12 +280,17 @@ const loadNote = async () => {
     noteId.value = data.id
     noteOwner.value = data.owner
     lastEditor.value = data.lastEditor
-    lastEditedAt.value = data.lastEditedAt
+    lastEditedAt.value = data.lastEditedAt || data.lastContentEditedAt
     canEdit.value = data.canEdit || false
     
-    if (data.book) {
-      book.value = data.book
-      bookNotes.value = data.book.notes || []
+    // Handle API response: Book (capitalized) with Notes (capitalized)
+    const bookData = data.book || data.Book
+    if (bookData) {
+      book.value = bookData
+      // Handle notes array (could be 'notes' or 'Notes')
+      const notesArray = bookData.notes || bookData.Notes || []
+      // Sort by order
+      bookNotes.value = [...notesArray].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     }
     
     document.title = `${title.value.substring(0, 30)} | NoteHubMD`
@@ -506,15 +511,24 @@ watch(() => route.params.shareId, () => {
 
     <!-- Content -->
     <template v-else>
-      <!-- Header -->
-      <div class="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center shadow-md z-10 shrink-0">
+      <!-- Header (hidden in slide mode) -->
+      <div v-show="!showSlide" class="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center shadow-md z-10 shrink-0">
         <div class="flex-1 flex items-center space-x-3">
           <router-link to="/" class="hover:text-blue-400 transition">
-            <i class="fa-solid fa-house"></i>
+            <img src="@/assets/images/logo.png" alt="NoteHubMD" class="w-8 h-8">
           </router-link>
+
           <span class="text-gray-600">/</span>
+          <!-- Book Title (if note is in a book) -->
+          <template v-if="book">
+            <a :href="'/v/' + (book.shareId || book.shareAlias || book.id)" class="text-sm bg-gray-300 dark:bg-gray-800 px-3 py-1 rounded truncate max-w-[200px] hover:text-blue-400 transition">
+              <i class="fa-solid fa-book mr-2"></i>{{ book.title }}
+            </a>
+            <span class="text-gray-600">/</span>
+          </template>
+          <!-- Note Title -->
           <span class="text-sm bg-gray-300 dark:bg-gray-800 px-3 py-1 rounded truncate max-w-md">
-            <i class="fa-solid fa-note-sticky mr-2 text-blue-500"></i>{{ title }}
+            <i class="fa-solid fa-note-sticky mr-2"></i>{{ title }}
           </span>
         </div>
         <div class="flex items-center space-x-3">
@@ -579,10 +593,10 @@ watch(() => route.params.shareId, () => {
         <div v-if="book && bookNotes.length > 1 && !showBookToc" class="absolute left-0 top-40 z-30">
           <button 
             @click="toggleBookToc" 
-            class="bg-gray-100 dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 border-l-0 rounded-r-md shadow-md py-3 px-1 cursor-pointer"
-            title="顯示書本目錄"
-          >
+            class="bg-gray-100 dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 border-l-0 rounded-r-md shadow-md py-3 px-1.5 cursor-pointer flex flex-col items-center gap-1"
+            title="顯示書本目錄">
             <i class="fa-solid fa-book-open text-xs"></i>
+            <span class="text-xs" style="writing-mode: vertical-rl;">書本目錄</span>
           </button>
         </div>
 
@@ -619,6 +633,16 @@ watch(() => route.params.shareId, () => {
                       <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
                     </span>
                     <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有</span>
+                  </div>
+                  <!-- Last Editor -->
+                  <div v-if="lastEditor" class="flex items-center">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white mr-1.5 overflow-hidden" 
+                          :class="lastEditor.username ? 'bg-blue-600' : 'bg-gray-500'"
+                          style="font-size: 10px;">
+                      <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
+                      <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                    </span>
+                    <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
                   </div>
                   <div v-if="relativeLastEditedTime" class="flex items-center">
                     <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
