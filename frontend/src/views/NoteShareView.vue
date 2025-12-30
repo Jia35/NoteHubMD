@@ -632,7 +632,7 @@ watch(() => route.params.shareId, () => {
                       <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
                       <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
                     </span>
-                    <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有</span>
+                    <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
                   </div>
                   <!-- Last Editor -->
                   <div v-if="lastEditor" class="flex items-center">

@@ -80,28 +80,50 @@ const selectRevision = async (rev) => {
   }
 }
 
+// Check if selected revision is the first (oldest) one
+const isFirstRevision = computed(() => {
+  if (!selectedRevision.value || revisions.value.length === 0) return false
+  const idx = revisions.value.findIndex(r => r.id === selectedRevision.value.id)
+  return idx === revisions.value.length - 1
+})
+
 // Calculate diff with diff-match-patch
 const recalculateDiff = () => {
   if (!selectedRevision.value) return
   
-  let baseContent = ''
+  let fromContent = ''
+  let toContent = ''
+  
   if (diffCompareMode.value === 'current') {
-    baseContent = props.currentContent
+    // "與目前版本比較": show what changed from selected version to current
+    // diff(selected version → current version)
+    fromContent = revisionContent.value || ''
+    toContent = props.currentContent || ''
   } else {
-    baseContent = previousRevisionContent.value
+    // "與上一版本比較": show what changed from previous version to selected version
+    // diff(previous version → selected version)
+    // For the first version, there's no previous version
+    if (isFirstRevision.value) {
+      // First version: just show content without diff markers
+      const escapedText = escapeHtml(revisionContent.value || '').replace(/\n/g, '<br>')
+      diffHtml.value = `<span class="text-gray-800 dark:text-gray-200">${escapedText}</span>`
+      return
+    }
+    fromContent = previousRevisionContent.value || ''
+    toContent = revisionContent.value || ''
   }
   
   // Use diff-match-patch to calculate differences
-  const diffs = dmp.diff_main(baseContent, revisionContent.value)
+  const diffs = dmp.diff_main(fromContent, toContent)
   dmp.diff_cleanupSemantic(diffs)
   
   // Generate HTML with highlighting
   let html = ''
   for (const [op, text] of diffs) {
     const escapedText = escapeHtml(text).replace(/\n/g, '<br>')
-    if (op === DiffMatchPatch.DIFF_INSERT) {
+    if (op === 1) { // DIFF_INSERT
       html += `<span class="bg-green-200 dark:bg-green-800/50 text-green-800 dark:text-green-200">${escapedText}</span>`
-    } else if (op === DiffMatchPatch.DIFF_DELETE) {
+    } else if (op === -1) { // DIFF_DELETE
       html += `<span class="bg-red-200 dark:bg-red-800/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`
     } else {
       html += `<span class="text-gray-800 dark:text-gray-200">${escapedText}</span>`
@@ -158,6 +180,17 @@ const formatDate = (date) => {
         <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800/50">
           <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
             <i class="fa-solid fa-history mr-2 text-blue-500"></i>活動紀錄
+            <span class="relative ml-2 group">
+              <i class="fa-solid fa-circle-info text-sm text-gray-400 hover:text-blue-500 cursor-help transition"></i>
+              <div class="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-pre-line">
+                <div class="font-bold mb-1">版本自動儲存規則：</div>
+                <ul class="list-disc list-inside space-y-1">
+                  <li>閒置 5 分鐘後再編輯會觸發保存</li>
+                  <li>距離上次版本保存超過 15 分鐘觸發保存</li>
+                  <li>最多保留 50 個歷史版本</li>
+                </ul>
+              </div>
+            </span>
           </h2>
           <button @click="emit('close')" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>

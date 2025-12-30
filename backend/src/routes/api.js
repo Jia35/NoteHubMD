@@ -10,8 +10,8 @@ const DiffMatchPatch = require('diff-match-patch');
 
 // Revision settings
 const REVISION_MAX_COUNT = 50;
-const REVISION_IDLE_MINUTES = 10;
-const REVISION_FORCE_MINUTES = 20;
+const REVISION_IDLE_MINUTES = 5;
+const REVISION_FORCE_MINUTES = 15;
 
 // --- App Info ---
 router.get('/version', (req, res) => {
@@ -360,11 +360,11 @@ router.put('/notes/:id', async (req, res) => {
                     });
 
                     if (revisions.length === 0) {
-                        // First revision: store full content
+                        // First revision: store the new content (not empty old content)
                         await db.NoteRevision.create({
                             noteId: note.id,
-                            content: oldContent,
-                            length: oldContent.length,
+                            content: newContent,
+                            length: newContent.length,
                             editorId: userId
                         });
                     } else {
