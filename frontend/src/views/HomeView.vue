@@ -296,11 +296,11 @@ const handleMoveNote = async (bookId) => {
 const loadData = async () => {
   loading.value = true
   try {
-    // Load sidebar data if not already loaded
-    await loadSidebarData()
-    
-    // Load notes (local to this view)
-    const notesData = await api.getNotes()
+    // Load sidebar data and notes in parallel for faster loading
+    const [_, notesData] = await Promise.all([
+      loadSidebarData(),
+      api.getNotes()
+    ])
     notes.value = notesData
   } catch (e) {
     console.error('Failed to load data:', e)
