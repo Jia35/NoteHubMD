@@ -2,7 +2,7 @@
 import { ref, computed, provide, onMounted, inject } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav, CreateBookModal, SettingsModal, UserProfileModal, InfoModal } from '@/components'
+import { SidebarNav, CreateBookModal, SettingsModal, UserProfileModal, InfoModal, AboutModal } from '@/components'
 
 const route = useRoute()
 const router = useRouter()
@@ -160,6 +160,7 @@ const setTheme = (newTheme) => {
 const showCreateBookModal = ref(false)
 const showSettings = ref(false)
 const showUserProfileModal = ref(false)
+const showAboutModal = ref(false)
 
 // Provide open modal functions (optional, if needed by children)
 provide('openCreateBookModal', () => showCreateBookModal.value = true)
@@ -386,6 +387,13 @@ onMounted(async () => {
       @export-notes="exportNotes"
       @import-file="handleImportFile"
       @import-folder="handleImportFolder"
+      @open-about="showAboutModal = true"
+    />
+
+    <AboutModal 
+      :show="showAboutModal" 
+      :app-version="appVersion" 
+      @close="showAboutModal = false" 
     />
 
     <UserProfileModal 

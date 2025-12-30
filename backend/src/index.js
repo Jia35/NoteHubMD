@@ -21,23 +21,12 @@ app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Static files with cache control
-// Vendors (third-party libraries) - 1 week cache
-app.use('/vendors', express.static(path.join(__dirname, '../../legacy/public/vendors'), {
-    maxAge: '7d',
-    etag: true,
-    immutable: true
-}));
+// Vite SPA configuration
+const viteConfig = require('./config/vite');
 
 // Uploads - 1 day cache
 app.use('/_uploads', express.static(path.join(__dirname, '../../_uploads'), {
     maxAge: '1d',
-    etag: true
-}));
-
-// Other static files - 6 hours cache
-app.use(express.static(path.join(__dirname, '../../legacy/public'), {
-    maxAge: '6h',
     etag: true
 }));
 
@@ -56,61 +45,31 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
-// Serve different HTML files based on route (Page Separation)
-// Check for Vite SPA mode
-const viteConfig = require('./config/vite');
+// Vite SPA mode - serve static files and handle all routes
 const spaHandler = viteConfig.spaMiddleware(app, express);
 
 if (spaHandler) {
-    // Vite SPA mode - all routes handled by SPA
-    // Login page (SPA handles it)
+    // Login page
     app.get('/login', spaHandler);
 
-    // Note page (SPA handles it)
+    // Note page
     app.get('/n/:id', spaHandler);
 
-    // Note share page (SPA handles it)
+    // Note share page
     app.get('/s/:shareId', spaHandler);
 
-    // Book share page (SPA handles it)
+    // Book share page
     app.get('/v/:shareId', spaHandler);
 
-    // 404 page (SPA handles it)
+    // 404 page
     app.get('/404', spaHandler);
 
     // All other routes - SPA fallback
     app.get(/(.*)/, spaHandler);
 } else {
-    // Legacy mode - serve individual HTML files
-    // Login page
-    app.get('/login', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../legacy/public/login.html'));
-    });
-
-    // Note page
-    app.get('/n/:id', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../legacy/public/note.html'));
-    });
-
-    // Note share page
-    app.get('/s/:shareId', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../legacy/public/note_share.html'));
-    });
-
-    // Book share page
-    app.get('/v/:shareId', (req, res) => {
-        res.sendFile(path.join(__dirname, '../../legacy/public/book_share.html'));
-    });
-
-    // 404 page
-    app.get('/404', (req, res) => {
-        res.status(404).sendFile(path.join(__dirname, '../../legacy/public/404.html'));
-    });
-
-    // All other routes (Home, Books, Trash, Admin, etc.) - use index.html
-    // Using regex for catch-all in Express 5
+    // No Vite build available - show error
     app.get(/(.*)/, (req, res) => {
-        res.sendFile(path.join(__dirname, '../../legacy/public/index.html'));
+        res.status(500).send('Error: Vite build not found. Please run "cd frontend && npm run build" first.');
     });
 }
 
@@ -143,8 +102,6 @@ function broadcastUsersInNote(noteId) {
 
 // Socket.io
 io.on('connection', (socket) => {
-    // console.log('New client connected:', socket.id);
-
     // Track which notes this socket has joined
     socket.noteRooms = new Set();
 
@@ -195,8 +152,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // console.log('Client disconnected:', socket.id);
-
         // Remove user from all note rooms they were in
         for (const noteId of socket.noteRooms) {
             const users = noteUsersMap.get(noteId);

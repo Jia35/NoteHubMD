@@ -26,11 +26,11 @@ services:
       DB_PASSWORD: "notehubmd_password"
       DB_NAME: "notehubmd"
       SESSION_SECRET: "change-this-in-production"
-      USE_VITE_BUILD: "true"
     depends_on:
       - db
     volumes:
       - uploads_data:/app/_uploads
+      # - ./backend/.env:/app/backend/.env:ro
 
 volumes:
   postgres_data:
