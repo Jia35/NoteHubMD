@@ -1750,7 +1750,6 @@ watch(() => route.params.id, (newId, oldId) => {
             :current-route="currentRoute"
             :global-view-mode="globalViewMode"
             :app-version="appVersion"
-            @unpin="unpinItem"
             @view-mode-change="setGlobalViewMode"
             @create-note="createNewNote"
             @create-book="showCreateBookModal = true"

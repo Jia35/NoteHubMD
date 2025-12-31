@@ -304,13 +304,19 @@ const unpinItem = async (type, id) => {
 }
 */
 
-const handleBookCreated = (newBook) => {
-  // Add new book to sidebar list
-  const newBooks = [newBook, ...sidebarBooks.value]
-  sidebarBooks.value = newBooks
-  showCreateBookModal.value = false
-  showAlert('新增書本成功', 'success')
-  router.push(`/b/${newBook.id}`)
+const handleBookCreated = async (bookData) => {
+  try {
+    // Actually create the book via API
+    const newBook = await api.createBook(bookData)
+    // Add new book to sidebar list
+    sidebarBooks.value = [newBook, ...sidebarBooks.value]
+    showCreateBookModal.value = false
+    showAlert('新增書本成功', 'success')
+    router.push(`/b/${newBook.id}`)
+  } catch (e) {
+    console.error('Failed to create book:', e)
+    showAlert('建立書本失敗', 'error')
+  }
 }
 
 const handleLogout = async () => {
@@ -354,7 +360,6 @@ onMounted(async () => {
         :current-route="currentRoutePath"
         :global-view-mode="globalViewMode"
         :app-version="appVersion"
-        @unpin="unpinItem"
         @view-mode-change="setGlobalViewMode"
         @create-note="createNote"
         @create-book="showCreateBookModal = true"
@@ -373,7 +378,7 @@ onMounted(async () => {
 
     <!-- Global Modals -->
     <CreateBookModal 
-      v-if="showCreateBookModal" 
+      :show="showCreateBookModal" 
       @close="showCreateBookModal = false" 
       @book-created="handleBookCreated" 
     />

@@ -389,6 +389,16 @@ const togglePin = async (type, item) => {
 }
 */
 
+// Handle create book click with safety check
+const handleCreateBook = () => {
+  if (typeof openCreateBookModal === 'function') {
+    openCreateBookModal()
+  } else {
+    console.error('openCreateBookModal is not defined or not a function')
+    showAlert?.('無法開啟新增書本視窗', 'error')
+  }
+}
+
 // Delete book
 const deleteBook = async (book) => {
   const confirmed = await showConfirm?.(`確定要刪除「${book.title}」嗎？`, '刪除確認')
@@ -580,7 +590,7 @@ onUnmounted(() => {
           <!-- Empty State - Grid Mode -->
           <div v-if="sortedBooks.length === 0 && displayMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div
-              @click="openCreateBookModal"
+              @click="handleCreateBook"
               class="flex flex-col items-center justify-center bg-white dark:bg-dark-surface rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[140px]"
             >
               <i class="fa-solid fa-plus text-3xl text-green-500 mb-2"></i>
@@ -591,7 +601,7 @@ onUnmounted(() => {
           <!-- Empty State - List Mode -->
           <div v-else-if="sortedBooks.length === 0 && displayMode === 'list'" class="flex flex-col gap-2">
             <div
-              @click="openCreateBookModal"
+              @click="handleCreateBook"
               class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 h-[70px]"
             >
               <div class="w-10 text-center text-xl mr-3 text-green-500 flex-shrink-0">
@@ -666,7 +676,7 @@ onUnmounted(() => {
           <!-- Empty State -->
           <div
             v-if="sortedBooks.length === 0"
-            @click="openCreateBookModal"
+            @click="handleCreateBook"
             class="w-64 shrink-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 p-6"
           >
             <i class="fa-solid fa-plus text-3xl text-green-500 mb-3"></i>
