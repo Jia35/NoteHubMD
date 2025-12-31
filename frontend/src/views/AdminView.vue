@@ -130,14 +130,14 @@ onMounted(loadData)
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-gray-500 dark:text-gray-400 font-medium">總用戶數</h3>
+              <h3 class="text-gray-500 dark:text-gray-400 font-medium">總使用者數</h3>
               <i class="fa-solid fa-users text-blue-500 text-xl"></i>
             </div>
             <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ users.length }}</p>
           </div>
           <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-gray-500 dark:text-gray-400 font-medium">線上用戶</h3>
+              <h3 class="text-gray-500 dark:text-gray-400 font-medium">線上使用者</h3>
               <i class="fa-solid fa-circle text-green-500 text-xl"></i>
             </div>
             <p class="text-2xl font-bold text-gray-800 dark:text-white">1</p>
@@ -154,17 +154,17 @@ onMounted(loadData)
         <!-- User Management -->
         <div class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white">用戶管理</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">使用者管理</h2>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm uppercase">
-                  <th class="px-6 py-3 font-semibold">用戶</th>
+                  <th class="px-6 py-3 font-semibold">使用者</th>
                   <th class="px-6 py-3 font-semibold">角色</th>
                   <th class="px-6 py-3 font-semibold">內容</th>
-                  <th class="px-6 py-3 font-semibold">狀態</th>
-                  <th class="px-6 py-3 font-semibold">最後登入</th>
+                  <!-- <th class="px-6 py-3 font-semibold">狀態</th> -->
+                  <th class="px-6 py-3 font-semibold">上次活動</th>
                   <th class="px-6 py-3 font-semibold">註冊時間</th>
                 </tr>
               </thead>
@@ -179,7 +179,7 @@ onMounted(loadData)
                       </div>
                       <div>
                         <div class="font-medium text-gray-900 dark:text-gray-100">{{ u.name || u.username }}</div>
-                        <div class="text-xs text-gray-500">{{ u.username }}</div>
+                        <div class="text-xs text-gray-500">@{{ u.username }}</div>
                       </div>
                     </div>
                   </td>
@@ -207,11 +207,11 @@ onMounted(loadData)
                       </span>
                     </div>
                   </td>
-                  <td class="px-6 py-4">
+                  <!-- <td class="px-6 py-4">
                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                       Active
                     </span>
-                  </td>
+                  </td> -->
                   <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" :title="formatDateTime(u.lastActiveAt)">
                     {{ formatRelativeTime(u.lastActiveAt) }}
                   </td>
