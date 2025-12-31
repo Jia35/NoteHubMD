@@ -146,6 +146,16 @@ const previewContainer = ref(null)
 const previewContent = ref(null)
 const editorView = shallowRef(null)
 const renderedContent = ref('')
+const showFloatingToc = ref(false)
+
+const toggleFloatingToc = () => {
+  showFloatingToc.value = !showFloatingToc.value
+}
+
+const scrollToHeadingAndCloseToc = (id) => {
+  scrollToHeading(id)
+  showFloatingToc.value = false
+}
 
 // Stats
 const charCount = computed(() => content.value.length)
@@ -1982,7 +1992,7 @@ watch(() => route.params.id, (newId, oldId) => {
                title="拖曳調整寬度"></div>
           
           <!-- Preview with TOC -->
-          <div v-show="showPreview" class="h-full flex min-w-0 flex-1">
+          <div v-show="showPreview" class="h-full flex min-w-0 flex-1 relative">
             <!-- Preview Content -->
             <div class="h-full flex flex-col flex-1 overflow-auto bg-white dark:bg-dark-bg" ref="previewContainer" @scroll="syncScrollFromPreview" @click="handlePreviewClick">
               <!-- Preview Info Bar -->
@@ -2197,6 +2207,50 @@ watch(() => route.params.id, (newId, oldId) => {
                   </a>
                 </nav>
               </div>
+
+              <!-- Floating TOC Button (visible on small screens) -->
+              <div v-if="toc.length > 0 && (mode === 'view' || mode === 'both')" class="fixed right-0 top-40 z-40 lg:hidden">
+                <button 
+                  @click="toggleFloatingToc"
+                  class="bg-gray-100 dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 border-r-0 rounded-l-md shadow-md py-3 px-1.5 cursor-pointer flex flex-col items-center gap-1"
+                  title="顯示目錄">
+                  <i class="fa-solid fa-list text-xs"></i>
+                  <span class="text-xs" style="writing-mode: vertical-rl;">目錄</span>
+                </button>
+              </div>
+
+              <!-- Floating TOC Panel -->
+              <Transition name="slide-right">
+                <div v-if="showFloatingToc" 
+                    class="absolute inset-0 z-50 lg:hidden" 
+                    @click="showFloatingToc = false">
+                  <div class="absolute inset-0 bg-black/50"></div>
+                  <div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-dark-surface shadow-xl overflow-y-auto" 
+                      @click.stop>
+                    <!-- Panel Header -->
+                    <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                      <h3 class="text-sm font-bold text-gray-800 dark:text-white">
+                        <i class="fa-solid fa-list mr-2"></i>目錄
+                      </h3>
+                      <button @click="showFloatingToc = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                    <!-- TOC Content -->
+                    <nav class="p-4 space-y-1">
+                      <a v-for="item in toc" :key="item.id" 
+                        @click.prevent="scrollToHeadingAndCloseToc(item.id)"
+                        class="block py-1.5 text-sm cursor-pointer transition border-l-2"
+                        :class="activeHeadingId === item.id 
+                          ? 'text-blue-600 dark:text-blue-400 border-blue-600 font-semibold' 
+                          : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border-transparent'"
+                        :style="{ paddingLeft: ((item.level - 1) * 12 + 8) + 'px' }">
+                        {{ item.text }}
+                      </a>
+                    </nav>
+                  </div>
+                </div>
+              </Transition>
             </div>
             </div>
           </div>
@@ -2305,6 +2359,19 @@ watch(() => route.params.id, (newId, oldId) => {
 .note-sidebar-slide-enter-from > div:last-child,
 .note-sidebar-slide-leave-to > div:last-child {
   transform: translateX(-100%);
+}
+
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-right-enter-from,
+.slide-right-leave-to {
+  opacity: 0;
+}
+.slide-right-enter-from > div:last-child,
+.slide-right-leave-to > div:last-child {
+  transform: translateX(100%);
 }
 
 .editor-container { height: 100%; }
