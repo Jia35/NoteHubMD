@@ -1544,7 +1544,7 @@ const submitComment = async () => {
   if (!newComment.value.trim() || submittingComment.value) return
   submittingComment.value = true
   try {
-    const comment = await api.createComment(note.value.id, { content: newComment.value })
+    const comment = await api.addComment(note.value.id, newComment.value)
     comments.value.unshift(comment) // Add to top
     newComment.value = ''
     commentPreviewMode.value = false

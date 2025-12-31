@@ -49,9 +49,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
-        commentsDisabled: {
+        commentsEnabled: {
             type: DataTypes.BOOLEAN,
-            defaultValue: false
+            defaultValue: true
         },
         shareId: {
             type: DataTypes.STRING(7),

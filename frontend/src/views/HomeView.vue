@@ -170,7 +170,7 @@ const openInfoModal = (type, item, tab = 'info') => {
   editableDescription.value = item.description || ''
   editableTags.value = [...(item.tags || [])]
   editablePermission.value = item.permission || 'private'
-  infoCommentsEnabled.value = !item.commentsDisabled
+  infoCommentsEnabled.value = item.commentsEnabled !== false
   infoModalTab.value = tab
   showInfoModal.value = true
   openMenuId.value = null
@@ -253,9 +253,9 @@ const autoSaveCommentsEnabled = async (enabled) => {
   infoCommentsEnabled.value = enabled
   if (infoModalType.value !== 'note' || !infoModalItem.value.isOwner) return
   try {
-    await api.updateNote(infoModalItem.value.id, { commentsDisabled: !enabled })
+    await api.updateNote(infoModalItem.value.id, { commentsEnabled: enabled })
     const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
-    if (noteIndex !== -1) notes.value[noteIndex].commentsDisabled = !enabled
+    if (noteIndex !== -1) notes.value[noteIndex].commentsEnabled = enabled
   } catch (e) {
     showAlert?.('留言設定儲存失敗', 'error')
   }

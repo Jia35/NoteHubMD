@@ -478,6 +478,16 @@ const api = {
         return res.json()
     },
 
+    async updateComment(noteId, commentId, data) {
+        const res = await fetch('/api/comments/' + commentId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        if (!res.ok) throw new Error('Failed to update comment')
+        return res.json()
+    },
+
     // App version
     async getAppVersion() {
         const res = await fetch('/api/version')

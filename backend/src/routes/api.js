@@ -309,11 +309,11 @@ router.put('/notes/:id', async (req, res) => {
 
         // Prevent permission from being updated via this endpoint
         // Use PUT /notes/:id/permission instead
-        const { permission: _, commentsDisabled: requestedCommentsDisabled, isPublic: requestedIsPublic, ...updateData } = req.body;
+        const { permission: _, commentsEnabled: requestedCommentsEnabled, isPublic: requestedIsPublic, ...updateData } = req.body;
 
-        // Only owner can update commentsDisabled and isPublic
-        if (isOwner && requestedCommentsDisabled !== undefined) {
-            updateData.commentsDisabled = requestedCommentsDisabled;
+        // Only owner can update commentsEnabled and isPublic
+        if (isOwner && requestedCommentsEnabled !== undefined) {
+            updateData.commentsEnabled = requestedCommentsEnabled;
         }
         if (isOwner && requestedIsPublic !== undefined) {
             updateData.isPublic = requestedIsPublic;
@@ -2284,7 +2284,7 @@ router.post('/notes/:id/comments', async (req, res) => {
         }
 
         // Check if comments are disabled for this note
-        if (note.commentsDisabled) {
+        if (note.commentsEnabled === false) {
             return res.status(403).json({ error: 'Comments are disabled for this note' });
         }
 
