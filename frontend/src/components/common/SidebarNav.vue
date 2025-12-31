@@ -350,7 +350,7 @@ const formatDate = (date) => {
     <!-- Search Modal -->
     <Teleport to="body">
       <div v-if="showSearchModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showSearchModal = false">
-        <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="max-height: 80vh;">
+        <div class="bg-white dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden flex flex-col" style="height: 80vh;">
           <!-- Modal Header -->
           <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white">
@@ -441,7 +441,7 @@ const formatDate = (date) => {
           </div>
 
           <!-- Search Results -->
-          <div class="flex-1 overflow-y-auto p-4">
+          <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
             <div v-if="searchLoading" class="text-center py-8 text-gray-500">
               <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
             </div>
@@ -458,15 +458,37 @@ const formatDate = (date) => {
                     :key="book.id"
                     :href="'/b/' + book.id"
                     @click="showSearchModal = false"
-                    class="block p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border border-gray-100 dark:border-gray-700 transition group h-[70px]"
                   >
-                    <div class="flex items-center">
-                      <i class="fa-solid fa-book text-green-500 mr-2"></i>
-                      <span class="font-medium text-gray-800 dark:text-white">{{ book.title }}</span>
+                    <!-- Icon -->
+                    <div class="w-10 text-center text-xl mr-3 text-green-500 flex-shrink-0">
+                      <i class="fa-solid fa-book"></i>
+                    </div>
+
+                    <!-- Main Info -->
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-bold text-gray-800 dark:text-white truncate text-base mb-1">
+                        {{ book.title }}
+                      </h3>
+                      <!-- Tags -->
+                      <div class="h-[20px] overflow-hidden">
+                        <div v-if="book.tags && book.tags.length > 0" class="flex flex-wrap gap-1">
+                          <span v-for="tag in book.tags.slice(0, 6)" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 flex-shrink-0">
+                            {{ tag }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Date/User -->
+                    <div class="text-right shrink-0 mr-2 text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                      <div>{{ formatDate(book.updatedAt) }}</div>
+                      <div v-if="book.lastUpdater || book.owner">by {{ book.lastUpdater?.username || book.owner?.username }}</div>
                     </div>
                   </a>
                 </div>
               </div>
+              
               <!-- Notes -->
               <div v-if="searchResults.notes.length > 0">
                 <h3 class="text-sm font-semibold text-gray-500 mb-2">筆記 ({{ searchResults.notes.length }})</h3>
@@ -476,13 +498,33 @@ const formatDate = (date) => {
                     :key="note.id"
                     :href="'/n/' + note.id"
                     @click="showSearchModal = false"
-                    class="block p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border border-gray-100 dark:border-gray-700 transition group h-[70px]"
                   >
-                    <div class="flex items-center">
-                      <i class="fa-solid fa-note-sticky text-blue-500 mr-2"></i>
-                      <span class="font-medium text-gray-800 dark:text-white">{{ note.title || 'Untitled' }}</span>
+                    <!-- Icon -->
+                    <div class="w-10 text-center text-xl mr-3 text-blue-500 flex-shrink-0">
+                      <i class="fa-solid fa-note-sticky"></i>
                     </div>
-                    <p class="text-sm text-gray-500 mt-1">{{ formatDate(note.updatedAt) }}</p>
+
+                    <!-- Main Info -->
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-bold text-gray-800 dark:text-white truncate text-base mb-1">
+                        {{ note.title || 'Untitled' }}
+                      </h3>
+                      <!-- Tags -->
+                      <div class="h-[20px] overflow-hidden">
+                        <div v-if="note.tags && note.tags.length > 0" class="flex flex-wrap gap-1">
+                          <span v-for="tag in note.tags.slice(0, 6)" :key="tag" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex-shrink-0">
+                            {{ tag }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Date/User -->
+                    <div class="text-right shrink-0 mr-2 text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                      <div>{{ formatDate(note.updatedAt) }}</div>
+                      <div v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username }}</div>
+                    </div>
                   </a>
                 </div>
               </div>
