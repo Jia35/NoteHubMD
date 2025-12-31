@@ -194,6 +194,10 @@ router.post('/notes', async (req, res) => {
             if (isPublic !== undefined) noteData.isPublic = isPublic;
 
             const note = await db.Note.create(noteData);
+            // Update user's lastActiveAt
+            if (req.session.userId) {
+                db.User.update({ lastActiveAt: new Date() }, { where: { id: req.session.userId } }).catch(() => { });
+            }
             return res.json(note);
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
@@ -416,6 +420,8 @@ router.put('/notes/:id', async (req, res) => {
         if (userId) {
             updateData.lastEditorId = userId;
             updateData.lastUpdaterId = userId;
+            // Update user's lastActiveAt (low-impact: only on actual save)
+            db.User.update({ lastActiveAt: new Date() }, { where: { id: userId } }).catch(() => { });
         }
 
         // Handle bookId change: assign order at the end
@@ -1378,6 +1384,10 @@ router.post('/books', async (req, res) => {
             if (isPublic !== undefined) bookData.isPublic = isPublic;
 
             const book = await db.Book.create(bookData);
+            // Update user's lastActiveAt
+            if (req.session.userId) {
+                db.User.update({ lastActiveAt: new Date() }, { where: { id: req.session.userId } }).catch(() => { });
+            }
             return res.json(book);
         } catch (e) {
             if (e.name === 'SequelizeUniqueConstraintError') {
@@ -1682,6 +1692,10 @@ router.post('/books/:id/notes', async (req, res) => {
                     order: newOrder,
                     shareId: shareId  // Auto-generate share link
                 });
+                // Update user's lastActiveAt
+                if (userId) {
+                    db.User.update({ lastActiveAt: new Date() }, { where: { id: userId } }).catch(() => { });
+                }
                 return res.json(note);
             } catch (e) {
                 if (e.name === 'SequelizeUniqueConstraintError') {
@@ -1824,6 +1838,10 @@ router.delete('/books/:id', async (req, res) => {
         }
 
         await book.destroy();
+        // Update user's lastActiveAt
+        if (userId) {
+            db.User.update({ lastActiveAt: new Date() }, { where: { id: userId } }).catch(() => { });
+        }
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -2164,6 +2182,10 @@ router.delete('/notes/:id', async (req, res) => {
         }
 
         await note.destroy();
+        // Update user's lastActiveAt
+        if (userId) {
+            db.User.update({ lastActiveAt: new Date() }, { where: { id: userId } }).catch(() => { });
+        }
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
