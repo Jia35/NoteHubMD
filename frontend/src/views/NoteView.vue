@@ -2334,7 +2334,8 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body pre code { background: none; padding: 0; }
 .markdown-body pre.hljs { padding: 1em; }
 .markdown-body blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 1em; color: #666; }
-.markdown-body table { border-collapse: collapse; margin: 1em 0; width: 100%; }
+.markdown-body blockquote p { margin: 0.5em 0; }
+.markdown-body table { border-collapse: collapse; margin: 1em 0; }
 .markdown-body th, .markdown-body td { border: 1px solid #ddd; padding: 0.5em 1em; }
 .markdown-body a { color: #0366d6; text-decoration: none; }
 .markdown-body a:hover { text-decoration: underline; }
