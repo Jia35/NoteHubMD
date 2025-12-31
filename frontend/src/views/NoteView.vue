@@ -21,7 +21,7 @@ import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, Cre
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, undo, redo } from '@codemirror/commands'
 import { autocompletion } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
 import {
@@ -1053,6 +1053,19 @@ const syncScrollFromPreview = (e) => {
 }
 
 // --- Markdown Toolbar Functions ---
+// Undo/Redo functions
+const performUndo = () => {
+  if (!editorView.value) return
+  undo(editorView.value)
+  editorView.value.focus()
+}
+
+const performRedo = () => {
+  if (!editorView.value) return
+  redo(editorView.value)
+  editorView.value.focus()
+}
+
 // Helper: Toggle wrap around selection
 const toggleWrap = (prefix, suffix = prefix) => {
   if (!editorView.value) return
@@ -1884,6 +1897,13 @@ watch(() => route.params.id, (newId, oldId) => {
             
             <!-- Markdown Toolbar -->
             <div v-if="canEdit" class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1.5 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
+                <button @click="performUndo" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="上一步 (Ctrl+Z)">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button @click="performRedo" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="下一步 (Ctrl+Y)">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
                 <button @click="toggleBold" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Bold">
                     <i class="fa-solid fa-bold"></i>
                 </button>
