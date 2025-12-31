@@ -1,6 +1,6 @@
 <script setup>
 /**
- * RevisionsModal - 活動紀錄/版本歷史 Modal
+ * RevisionsModal - 版本紀錄/歷史 Modal
  */
 import { ref, watch, computed } from 'vue'
 import api from '@/composables/useApi'
@@ -12,6 +12,7 @@ const dmp = new DiffMatchPatch()
 const props = defineProps({
   show: Boolean,
   noteId: String,
+  noteTitle: { type: String, default: '' },
   canEdit: { type: Boolean, default: false },
   currentContent: { type: String, default: '' }
 })
@@ -126,7 +127,8 @@ const recalculateDiff = () => {
     } else if (op === -1) { // DIFF_DELETE
       html += `<span class="bg-red-200 dark:bg-red-800/50 text-red-800 dark:text-red-200 line-through">${escapedText}</span>`
     } else {
-      html += `<span class="text-gray-800 dark:text-gray-200">${escapedText}</span>`
+      // Unchanged text - use gray to highlight the differences
+      html += `<span class="text-gray-400 dark:text-gray-500">${escapedText}</span>`
     }
   }
   
@@ -166,6 +168,27 @@ const confirmRestoreRevision = async () => {
   }
 }
 
+// Download revision as .md file
+const downloadRevision = () => {
+  if (!selectedRevision.value || !revisionContent.value) return
+  
+  const content = revisionContent.value
+  const date = dayjs(selectedRevision.value.createdAt).format('YYYYMMDD_HHmmss')
+  // Sanitize title for filename (remove invalid characters)
+  const safeTitle = (props.noteTitle || 'Untitled').replace(/[\\/:*?"<>|]/g, '_').substring(0, 50)
+  const filename = `${safeTitle}_revision_${date}.md`
+  
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 // Format date
 const formatDate = (date) => {
   return dayjs(date).format('YYYY/MM/DD HH:mm')
@@ -179,7 +202,7 @@ const formatDate = (date) => {
         <!-- Modal Header -->
         <div class="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-700 shrink-0 bg-gray-50 dark:bg-gray-800/50">
           <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
-            <i class="fa-solid fa-history mr-2 text-blue-500"></i>活動紀錄
+            <i class="fa-solid fa-history mr-2 text-blue-500"></i>版本紀錄
             <span class="relative ml-2 group">
               <i class="fa-solid fa-circle-info text-sm text-gray-400 hover:text-blue-500 cursor-help transition"></i>
               <div class="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-pre-line">
@@ -263,11 +286,18 @@ const formatDate = (date) => {
                       <option value="current">與目前版本比較</option>
                     </select>
                   </div>
-                  <button v-if="canEdit" @click="confirmRestoreRevision"
-                          class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition cursor-pointer">
-                    <i class="fa-solid fa-rotate-left mr-1"></i>
-                    還原此版本
-                  </button>
+                  <div class="flex items-center space-x-2">
+                    <button @click="downloadRevision"
+                            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer">
+                      <i class="fa-solid fa-download mr-1"></i>
+                      下載此版本
+                    </button>
+                    <button v-if="canEdit" @click="confirmRestoreRevision"
+                            class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition cursor-pointer">
+                      <i class="fa-solid fa-rotate-left mr-1"></i>
+                      還原此版本
+                    </button>
+                  </div>
                 </div>
               </div>
               <!-- Diff Content -->

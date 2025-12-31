@@ -1863,7 +1863,7 @@ watch(() => route.params.id, (newId, oldId) => {
             <button @click="showRevisionsModal = true" 
                     class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
               <i class="fa-solid fa-history text-xs"></i>
-              <span>活動紀錄</span>
+              <span>版本紀錄</span>
             </button>
             
             <!-- Share -->
@@ -2222,6 +2222,7 @@ watch(() => route.params.id, (newId, oldId) => {
     <RevisionsModal 
       :show="showRevisionsModal"
       :note-id="note?.id"
+      :note-title="note?.title"
       :can-edit="canEdit"
       :current-content="content"
       @close="showRevisionsModal = false"
