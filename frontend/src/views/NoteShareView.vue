@@ -698,7 +698,7 @@ watch(() => route.params.shareId, () => {
               @click.prevent="scrollToHeading(item.id)"
               class="block py-0.5 text-sm transition truncate border-l-2 cursor-pointer"
               :class="{
-                'pl-1': item.level === 1, 
+                'pl-2': item.level === 1, 
                 'pl-4': item.level === 2, 
                 'pl-7': item.level === 3,
                 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-black': activeTocId === item.id,
@@ -741,7 +741,7 @@ watch(() => route.params.shareId, () => {
 .markdown-body h1 { font-size: 2em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
 .markdown-body h2 { font-size: 1.5em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
 .markdown-body h3 { font-size: 1.25em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; scroll-margin-top: 3rem; }
-.markdown-body h4, .markdown-body h5, .markdown-body h6 { scroll-margin-top: 3rem; }
+.markdown-body h4, .markdown-body h5, .markdown-body h6 { margin-top: 0.33em; margin-bottom: 0.33em; font-weight: bold; scroll-margin-top: 3rem; }
 .markdown-body p { margin: 1em 0; }
 .markdown-body ul, .markdown-body ol { margin: 0.2em 0; padding-left: 2em; }
 .markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
@@ -754,6 +754,7 @@ watch(() => route.params.shareId, () => {
 .markdown-body a { color: #0366d6; text-decoration: none; }
 .markdown-body a:hover { text-decoration: underline; }
 .markdown-body img { max-width: 100%; border-radius: 4px; }
+.markdown-body hr { margin: 24px 0;}
 
 .dark .markdown-body code { background: #2d2d2d; }
 .dark .markdown-body pre.hljs { }
@@ -891,7 +892,7 @@ details[open] summary {
 
 .hljs.has-line-numbers .code-content {
     flex: 1;
-    padding: 16px;
+    padding: 12px;
     overflow-x: auto;
     font-family: inherit;
     font-size: inherit;
@@ -928,6 +929,7 @@ details[open] summary {
 
 /* Override default pre margin since wrapper handles it */
 .markdown-body .code-block-wrapper pre {
+    padding: 12px 16px;
     margin: 0;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
