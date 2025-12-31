@@ -5,6 +5,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, inject, watch, nextTick, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import morphdom from 'morphdom'
 import api from '@/composables/useApi'
 import { useSocket } from '@/composables/useSocket'
 import dayjs from 'dayjs'
@@ -800,7 +801,15 @@ const debouncedRender = () => {
 }
 
 const renderMarkdown = () => {
-  renderedContent.value = md.render(content.value)
+  const newHtml = md.render(content.value)
+  
+  if (previewContent.value) {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = newHtml
+    morphdom(previewContent.value, tempDiv, { childrenOnly: true })
+  }
+  
+  // renderedContent.value = newHtml // No longer driving the view
   
   // Generate TOC from headings and render mermaid diagrams
   nextTick(async () => {
@@ -2066,7 +2075,7 @@ watch(() => route.params.id, (newId, oldId) => {
               <div class="markdown-body dark:text-gray-300"
                    :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}"
                    :style="toc.length > 0 && mode === 'view' && !showEditor ? 'padding-right: 15rem' : ''">
-                <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent" v-html="renderedContent"></div>
+                <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent"></div>
               </div>
 
               <!-- Comments Section (hidden when commentsDisabled) -->
