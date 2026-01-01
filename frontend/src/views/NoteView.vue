@@ -25,14 +25,12 @@ import { markdown } from '@codemirror/lang-markdown'
 import { foldGutter, foldKeymap } from '@codemirror/language'
 import { defaultKeymap, history, historyKeymap, undo, redo } from '@codemirror/commands'
 import { autocompletion } from '@codemirror/autocomplete'
+// CodeMirror themes - loaded dynamically for bundle size optimization
+// Import only the official one-dark as fallback (it's small and commonly used)
 import { oneDark } from '@codemirror/theme-one-dark'
-import {
-  androidstudio, atomone, aura, copilot, darcula, eclipse, githubLight,
-  githubDark, gruvboxDark, kimbie, material, monokai, monokaiDimmed, noctisLilac,
-  okaidia, quietlight, solarizedLight, solarizedDark, sublime, tokyoNightDay,
-  tomorrowNightBlue, vscodeDark, whiteLight, xcodeLight, xcodeDark
-} from '@uiw/codemirror-themes-all'
-import { customOneDark } from '@/themes/custom-onedark.js'
+
+// Dynamic loaders for bundle optimization
+import { loadEditorTheme, editorThemeList, loadMermaid, loadKatexPlugin, contentHasMath } from '@/composables/useDynamicLoaders'
 
 // Markdown-it
 import MarkdownIt from 'markdown-it'
@@ -44,24 +42,16 @@ import markdownItSup from 'markdown-it-sup'
 import markdownItIns from 'markdown-it-ins'
 import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
-import markdownItKatex from 'markdown-it-katex'
-import 'katex/dist/katex.min.css'
+// KaTeX - loaded dynamically when math content is detected
+// import markdownItKatex from 'markdown-it-katex'
+// import 'katex/dist/katex.min.css'
 import { tab as markdownItTab } from '@mdit/plugin-tab'
 import { imgLazyload } from '@mdit/plugin-img-lazyload'
 import markdownItFootnote from 'markdown-it-footnote'
 import markdownItAbbr from 'markdown-it-abbr'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
-// Mermaid
-import mermaid from 'mermaid'
-
-// Initialize mermaid with default config
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'default',
-  securityLevel: 'loose',
-  fontFamily: 'inherit'
-})
+// Note: mermaid, KaTeX, and CodeMirror themes are loaded dynamically via useDynamicLoaders
 
 // Highlight.js
 import hljs from 'highlight.js/lib/core'
@@ -200,68 +190,25 @@ const noteInfoModalTab = ref('info')
 const theme = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
 const appVersion = ref('')
 
-// Editor Theme
-const editorThemes = [
-  // Defaults
-  { label: '[預設] One Dark', value: 'custom-onedark', theme: customOneDark },
-
-  // Dark Themes
-  { label: '[深色] Codemirror', value: 'codemirror-default', theme: [] },
-  // { label: '[深色] Abcdef', value: 'abcdef', theme: abcdef },
-  // { label: '[深色] Abyss', value: 'abyss', theme: abyss },
-  { label: '[深色] Android Studio', value: 'androidstudio', theme: androidstudio },
-  // { label: '[深色] Andromeda', value: 'andromeda', theme: andromeda },
-  { label: '[深色] Atom One', value: 'atom-one', theme: atomone },
-  { label: '[深色] Aura', value: 'aura', theme: aura },
-  // { label: '[深色] Bespin', value: 'bespin', theme: bespin },
-  // { label: '[深色] Console', value: 'console', theme: consoleDark },
-  { label: '[深色] Copilot', value: 'copilot', theme: copilot },
-  { label: '[深色] Darcula', value: 'darcula', theme: darcula },
-  // { label: '[深色] Dracula', value: 'dracula', theme: dracula },
-  // { label: '[深色] Duotone Dark', value: 'duotone-dark', theme: duotoneDark },
-  { label: '[深色] GitHub Dark', value: 'github-dark', theme: githubDark },
-  { label: '[深色] Gruvbox Dark', value: 'gruvbox-dark', theme: gruvboxDark },
-  { label: '[深色] Kimbie', value: 'kimbie', theme: kimbie },
-  { label: '[深色] Material', value: 'material', theme: material },
-  { label: '[深色] Monokai', value: 'monokai', theme: monokai },
-  { label: '[深色] Monokai Dimmed', value: 'monokai-dimmed', theme: monokaiDimmed },
-  // { label: '[深色] Nord', value: 'nord', theme: nord },
-  { label: '[深色] Okaidia', value: 'okaidia', theme: okaidia },
-  { label: '[深色] One Dark', value: 'one-dark', theme: oneDark },
-  // { label: '[深色] Red', value: 'red', theme: red },
-  { label: '[深色] Solarized Dark', value: 'solarized-dark', theme: solarizedDark },
-  { label: '[深色] Sublime', value: 'sublime', theme: sublime },
-  // { label: '[深色] Tokyo Night', value: 'tokyo-night', theme: tokyoNight },
-  // { label: '[深色] Tokyo Night Storm', value: 'tokyo-night-storm', theme: tokyoNightStorm },
-  { label: '[深色] Tomorrow Night Blue', value: 'tomorrow-night-blue', theme: tomorrowNightBlue },
-  { label: '[深色] VS Code Dark', value: 'vscode-dark', theme: vscodeDark },
-  { label: '[深色] Xcode Dark', value: 'xcode-dark', theme: xcodeDark },
-
-  // Light Themes
-  // { label: '[亮色] BBEdit', value: 'bbedit', theme: bbedit },
-  // { label: '[亮色] Duotone Light', value: 'duotone-light', theme: duotoneLight },
-  { label: '[亮色] Eclipse', value: 'eclipse', theme: eclipse },
-  { label: '[亮色] GitHub Light', value: 'github-light', theme: githubLight },
-  // { label: '[亮色] Gruvbox Light', value: 'gruvbox-light', theme: gruvboxLight },
-  { label: '[亮色] Noctis Lilac', value: 'noctis-lilac', theme: noctisLilac },
-  { label: '[亮色] Quiet Light', value: 'quiet-light', theme: quietlight },
-  { label: '[亮色] Solarized Light', value: 'solarized-light', theme: solarizedLight },
-  { label: '[亮色] Tokyo Night Day', value: 'tokyo-night-day', theme: tokyoNightDay },
-  { label: '[亮色] White', value: 'white', theme: whiteLight },
-  { label: '[亮色] Xcode Light', value: 'xcode-light', theme: xcodeLight },
-]
-
-const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'custom-onedark' : 'github-light'))
+// Editor Theme - using dynamic loader from composable
+// editorThemeList is imported from useDynamicLoaders
+const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'custom-onedark' : 'githubLight'))
 const themeCompartment = new Compartment()
+const currentThemeExtension = shallowRef(oneDark) // Default fallback
 
-watch(selectedEditorTheme, (newVal) => {
+// Watch for theme changes and dynamically load the new theme
+watch(selectedEditorTheme, async (newVal) => {
   localStorage.setItem('NoteHubMD-editorTheme', newVal)
   if (editorView.value) {
-    const themeItem = editorThemes.find(t => t.value === newVal)
-    const themeExtension = themeItem ? themeItem.theme : []
-    editorView.value.dispatch({
-      effects: themeCompartment.reconfigure(themeExtension)
-    })
+    try {
+      const themeExtension = await loadEditorTheme(newVal)
+      currentThemeExtension.value = themeExtension
+      editorView.value.dispatch({
+        effects: themeCompartment.reconfigure(themeExtension)
+      })
+    } catch (e) {
+      console.warn('Failed to load theme:', e)
+    }
   }
 })
 
@@ -485,7 +432,7 @@ md.use(markdownItAnchor, { permalink: false })
   .use(markdownItTaskLists, { enabled: true, label: true })
   .use(markdownItImsize)
   .use(blockquoteColorPlugin)
-  .use(markdownItKatex)
+  // KaTeX is loaded dynamically in renderMarkdown when math content is detected
   .use(markdownItTab, {
     name: 'tabs',
     openRender: (info) => {
@@ -788,8 +735,8 @@ const markdownCompletionSource = (context) => {
   }
 }
 
-// Init CodeMirror
-const initEditor = () => {
+// Init CodeMirror - async to support dynamic theme loading
+const initEditor = async () => {
   if (!editorContainer.value) {
     console.warn('Editor container not found, retrying...')
     setTimeout(initEditor, 100)
@@ -798,6 +745,15 @@ const initEditor = () => {
   if (editorView.value) return
   
   const isDark = document.documentElement.classList.contains('dark')
+  
+  // Dynamically load the selected theme
+  let themeExtension = oneDark // Default fallback
+  try {
+    themeExtension = await loadEditorTheme(selectedEditorTheme.value)
+    currentThemeExtension.value = themeExtension
+  } catch (e) {
+    console.warn('Failed to load initial theme, using default:', e)
+  }
   
   const extensions = [
     lineNumbers(),
@@ -809,7 +765,7 @@ const initEditor = () => {
     foldGutter(),
     keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
     EditorView.lineWrapping,
-    themeCompartment.of(editorThemes.find(t => t.value === selectedEditorTheme.value)?.theme || []),
+    themeCompartment.of(themeExtension),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         content.value = update.state.doc.toString()
@@ -870,7 +826,12 @@ const debouncedRender = () => {
   }, 300)
 }
 
-const renderMarkdown = () => {
+const renderMarkdown = async () => {
+  // Conditionally load KaTeX if math content is detected
+  if (contentHasMath(content.value)) {
+    await loadKatexPlugin(md)
+  }
+  
   const newHtml = md.render(content.value)
   
   if (previewContent.value) {
@@ -906,18 +867,13 @@ const renderMarkdown = () => {
 
       setupIntersectionObserver()
       
-      // Render mermaid diagrams
+      // Render mermaid diagrams (dynamically loaded)
       const mermaidDivs = previewContent.value.querySelectorAll('.mermaid')
       if (mermaidDivs.length > 0) {
         try {
-          // Update mermaid theme based on current theme
+          // Dynamically load mermaid only when needed
           const isDark = document.documentElement.classList.contains('dark')
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: isDark ? 'dark' : 'default',
-            securityLevel: 'loose',
-            fontFamily: 'inherit'
-          })
+          const mermaid = await loadMermaid(isDark)
           await new Promise(resolve => setTimeout(resolve, 50))
           await mermaid.run({ nodes: mermaidDivs })
         } catch (e) {
@@ -2179,7 +2135,7 @@ watch(() => route.params.id, (newId, oldId) => {
                 <span v-if="selectedChars > 0" class="whitespace-nowrap">已選擇 {{ selectedChars }} 個字</span>
               </div>
               <select v-model="selectedEditorTheme" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer mr-2">
-                <option v-for="t in editorThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+                <option v-for="t in editorThemeList" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
             </div>
           </div>

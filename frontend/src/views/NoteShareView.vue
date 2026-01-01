@@ -25,13 +25,18 @@ import markdownItIns from 'markdown-it-ins'
 import markdownItTaskLists from 'markdown-it-task-lists'
 import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
-import markdownItKatex from 'markdown-it-katex'
-import 'katex/dist/katex.min.css'
+// KaTeX - loaded dynamically when math content is detected
+// import markdownItKatex from 'markdown-it-katex'
+// import 'katex/dist/katex.min.css'
 import { tab as markdownItTab } from '@mdit/plugin-tab'
 import { imgLazyload } from '@mdit/plugin-img-lazyload'
 import markdownItFootnote from 'markdown-it-footnote'
 import markdownItAbbr from 'markdown-it-abbr'
-import mermaid from 'mermaid'
+
+// Dynamic loaders for bundle optimization
+import { loadMermaid, loadKatexPlugin, contentHasMath } from '@/composables/useDynamicLoaders'
+
+// Note: mermaid and KaTeX are loaded dynamically via useDynamicLoaders
 
 // Highlight.js
 import hljs from 'highlight.js/lib/core'
@@ -256,7 +261,7 @@ md.use(markdownItAnchor, { permalink: false })
   .use(markdownItTaskLists, { enabled: true, label: true })
   .use(markdownItImsize)
   .use(blockquoteColorPlugin)
-  .use(markdownItKatex)
+  // KaTeX is loaded dynamically in renderContent when math content is detected
   .use(markdownItTab, {
     name: 'tabs',
     openRender: (info) => {
@@ -370,8 +375,13 @@ const loadNote = async () => {
 }
 
 // Render markdown content
-const renderContent = () => {
+const renderContent = async () => {
   if (!previewContent.value) return
+  
+  // Conditionally load KaTeX if math content is detected
+  if (contentHasMath(content.value)) {
+    await loadKatexPlugin(md)
+  }
   
   const rendered = md.render(content.value)
   previewContent.value.innerHTML = rendered
@@ -387,20 +397,14 @@ const renderContent = () => {
     })
   })
   
-  // Render mermaid diagrams
+  // Render mermaid diagrams (dynamically loaded)
   const mermaidDivs = previewContent.value.querySelectorAll('.mermaid')
   if (mermaidDivs.length > 0) {
     try {
       const isDark = document.documentElement.classList.contains('dark')
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: isDark ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit'
-      })
-      setTimeout(() => {
-        mermaid.run({ nodes: mermaidDivs })
-      }, 50)
+      const mermaid = await loadMermaid(isDark)
+      await new Promise(resolve => setTimeout(resolve, 50))
+      await mermaid.run({ nodes: mermaidDivs })
     } catch (e) {
       console.warn('Mermaid rendering error:', e)
     }
