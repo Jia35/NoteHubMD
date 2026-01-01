@@ -30,6 +30,7 @@ import 'katex/dist/katex.min.css'
 import { tab as markdownItTab } from '@mdit/plugin-tab'
 import { imgLazyload } from '@mdit/plugin-img-lazyload'
 import markdownItFootnote from 'markdown-it-footnote'
+import markdownItAbbr from 'markdown-it-abbr'
 import mermaid from 'mermaid'
 
 // Highlight.js
@@ -270,6 +271,7 @@ md.use(markdownItAnchor, { permalink: false })
   })
   .use(imgLazyload)
   .use(markdownItFootnote)
+  .use(markdownItAbbr)
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {
