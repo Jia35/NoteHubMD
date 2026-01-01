@@ -42,6 +42,8 @@ import markdownItSup from 'markdown-it-sup'
 import markdownItIns from 'markdown-it-ins'
 import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
+import markdownItKatex from 'markdown-it-katex'
+import 'katex/dist/katex.min.css'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
 // Mermaid
@@ -474,6 +476,7 @@ md.use(markdownItAnchor, { permalink: false })
   .use(markdownItTaskLists, { enabled: true, label: true })
   .use(markdownItImsize)
   .use(blockquoteColorPlugin)
+  .use(markdownItKatex)
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {

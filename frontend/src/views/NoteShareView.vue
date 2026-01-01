@@ -25,6 +25,8 @@ import markdownItIns from 'markdown-it-ins'
 import markdownItTaskLists from 'markdown-it-task-lists'
 import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
+import markdownItKatex from 'markdown-it-katex'
+import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
 
 // Highlight.js
@@ -126,6 +128,47 @@ const previewContent = ref(null)
 const showSlide = ref(false)
 const revealInstance = shallowRef(null)
 
+// Plugin for colored blockquotes (CodiMD style)
+const blockquoteColorPlugin = (md) => {
+  md.core.ruler.push('blockquote_color', (state) => {
+    const tokens = state.tokens
+    const stack = []
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i]
+
+      if (token.type === 'blockquote_open') {
+        stack.push(token)
+      } else if (token.type === 'blockquote_close') {
+        stack.pop()
+      } else if (token.type === 'inline' && stack.length > 0) {
+        const text = token.content
+        const match = text.match(/\[color=(.*?)\]/)
+        if (match) {
+          const color = match[1]
+          const currentBlockquote = stack[stack.length - 1]
+          
+          // Apply style
+          const existingStyle = currentBlockquote.attrGet('style') || ''
+          currentBlockquote.attrSet('style', existingStyle + `border-left-color: ${color};`)
+          
+          // Remove tag from content
+          token.content = text.replace(match[0], '')
+          
+          // Also check children (text nodes) to update displayed text
+          if (token.children) {
+            token.children.forEach(child => {
+              if (child.type === 'text' && child.content.includes(match[0])) {
+                child.content = child.content.replace(match[0], '')
+              }
+            })
+          }
+        }
+      }
+    }
+  })
+}
+
 // Initialize markdown-it
 const md = new MarkdownIt({
   html: true,
@@ -208,6 +251,8 @@ md.use(markdownItAnchor, { permalink: false })
   .use(markdownItIns)
   .use(markdownItTaskLists, { enabled: true, label: true })
   .use(markdownItImsize)
+  .use(blockquoteColorPlugin)
+  .use(markdownItKatex)
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {
