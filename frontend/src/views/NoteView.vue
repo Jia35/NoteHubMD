@@ -44,6 +44,7 @@ import markdownItContainer from 'markdown-it-container'
 import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
 import markdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
+import { tab as markdownItTab } from '@mdit/plugin-tab'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
 // Mermaid
@@ -477,6 +478,18 @@ md.use(markdownItAnchor, { permalink: false })
   .use(markdownItImsize)
   .use(blockquoteColorPlugin)
   .use(markdownItKatex)
+  .use(markdownItTab, {
+    name: 'tabs',
+    openRender: (info) => {
+      const tabButtons = info.data.map((t, i) => 
+        `<button class="tab-btn${t.isActive ? ' active' : ''}" data-tab-index="${i}">${t.title}</button>`
+      ).join('')
+      return `<div class="tabs-container"><div class="tabs-header">${tabButtons}</div>`
+    },
+    closeRender: () => '</div>',
+    tabOpenRender: (data) => `<div class="tab-content${data.isActive ? ' active' : ''}" data-tab-index="${data.index}">`,
+    tabCloseRender: () => '</div>'
+  })
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {
@@ -899,6 +912,28 @@ const renderMarkdown = () => {
           console.warn('Mermaid rendering error:', e)
         }
       }
+      
+      // Setup tab switching
+      const tabContainers = previewContent.value.querySelectorAll('.tabs-container')
+      tabContainers.forEach(container => {
+        const buttons = container.querySelectorAll('.tab-btn')
+        const contents = container.querySelectorAll('.tab-content')
+        
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const index = btn.dataset.tabIndex
+            
+            // Update button states
+            buttons.forEach(b => b.classList.remove('active'))
+            btn.classList.add('active')
+            
+            // Update content visibility
+            contents.forEach(c => {
+              c.classList.toggle('active', c.dataset.tabIndex === index)
+            })
+          })
+        })
+      })
     }
   })
 }
@@ -2660,5 +2695,68 @@ watch(() => route.params.id, (newId, oldId) => {
 }
 .dark .code-lang {
     color: #abb2bf;
+}
+
+/* Tabs Container Styles */
+.tabs-container {
+    margin: 1rem 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.dark .tabs-container {
+    border-color: #374151;
+}
+
+.tabs-header {
+    display: flex;
+    flex-wrap: wrap;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    gap: 2px;
+    padding: 4px;
+}
+.dark .tabs-header {
+    background: #1f2937;
+    border-bottom-color: #374151;
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.tab-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+.dark .tab-btn {
+    color: #9ca3af;
+}
+.dark .tab-btn:hover {
+    background: #374151;
+    color: #e5e7eb;
+}
+
+.tab-btn.active {
+    background: #3b82f6;
+    color: white;
+}
+.dark .tab-btn.active {
+    background: #2563eb;
+}
+
+.tab-content {
+    display: none;
+    padding: 16px;
+}
+.tab-content.active {
+    display: block;
 }
 </style>
