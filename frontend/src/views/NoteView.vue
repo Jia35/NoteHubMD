@@ -193,6 +193,7 @@ const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 const showNoteInfoModal = ref(false)
 const showRevisionsModal = ref(false)
+const showExportModal = ref(false)
 const noteInfoModalTab = ref('info')
 
 // Settings
@@ -1655,6 +1656,52 @@ const handleUserProfileUpdate = (data) => {
   }
 }
 
+// Export as Markdown
+const exportAsMarkdown = () => {
+  const filename = (note.value?.title || 'Untitled').replace(/[<>:"/\\|?*]/g, '_') + '.md'
+  const blob = new Blob([content.value], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  showExportModal.value = false
+  showAlert?.('已匯出 Markdown 檔案', 'success')
+}
+
+// Export as PDF
+const exportAsPDF = async () => {
+  try {
+    const html2pdf = (await import('html2pdf.js')).default
+    const element = previewContent.value
+    if (!element) {
+      showAlert?.('無法取得預覽內容', 'error')
+      return
+    }
+    
+    const filename = (note.value?.title || 'Untitled').replace(/[<>:"/\\|?*]/g, '_') + '.pdf'
+    
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }
+    
+    showAlert?.('正在生成 PDF...', 'info')
+    await html2pdf().set(opt).from(element).save()
+    showExportModal.value = false
+    showAlert?.('已匯出 PDF 檔案', 'success')
+  } catch (e) {
+    console.error('PDF export failed:', e)
+    showAlert?.('PDF 匯出失敗', 'error')
+  }
+}
+
 // Format date
 const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
 const getRelativeTime = (date) => dayjs(date).fromNow()
@@ -2019,16 +2066,19 @@ watch(() => route.params.id, (newId, oldId) => {
                 <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
               </button>
               
-              <!-- Dropdown Menu -->
               <div v-if="showNoteMenu" 
                    class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[60]"
                    @click.stop>
                 <button @click="showRevisionsModal = true; showNoteMenu = false;"
-                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center cursor-pointer">
+                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
                   <i class="fa-solid fa-history w-5 mr-2"></i>版本紀錄
                 </button>
-                <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
+                <button @click="showExportModal = true; showNoteMenu = false;"
                         class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg flex items-center cursor-pointer">
+                  <i class="fa-solid fa-file-export w-5 mr-2"></i>匯出筆記
+                </button>
+                <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
+                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center cursor-pointer">
                   <i class="fa-solid fa-cog w-5 mr-2"></i>筆記設定
                 </button>
               </div>
@@ -2503,6 +2553,44 @@ watch(() => route.params.id, (newId, oldId) => {
       @zoom-out="zoomOut"
       @wheel="handleLightboxWheel"
     />
+
+    <!-- Export Modal -->
+    <Transition name="modal">
+      <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showExportModal = false">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">
+              <i class="fa-solid fa-file-export mr-2"></i>匯出筆記
+            </h3>
+            <button @click="showExportModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
+              <i class="fa-solid fa-times text-xl"></i>
+            </button>
+          </div>
+          <!-- Content -->
+          <div class="p-6 space-y-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">選擇匯出格式：</p>
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Markdown Export -->
+              <button @click="exportAsMarkdown" 
+                      class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group">
+                <i class="fa-brands fa-markdown text-4xl text-gray-400 group-hover:text-blue-500 mb-3 transition"></i>
+                <span class="font-semibold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">Markdown</span>
+                <span class="text-xs text-gray-400 mt-1">.md 檔案</span>
+              </button>
+              <!-- PDF Export -->
+              <button @click="exportAsPDF" 
+                      class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition cursor-pointer group">
+                <i class="fa-solid fa-file-pdf text-4xl text-gray-400 group-hover:text-red-500 mb-3 transition"></i>
+                <span class="font-semibold text-gray-700 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-400">PDF</span>
+                <span class="text-xs text-gray-400 mt-1">.pdf 檔案</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
