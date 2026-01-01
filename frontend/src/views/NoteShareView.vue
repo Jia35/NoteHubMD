@@ -28,6 +28,7 @@ import markdownItImsize from 'markdown-it-imsize/dist/markdown-it-imsize.min.js'
 import markdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
 import { tab as markdownItTab } from '@mdit/plugin-tab'
+import { imgLazyload } from '@mdit/plugin-img-lazyload'
 import mermaid from 'mermaid'
 
 // Highlight.js
@@ -266,6 +267,7 @@ md.use(markdownItAnchor, { permalink: false })
     tabOpenRender: (data) => `<div class="tab-content${data.isActive ? ' active' : ''}" data-tab-index="${data.index}">`,
     tabCloseRender: () => '</div>'
   })
+  .use(imgLazyload)
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {
