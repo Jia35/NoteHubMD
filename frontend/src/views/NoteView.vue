@@ -305,6 +305,7 @@ const loadingUserPermissions = ref(false)
 const userSearchQuery = ref('')
 const userSearchResults = ref([])
 const newUserPermission = ref('view')
+const showNoteMenu = ref(false)
 
 // Computed
 const showEditor = computed(() => mode.value === 'edit' || mode.value === 'both')
@@ -1971,19 +1972,32 @@ watch(() => route.params.id, (newId, oldId) => {
               <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
             </button>
             
-            <!-- Note Settings -->
-            <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true;" 
-                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
-              <i class="fa-solid fa-cog text-xs"></i>
-              <span>筆記設定</span>
-            </button>
-            
-            <!-- Activity Log -->
-            <button @click="showRevisionsModal = true" 
-                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
-              <i class="fa-solid fa-history text-xs"></i>
-              <span>版本紀錄</span>
-            </button>
+            <!-- Note Menu Dropdown -->
+            <div class="relative">
+              <button @click="showNoteMenu = !showNoteMenu" 
+                      class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+                <i class="fa-solid fa-ellipsis-v text-xs"></i>
+                <span>更多</span>
+                <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div v-if="showNoteMenu" 
+                   class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                   @click.stop>
+                <button @click="showRevisionsModal = true; showNoteMenu = false;"
+                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center cursor-pointer">
+                  <i class="fa-solid fa-history w-5 mr-2"></i>版本紀錄
+                </button>
+                <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
+                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg flex items-center cursor-pointer">
+                  <i class="fa-solid fa-cog w-5 mr-2"></i>筆記設定
+                </button>
+              </div>
+              
+              <!-- Click outside to close -->
+              <div v-if="showNoteMenu" class="fixed inset-0 z-40" @click="showNoteMenu = false"></div>
+            </div>
             
             <!-- Share -->
             <button v-if="canEdit || isOwner" @click="shareNote" 
