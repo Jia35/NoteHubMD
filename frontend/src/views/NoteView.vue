@@ -968,6 +968,42 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize)
 }
 
+// Scroll to top/bottom
+// Flag to prevent sync conflict during programmatic scroll
+const isProgrammaticScrolling = ref(false)
+
+const scrollToTop = () => {
+  isProgrammaticScrolling.value = true
+  
+  if (previewContainer.value) {
+    previewContainer.value.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  if (editorView.value && editorView.value.scrollDOM) {
+    editorView.value.scrollDOM.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  
+  // Reset flag after scroll animation completes
+  setTimeout(() => {
+    isProgrammaticScrolling.value = false
+  }, 1000)
+}
+
+const scrollToBottom = () => {
+  isProgrammaticScrolling.value = true
+  
+  if (previewContainer.value) {
+    previewContainer.value.scrollTo({ top: previewContainer.value.scrollHeight, behavior: 'smooth' })
+  }
+  if (editorView.value && editorView.value.scrollDOM) {
+    editorView.value.scrollDOM.scrollTo({ top: editorView.value.scrollDOM.scrollHeight, behavior: 'smooth' })
+  }
+  
+  // Reset flag after scroll animation completes
+  setTimeout(() => {
+    isProgrammaticScrolling.value = false
+  }, 1000)
+}
+
 // Scroll to TOC item
 const scrollToHeading = (id) => {
   const el = document.getElementById(id)
@@ -1136,7 +1172,7 @@ const handleDrop = (event, view) => {
 
 // Sync Scroll
 const syncScrollFromEditor = (target) => {
-  if (!previewContainer.value || mode.value !== 'both') return
+  if (!previewContainer.value || mode.value !== 'both' || isProgrammaticScrolling.value) return
   const percentage = target.scrollTop / (target.scrollHeight - target.clientHeight)
   const preview = previewContainer.value
   preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight)
@@ -1150,7 +1186,7 @@ const syncScrollFromPreview = (e) => {
     activeHeadingId.value = toc.value[0].id
   }
 
-  if (!editorView.value || isSyncingRight.value || mode.value !== 'both') return
+  if (!editorView.value || isSyncingRight.value || mode.value !== 'both' || isProgrammaticScrolling.value) return
   isSyncingLeft.value = true
   const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
   const scroller = editorView.value.scrollDOM
@@ -2304,9 +2340,19 @@ watch(() => route.params.id, (newId, oldId) => {
               <div v-if="toc.length > 0 && mode === 'view' && !showEditor" 
                   class="fixed w-56 overflow-y-auto p-3 hidden lg:block note-toc"
                   style="right: 2rem; top: 8rem; max-height: calc(100vh - 12rem);">
-                <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
-                  <i class="fa-solid fa-list mr-2"></i>目錄
-                </h3>
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <i class="fa-solid fa-list mr-2"></i>目錄
+                  </h3>
+                  <div class="flex items-center space-x-1">
+                    <button @click="scrollToTop" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="回到頂部">
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                    <button @click="scrollToBottom" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="跳到底部">
+                      <i class="fa-solid fa-arrow-down"></i>
+                    </button>
+                  </div>
+                </div>
                 <nav class="space-y-1">
                   <a v-for="item in toc" :key="item.id" 
                   @click.prevent="scrollToHeading(item.id)"
@@ -2346,9 +2392,14 @@ watch(() => route.params.id, (newId, oldId) => {
                       <h3 class="text-sm font-bold text-gray-800 dark:text-white">
                         <i class="fa-solid fa-list mr-2"></i>目錄
                       </h3>
-                      <button @click="showFloatingToc = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
+                      <div class="flex items-center space-x-1">
+                        <button @click="scrollToTop" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="回到頂部">
+                          <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                        <button @click="scrollToBottom" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="跳到底部">
+                          <i class="fa-solid fa-arrow-down"></i>
+                        </button>
+                      </div>
                     </div>
                     <!-- TOC Content -->
                     <nav class="p-4 space-y-1">

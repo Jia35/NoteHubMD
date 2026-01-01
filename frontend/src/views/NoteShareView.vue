@@ -453,6 +453,19 @@ const extractToc = () => {
   toc.value = items
 }
 
+// Scroll to top/bottom
+const scrollToTop = () => {
+  if (previewContainer.value) {
+    previewContainer.value.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const scrollToBottom = () => {
+  if (previewContainer.value) {
+    previewContainer.value.scrollTo({ top: previewContainer.value.scrollHeight, behavior: 'smooth' })
+  }
+}
+
 // Scroll to heading
 const scrollToHeading = (id) => {
   const el = document.getElementById(id)
@@ -773,9 +786,19 @@ watch(() => route.params.shareId, () => {
 
         <!-- TOC Sidebar -->
         <div v-if="toc.length > 0" class="w-56 shrink-0 overflow-y-auto p-3 hidden lg:block border-l border-gray-200 dark:border-gray-700">
-          <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
-            <i class="fa-solid fa-list mr-2"></i>目錄
-          </h3>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-list mr-2"></i>目錄
+            </h3>
+            <div class="flex items-center space-x-1">
+              <button @click="scrollToTop" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="回到頂部">
+                <i class="fa-solid fa-arrow-up"></i>
+              </button>
+              <button @click="scrollToBottom" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="跳到底部">
+                <i class="fa-solid fa-arrow-down"></i>
+              </button>
+            </div>
+          </div>
           <nav class="space-y-1">
             <a 
               v-for="item in toc" 
