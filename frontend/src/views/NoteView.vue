@@ -22,6 +22,7 @@ import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, Cre
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
+import { foldGutter, foldKeymap } from '@codemirror/language'
 import { defaultKeymap, history, historyKeymap, undo, redo } from '@codemirror/commands'
 import { autocompletion } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -801,7 +802,8 @@ const initEditor = () => {
     history(),
     markdown(),
     placeholder('開始編輯筆記...'),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    foldGutter(),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
     EditorView.lineWrapping,
     themeCompartment.of(editorThemes.find(t => t.value === selectedEditorTheme.value)?.theme || []),
     EditorView.updateListener.of((update) => {
