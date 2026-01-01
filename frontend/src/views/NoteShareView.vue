@@ -661,7 +661,6 @@ watch(() => route.params.shareId, () => {
           </button>
           <!-- Edit Button -->
           <a 
-            v-if="canEdit" 
             :href="'/n/' + noteId" 
             class="px-2 py-1 text-xs border border-blue-500 text-blue-400 rounded hover:bg-blue-500 hover:text-white transition"
           >
@@ -751,9 +750,9 @@ watch(() => route.params.shareId, () => {
                           :class="lastEditor.username ? 'bg-blue-600' : 'bg-gray-500'"
                           style="font-size: 10px;">
                       <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
-                      <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                      <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '訪' }}</template>
                     </span>
-                    <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
+                    <span>{{ lastEditor.name || lastEditor.username || '訪客' }} 編輯</span>
                   </div>
                   <div v-if="relativeLastEditedTime" class="flex items-center">
                     <i class="fa-solid fa-pen mr-1 text-gray-400"></i>

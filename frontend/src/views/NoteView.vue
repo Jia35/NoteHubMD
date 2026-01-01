@@ -522,14 +522,13 @@ const loadNote = async () => {
     
     // renderMarkdown will be called in finally block after DOM update
     
-    if (canEdit.value) {
-      // Delay editor init to ensure DOM is ready
-      nextTick(() => {
-        setTimeout(() => {
-          initEditor()
-        }, 100)
-      })
-    }
+    // Always initialize editor (with edit blocking if no permission)
+    // Delay editor init to ensure DOM is ready
+    nextTick(() => {
+      setTimeout(() => {
+        initEditor()
+      }, 100)
+    })
     
     // Load comments
     if (noteCommentsEnabled.value) {
@@ -558,7 +557,7 @@ const loadNote = async () => {
       renderMarkdown()
     })
     
-    if (note.value && canEdit.value) {
+    if (note.value) {
       const username = currentUser.value?.username || 'Guest'
       joinNote(note.value.id, username)
       
@@ -766,6 +765,14 @@ const initEditor = async () => {
     keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
     EditorView.lineWrapping,
     themeCompartment.of(themeExtension),
+    // Edit filter: block edits and show alert if no permission
+    EditorState.transactionFilter.of((tr) => {
+      if (!canEdit.value && tr.docChanged) {
+        showAlert?.('您沒有編輯權限', 'error')
+        return []
+      }
+      return tr
+    }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         content.value = update.state.doc.toString()
@@ -2060,7 +2067,7 @@ watch(() => route.params.id, (newId, oldId) => {
                :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
             
             <!-- Markdown Toolbar -->
-            <div v-if="canEdit" class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1.5 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
+            <div class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1.5 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
                 <button @click="performUndo" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="上一步 (Ctrl+Z)">
                     <i class="fa-solid fa-rotate-left"></i>
                 </button>
@@ -2121,10 +2128,7 @@ watch(() => route.params.id, (newId, oldId) => {
                 </button>
             </div>
 
-            <div v-if="canEdit" ref="editorContainer" class="flex-1 overflow-hidden relative editor-container"></div>
-            <div v-else class="flex-1 flex items-center justify-center text-gray-500">
-              <i class="fa-solid fa-lock mr-2"></i>您沒有編輯權限
-            </div>
+            <div ref="editorContainer" class="flex-1 overflow-hidden relative editor-container"></div>
             <!-- Editor Footer -->
             <div class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-1 flex justify-between items-center text-xs z-10 shrink-0">
               <div class="flex items-center space-x-3 text-gray-500 dark:text-gray-400 px-2 min-w-0">
@@ -2189,7 +2193,7 @@ watch(() => route.params.id, (newId, oldId) => {
                               style="font-size: 10px;"
                               :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                           <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
-                          <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</template>
+                          <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '訪' }}</template>
                         </span>
                         <!-- Editor Tooltip -->
                         <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
@@ -2198,16 +2202,16 @@ watch(() => route.params.id, (newId, oldId) => {
                             <div class="w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden shrink-0 border-2 border-gray-100 dark:border-gray-600"
                                  :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                               <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover">
-                              <span v-else class="text-xl text-white font-bold">{{ lastEditor.username?.charAt(0).toUpperCase() || '?' }}</span>
+                              <span v-else class="text-xl text-white font-bold">{{ lastEditor.username?.charAt(0).toUpperCase() || '訪' }}</span>
                             </div>
                             <div>
-                              <div class="font-bold text-gray-900 dark:text-white text-base">{{ lastEditor.name || lastEditor.username || 'Guest' }}</div>
+                              <div class="font-bold text-gray-900 dark:text-white text-base">{{ lastEditor.name || lastEditor.username || '訪客' }}</div>
                               <div class="text-xs text-gray-500 dark:text-gray-400">@{{ lastEditor.username || 'guest' }}</div>
                             </div>
                           </div>
                         </div>
                       </div>
-                      <span>{{ lastEditor.name || lastEditor.username || '?' }} 編輯</span>
+                      <span>{{ lastEditor.name || lastEditor.username || '訪客' }} 編輯</span>
                     </div>
                     <!-- Last Edited Time -->
                     <div v-if="relativeLastEditedTime" class="flex items-center">
