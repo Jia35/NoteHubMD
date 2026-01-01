@@ -32,6 +32,7 @@ import {
   okaidia, quietlight, solarizedLight, solarizedDark, sublime, tokyoNightDay,
   tomorrowNightBlue, vscodeDark, whiteLight, xcodeLight, xcodeDark
 } from '@uiw/codemirror-themes-all'
+import { customDefault } from '@/themes/custom-default.js'
 
 // Markdown-it
 import MarkdownIt from 'markdown-it'
@@ -246,6 +247,7 @@ const editorThemes = [
   { label: '[亮色] Tokyo Night Day', value: 'tokyo-night-day', theme: tokyoNightDay },
   { label: '[亮色] White', value: 'white', theme: whiteLight },
   { label: '[亮色] Xcode Light', value: 'xcode-light', theme: xcodeLight },
+  { label: '[自訂] Custom Default', value: 'custom-default', theme: customDefault },
 ]
 
 const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'monokai' : 'default'))
