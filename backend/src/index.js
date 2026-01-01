@@ -6,6 +6,7 @@ const path = require('path');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const compression = require('compression');
+const helmet = require('helmet');
 const db = require('./models');
 
 const app = express();
@@ -13,6 +14,12 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const PORT = config.server.port;
+
+// Security Headers (Helmet)
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP for now (can break inline scripts)
+    crossOriginEmbedderPolicy: false // Allow embedding resources
+}));
 
 // Gzip/Brotli Compression Middleware
 app.use(compression());
