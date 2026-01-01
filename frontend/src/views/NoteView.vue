@@ -1916,7 +1916,7 @@ watch(() => route.params.id, (newId, oldId) => {
       <!-- Note Content -->
       <template v-else-if="note">
         <!-- Header -->
-        <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0">
+        <div class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
           <div class="flex-1 flex items-center space-x-2">
             <template v-if="book">
               <div class="relative group">
@@ -1985,7 +1985,7 @@ watch(() => route.params.id, (newId, oldId) => {
               </button>
               <div v-if="showOnlineUsersPopup" 
                    data-online-users-popup
-                   class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-50">
+                   class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-[60]">
                 <div class="p-3">
                   <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">
                     <i class="fa-solid fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
@@ -2021,7 +2021,7 @@ watch(() => route.params.id, (newId, oldId) => {
               
               <!-- Dropdown Menu -->
               <div v-if="showNoteMenu" 
-                   class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                   class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[60]"
                    @click.stop>
                 <button @click="showRevisionsModal = true; showNoteMenu = false;"
                         class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center cursor-pointer">
@@ -2034,7 +2034,7 @@ watch(() => route.params.id, (newId, oldId) => {
               </div>
               
               <!-- Click outside to close -->
-              <div v-if="showNoteMenu" class="fixed inset-0 z-40" @click="showNoteMenu = false"></div>
+              <div v-if="showNoteMenu" class="fixed inset-0 z-[55]" @click="showNoteMenu = false"></div>
             </div>
             
             <!-- Share -->
@@ -2047,7 +2047,7 @@ watch(() => route.params.id, (newId, oldId) => {
         </div>
         
         <!-- Content Area -->
-        <div ref="contentArea" class="flex-1 flex overflow-hidden relative">
+        <div ref="contentArea" class="flex-1 flex overflow-hidden relative z-0">
           <!-- Editor -->
           <div v-show="showEditor" class="h-full flex flex-col" 
                :class="showPreview ? 'border-r border-gray-300 dark:border-gray-700' : ''"
@@ -2383,7 +2383,7 @@ watch(() => route.params.id, (newId, oldId) => {
               <!-- Floating TOC Panel -->
               <Transition name="slide-right">
                 <div v-if="showFloatingToc" 
-                    class="absolute inset-0 z-50" 
+                    class="absolute inset-0 z-20" 
                     :class="{ 'lg:hidden': mode === 'view' }"
                     @click="showFloatingToc = false">
                   <div class="absolute inset-0 bg-black/50"></div>
