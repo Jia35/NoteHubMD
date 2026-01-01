@@ -46,6 +46,7 @@ import markdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css'
 import { tab as markdownItTab } from '@mdit/plugin-tab'
 import { imgLazyload } from '@mdit/plugin-img-lazyload'
+import markdownItFootnote from 'markdown-it-footnote'
 import markdownItTaskLists from 'markdown-it-task-lists'
 
 // Mermaid
@@ -492,6 +493,7 @@ md.use(markdownItAnchor, { permalink: false })
     tabCloseRender: () => '</div>'
   })
   .use(imgLazyload)
+  .use(markdownItFootnote)
 
 // Containers
 ;['success', 'info', 'warning', 'danger'].forEach(type => {
