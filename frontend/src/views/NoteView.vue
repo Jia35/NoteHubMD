@@ -2319,8 +2319,10 @@ watch(() => route.params.id, (newId, oldId) => {
                 </nav>
               </div>
 
-              <!-- Floating TOC Button (visible on small screens) -->
-              <div v-if="toc.length > 0 && (mode === 'view' || mode === 'both')" class="fixed right-0 top-40 z-40 lg:hidden">
+              <!-- Floating TOC Button (visible on small screens or in both mode) -->
+              <div v-if="toc.length > 0 && (mode === 'view' || mode === 'both')" 
+                   class="fixed right-0 top-40 z-40"
+                   :class="{ 'lg:hidden': mode === 'view' }">
                 <button 
                   @click="toggleFloatingToc"
                   class="bg-gray-100 dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 border-r-0 rounded-l-md shadow-md py-3 px-1.5 cursor-pointer flex flex-col items-center gap-1"
@@ -2333,7 +2335,8 @@ watch(() => route.params.id, (newId, oldId) => {
               <!-- Floating TOC Panel -->
               <Transition name="slide-right">
                 <div v-if="showFloatingToc" 
-                    class="absolute inset-0 z-50 lg:hidden" 
+                    class="absolute inset-0 z-50" 
+                    :class="{ 'lg:hidden': mode === 'view' }"
                     @click="showFloatingToc = false">
                   <div class="absolute inset-0 bg-black/50"></div>
                   <div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-dark-surface shadow-xl overflow-y-auto" 
