@@ -32,7 +32,7 @@ import {
   okaidia, quietlight, solarizedLight, solarizedDark, sublime, tokyoNightDay,
   tomorrowNightBlue, vscodeDark, whiteLight, xcodeLight, xcodeDark
 } from '@uiw/codemirror-themes-all'
-import { customDefault } from '@/themes/custom-default.js'
+import { customOneDark } from '@/themes/custom-onedark.js'
 
 // Markdown-it
 import MarkdownIt from 'markdown-it'
@@ -202,9 +202,10 @@ const appVersion = ref('')
 // Editor Theme
 const editorThemes = [
   // Defaults
-  { label: '[預設] Default', value: 'default', theme: [] },
+  { label: '[預設] One Dark', value: 'custom-onedark', theme: customOneDark },
 
   // Dark Themes
+  { label: '[深色] Codemirror', value: 'codemirror-default', theme: [] },
   // { label: '[深色] Abcdef', value: 'abcdef', theme: abcdef },
   // { label: '[深色] Abyss', value: 'abyss', theme: abyss },
   { label: '[深色] Android Studio', value: 'androidstudio', theme: androidstudio },
@@ -247,10 +248,9 @@ const editorThemes = [
   { label: '[亮色] Tokyo Night Day', value: 'tokyo-night-day', theme: tokyoNightDay },
   { label: '[亮色] White', value: 'white', theme: whiteLight },
   { label: '[亮色] Xcode Light', value: 'xcode-light', theme: xcodeLight },
-  { label: '[自訂] Custom Default', value: 'custom-default', theme: customDefault },
 ]
 
-const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'monokai' : 'default'))
+const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'custom-onedark' : 'github-light'))
 const themeCompartment = new Compartment()
 
 watch(selectedEditorTheme, (newVal) => {
