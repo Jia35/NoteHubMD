@@ -13,6 +13,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Export io for use in other modules
+module.exports.io = io;
+
 const PORT = config.server.port;
 
 // Security Headers (Helmet)

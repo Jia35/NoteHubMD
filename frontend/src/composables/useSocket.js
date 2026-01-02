@@ -20,6 +20,7 @@ export function useSocket() {
     // Store wrapped handlers for proper cleanup
     let noteUpdatedHandler = null
     let usersInNoteHandler = null
+    let permissionChangedHandler = null
 
     const joinNote = (noteId, username = 'Guest') => {
         s.emit('join-note', { noteId, username })
@@ -68,6 +69,22 @@ export function useSocket() {
         }
     }
 
+    const onPermissionChanged = (callback) => {
+        // Remove previous handler if exists
+        if (permissionChangedHandler) {
+            s.off('permission-changed', permissionChangedHandler)
+        }
+        permissionChangedHandler = callback
+        s.on('permission-changed', permissionChangedHandler)
+    }
+
+    const offPermissionChanged = () => {
+        if (permissionChangedHandler) {
+            s.off('permission-changed', permissionChangedHandler)
+            permissionChangedHandler = null
+        }
+    }
+
     return {
         socket: s,
         usersInNote,
@@ -77,7 +94,9 @@ export function useSocket() {
         onNoteUpdated,
         offNoteUpdated,
         onUsersInNote,
-        offUsersInNote
+        offUsersInNote,
+        onPermissionChanged,
+        offPermissionChanged
     }
 }
 

@@ -8,6 +8,9 @@ const config = require('../config');
 const { generateId, generateShareId, generateImageId } = require('../utils/idGenerator');
 const DiffMatchPatch = require('diff-match-patch');
 
+// Get io from index.js for broadcasting events
+const getIo = () => require('../index').io;
+
 // Revision settings
 const REVISION_MAX_COUNT = 50;
 const REVISION_IDLE_MINUTES = 5;
@@ -513,6 +516,16 @@ router.put('/notes/:id/permission', async (req, res) => {
         }
 
         await note.update({ permission, lastUpdaterId: userId });
+
+        // Broadcast permission change to all clients in the note room
+        const io = getIo();
+        if (io) {
+            io.to(note.id).emit('permission-changed', {
+                noteId: note.id,
+                permission
+            });
+        }
+
         res.json({ success: true, permission });
     } catch (e) {
         res.status(500).json({ error: e.message });

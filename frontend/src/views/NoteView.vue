@@ -165,7 +165,7 @@ const isSyncingLeft = ref(false)
 const isSyncingRight = ref(false)
 
 // Socket
-const { socket, joinNote, leaveNote, editNote, onNoteUpdated, offNoteUpdated, onUsersInNote, offUsersInNote } = useSocket()
+const { socket, joinNote, leaveNote, editNote, onNoteUpdated, offNoteUpdated, onUsersInNote, offUsersInNote, onPermissionChanged, offPermissionChanged } = useSocket()
 const onlineUsers = ref([])
 const showOnlineUsersPopup = ref(false)
 
@@ -590,6 +590,30 @@ const loadNote = async () => {
             })
           }
           renderMarkdown()
+        }
+      })
+      
+      // Listen for permission changes (e.g., owner changes permission from edit to view)
+      onPermissionChanged(async (data) => {
+        if (data.noteId === note.value?.id) {
+          permission.value = data.permission
+          // Re-check canEdit based on new permission
+          const newPermission = data.permission
+          // Only owner or users with 'edit' override can edit private/view-only notes
+          // For simplicity, refetch the note to get accurate canEdit
+          try {
+            const refreshedData = await api.getNote(note.value.id)
+            canEdit.value = refreshedData.canEdit || false
+            if (!canEdit.value) {
+              showAlert?.('權限已變更，您現在為唯讀模式', 'warning')
+            }
+          } catch (e) {
+            // If access denied, redirect
+            if (e.message?.includes('Access denied') || e.message?.includes('Login required')) {
+              showAlert?.('您已失去此筆記的存取權限', 'error')
+              router.push('/')
+            }
+          }
         }
       })
     }
@@ -1857,6 +1881,7 @@ onUnmounted(() => {
     leaveNote(note.value.id)
     offNoteUpdated()
     offUsersInNote()
+    offPermissionChanged()
   }
 })
 
@@ -1866,6 +1891,7 @@ watch(() => route.params.id, (newId, oldId) => {
     leaveNote(oldId)
     offNoteUpdated()
     offUsersInNote()
+    offPermissionChanged()
   }
   if (editorView.value) {
     editorView.value.destroy()

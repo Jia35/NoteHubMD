@@ -97,7 +97,7 @@ const handleImportFolder = (event) => {
                   <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
                 </div>
-                <i class="fa-solid fa-chevron-down text-gray-400 ml-2"></i>
+                <i class="fa-solid fa-chevron-down text-gray-400 ml-2 text-sm"></i>
               </button>
               <!-- Dropdown Menu -->
               <div v-show="showImportMenu"
