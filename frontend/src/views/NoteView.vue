@@ -21,7 +21,8 @@ import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, Cre
 // CodeMirror 6
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
-import { markdown } from '@codemirror/lang-markdown'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { languages } from '@codemirror/language-data'
 import { foldGutter, foldKeymap } from '@codemirror/language'
 import { defaultKeymap, history, historyKeymap, undo, redo } from '@codemirror/commands'
 import { autocompletion } from '@codemirror/autocomplete'
@@ -783,7 +784,10 @@ const initEditor = async () => {
     highlightActiveLine(),
     highlightActiveLineGutter(),
     history(),
-    markdown(),
+    markdown({
+      base: markdownLanguage,
+      codeLanguages: languages
+    }),
     placeholder('開始編輯筆記...'),
     foldGutter(),
     keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
