@@ -183,8 +183,18 @@ const formatDate = (date) => {
       <span class="font-bold text-lg tracking-wide">NoteHubMD</span>
     </router-link>
 
+    <!-- Search Buttons -->
+    <div class="p-3 space-y-2 border-b border-gray-200 dark:border-gray-800">
+      <button
+        @click="openSearchModal"
+        class="w-full bg-gray-300 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition flex items-center justify-center text-sm cursor-pointer"
+      >
+        <i class="fa-solid fa-search mr-2"></i> 搜尋
+      </button>
+    </div>
+
     <!-- View Mode Toggle -->
-    <div class="px-3 pt-3 pb-1">
+    <div class="px-3 py-1">
       <div class="flex bg-gray-300 dark:bg-gray-700 rounded-lg p-1">
         <button
           @click="emit('view-mode-change', 'my')"
@@ -207,14 +217,8 @@ const formatDate = (date) => {
       </div>
     </div>
 
-    <!-- Search & Create Buttons -->
+    <!-- Create Buttons -->
     <div class="p-3 space-y-2 border-b border-gray-200 dark:border-gray-800">
-      <button
-        @click="openSearchModal"
-        class="w-full bg-gray-300 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition flex items-center justify-center text-sm cursor-pointer"
-      >
-        <i class="fa-solid fa-search mr-2"></i> 搜尋
-      </button>
       <button
         @click="emit('create-note')"
         class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm cursor-pointer"
@@ -333,7 +337,7 @@ const formatDate = (date) => {
       <div class="flex items-center justify-between">
         <button @click="emit('open-profile')" class="flex items-center overflow-hidden cursor-pointer hover:opacity-80 transition">
           <div
-            class="w-8 h-8 rounded-full flex items-center justify-center mr-2 shrink-0 overflow-hidden"
+            class="w-8 h-8 rounded-full text-white flex items-center justify-center mr-2 shrink-0 overflow-hidden"
             :class="user ? 'bg-blue-600' : 'bg-gray-500'"
           >
             <img v-if="user?.avatar" :src="user.avatar" class="w-full h-full object-cover" alt="Avatar" />

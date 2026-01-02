@@ -349,7 +349,7 @@ onMounted(async () => {
 <template>
   <div class="h-full w-full">
     <!-- Layout with Sidebar -->
-    <div v-if="showSidebar" class="h-full flex bg-gray-100 dark:bg-dark-bg transition-colors duration-200">
+    <div v-if="showSidebar" class="h-full flex bg-gray-50 dark:bg-dark-bg transition-colors duration-200">
       <!-- Sidebar -->
       <SidebarNav
         :user="sidebarUser"
