@@ -31,8 +31,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // CodeMirror themes - split into separate chunk
-          'codemirror-themes': ['@uiw/codemirror-themes-all'],
+          // Note: CodeMirror themes are now imported individually and will be split automatically
           // Highlight.js - split into separate chunk
           'highlight': ['highlight.js'],
           // KaTeX - split into separate chunk  

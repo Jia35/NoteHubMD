@@ -75,7 +75,7 @@ export const loadHljsLanguage = async (lang) => {
     }
 
     try {
-        const module = await import(`highlight.js/lib/languages/${actualLang}.js`)
+        const module = await import(/* @vite-ignore */ `highlight.js/lib/languages/${actualLang}.js`)
         hljs.registerLanguage(actualLang, module.default)
         registeredLanguages.add(actualLang)
 
@@ -101,7 +101,7 @@ export const preloadCommonLanguages = async () => {
     await Promise.all(commonLanguages.map(async (lang) => {
         if (!registeredLanguages.has(lang)) {
             try {
-                const module = await import(`highlight.js/lib/languages/${lang}.js`)
+                const module = await import(/* @vite-ignore */ `highlight.js/lib/languages/${lang}.js`)
                 hljs.registerLanguage(lang, module.default)
                 registeredLanguages.add(lang)
             } catch (e) {
@@ -213,10 +213,38 @@ export const loadEditorTheme = async (themeValue) => {
             const { oneDark } = await import('@codemirror/theme-one-dark')
             themeExtension = oneDark
         } else {
-            // UIW themes - dynamic import
-            const themes = await import('@uiw/codemirror-themes-all')
-            if (themes[themeValue]) {
-                themeExtension = themes[themeValue]
+            // UIW themes - import individually to avoid circular dependency issues
+            // Map theme values to their module names
+            const themeModuleMap = {
+                'androidstudio': () => import('@uiw/codemirror-theme-androidstudio').then(m => m.androidstudio),
+                'atomone': () => import('@uiw/codemirror-theme-atomone').then(m => m.atomone),
+                'aura': () => import('@uiw/codemirror-theme-aura').then(m => m.aura),
+                'copilot': () => import('@uiw/codemirror-theme-copilot').then(m => m.copilot),
+                'darcula': () => import('@uiw/codemirror-theme-darcula').then(m => m.darcula),
+                'githubDark': () => import('@uiw/codemirror-theme-github').then(m => m.githubDark),
+                'githubLight': () => import('@uiw/codemirror-theme-github').then(m => m.githubLight),
+                'gruvboxDark': () => import('@uiw/codemirror-theme-gruvbox-dark').then(m => m.gruvboxDark),
+                'kimbie': () => import('@uiw/codemirror-theme-kimbie').then(m => m.kimbie),
+                'material': () => import('@uiw/codemirror-theme-material').then(m => m.material),
+                'monokai': () => import('@uiw/codemirror-theme-monokai').then(m => m.monokai),
+                'monokaiDimmed': () => import('@uiw/codemirror-theme-monokai-dimmed').then(m => m.monokaiDimmed),
+                'okaidia': () => import('@uiw/codemirror-theme-okaidia').then(m => m.okaidia),
+                'solarizedDark': () => import('@uiw/codemirror-theme-solarized').then(m => m.solarizedDark),
+                'solarizedLight': () => import('@uiw/codemirror-theme-solarized').then(m => m.solarizedLight),
+                'sublime': () => import('@uiw/codemirror-theme-sublime').then(m => m.sublime),
+                'tomorrowNightBlue': () => import('@uiw/codemirror-theme-tomorrow-night-blue').then(m => m.tomorrowNightBlue),
+                'vscodeDark': () => import('@uiw/codemirror-theme-vscode').then(m => m.vscodeDark),
+                'xcodeDark': () => import('@uiw/codemirror-theme-xcode').then(m => m.xcodeDark),
+                'xcodeLight': () => import('@uiw/codemirror-theme-xcode').then(m => m.xcodeLight),
+                'eclipse': () => import('@uiw/codemirror-theme-eclipse').then(m => m.eclipse),
+                'noctisLilac': () => import('@uiw/codemirror-theme-noctis-lilac').then(m => m.noctisLilac),
+                'quietlight': () => import('@uiw/codemirror-theme-quietlight').then(m => m.quietlight),
+                'tokyoNightDay': () => import('@uiw/codemirror-theme-tokyo-night-day').then(m => m.tokyoNightDay),
+                'whiteLight': () => import('@uiw/codemirror-theme-white').then(m => m.whiteLight),
+            }
+
+            if (themeModuleMap[themeValue]) {
+                themeExtension = await themeModuleMap[themeValue]()
             }
         }
     } catch (e) {
