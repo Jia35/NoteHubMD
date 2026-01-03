@@ -13,6 +13,7 @@ const loadSidebarData = inject('loadSidebarData')
 
 // Admin state (local)
 const users = ref([])
+const stats = ref(null)
 const loading = ref(true)
 const isAdmin = ref(false)
 
@@ -91,6 +92,12 @@ const loadData = async () => {
     const response = await fetch('/api/admin/users')
     if (!response.ok) throw new Error('Failed to load users')
     users.value = await response.json()
+    
+    // Fetch stats
+    const statsResponse = await fetch('/api/admin/stats')
+    if (statsResponse.ok) {
+      stats.value = await statsResponse.json()
+    }
   } catch (e) {
     console.error('Failed to load admin data', e)
     isAdmin.value = false
@@ -127,7 +134,7 @@ onMounted(loadData)
         </div>
 
         <!-- System Stats (Mockup) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-gray-500 dark:text-gray-400 font-medium">總使用者數</h3>
@@ -148,6 +155,50 @@ onMounted(loadData)
               <i class="fa-solid fa-database text-purple-500 text-xl"></i>
             </div>
             <p class="text-2xl font-bold text-gray-800 dark:text-white">正常</p>
+          </div>
+        </div>
+
+        <!-- Notes Management -->
+        <div class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">筆記管理</h2>
+          </div>
+          <div class="px-6 py-4" v-if="stats">
+            <div class="grid grid-cols-3 gap-6">
+              <div class="flex items-center">
+                <i class="fa-solid fa-book text-blue-500 text-2xl mr-4"></i>
+                <div>
+                  <div class="flex items-baseline">
+                    <span class="text-2xl font-bold text-gray-800 dark:text-white">{{ stats.active.books }}</span>
+                    <span class="text-sm text-gray-500 ml-2">(<i class="fa-solid fa-trash-can text-xs"></i> {{ stats.trash.books }})</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">書本</div>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-note-sticky text-green-500 text-2xl mr-4"></i>
+                <div>
+                  <div class="flex items-baseline">
+                    <span class="text-2xl font-bold text-gray-800 dark:text-white">{{ stats.active.standaloneNotes }}</span>
+                    <span class="text-sm text-gray-500 ml-2">(<i class="fa-solid fa-trash-can text-xs"></i> {{ stats.trash.standaloneNotes }})</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">獨立筆記</div>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-file-lines text-purple-500 text-2xl mr-4"></i>
+                <div>
+                  <div class="flex items-baseline">
+                    <span class="text-2xl font-bold text-gray-800 dark:text-white">{{ stats.active.totalNotes }}</span>
+                    <span class="text-sm text-gray-500 ml-2">(<i class="fa-solid fa-trash-can text-xs"></i> {{ stats.trash.totalNotes }})</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">全部筆記</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="px-6 py-4 text-center text-gray-400">
+            <i class="fa-solid fa-spinner fa-spin"></i> 載入中...
           </div>
         </div>
 

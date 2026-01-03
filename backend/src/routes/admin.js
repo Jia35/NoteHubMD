@@ -43,6 +43,48 @@ router.get('/users', requireAdmin, async (req, res) => {
     }
 });
 
+// GET /api/admin/stats - Get notes and books statistics
+router.get('/stats', requireAdmin, async (req, res) => {
+    try {
+        // Active counts (not in trash, not system)
+        const booksCount = await db.Book.count({ where: { isSystem: false } });
+        const standaloneNotesCount = await db.Note.count({ where: { bookId: null, isSystem: false } });
+        const totalNotesCount = await db.Note.count({ where: { isSystem: false } });
+
+        // Trash counts (deletedAt is not null)
+        const trashedBooksCount = await db.Book.count({
+            where: { deletedAt: { [db.Sequelize.Op.ne]: null } },
+            paranoid: false
+        });
+        const trashedStandaloneNotesCount = await db.Note.count({
+            where: {
+                bookId: null,
+                deletedAt: { [db.Sequelize.Op.ne]: null }
+            },
+            paranoid: false
+        });
+        const trashedTotalNotesCount = await db.Note.count({
+            where: { deletedAt: { [db.Sequelize.Op.ne]: null } },
+            paranoid: false
+        });
+
+        res.json({
+            active: {
+                books: booksCount,
+                standaloneNotes: standaloneNotesCount,
+                totalNotes: totalNotesCount
+            },
+            trash: {
+                books: trashedBooksCount,
+                standaloneNotes: trashedStandaloneNotesCount,
+                totalNotes: trashedTotalNotesCount
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // PUT /api/admin/users/:id/role - Update user role
 router.put('/users/:id/role', requireAdmin, async (req, res) => {
     try {
