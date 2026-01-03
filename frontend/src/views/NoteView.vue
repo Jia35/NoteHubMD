@@ -2144,7 +2144,7 @@ watch(() => route.params.id, (newId, oldId) => {
             
             <!-- Share -->
             <button v-if="canEdit || isOwner" @click="shareNote" 
-                    class="flex items-center space-x-1 bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm text-white transition cursor-pointer">
+                    class="flex items-center space-x-1 bg-transparent hover:bg-green-600 dark:bg-gray-800 border border-green-600 px-3 py-1 rounded text-sm text-green-600 dark:text-green-500 hover:text-white transition cursor-pointer">
               <i class="fa-solid fa-share-alt text-xs"></i>
               <span>分享</span>
             </button>
