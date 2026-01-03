@@ -24,7 +24,7 @@ import { EditorState, Compartment } from '@codemirror/state'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { foldGutter, foldKeymap } from '@codemirror/language'
-import { defaultKeymap, history, historyKeymap, undo, redo } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, undo, redo, indentWithTab } from '@codemirror/commands'
 import { autocompletion } from '@codemirror/autocomplete'
 // CodeMirror themes - loaded dynamically for bundle size optimization
 // Import only the official one-dark as fallback (it's small and commonly used)
@@ -797,7 +797,7 @@ const initEditor = async () => {
     }),
     placeholder('開始編輯筆記...'),
     foldGutter(),
-    keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap, indentWithTab]),
     EditorView.lineWrapping,
     themeCompartment.of(themeExtension),
     // Edit filter: block edits and show alert if no permission
