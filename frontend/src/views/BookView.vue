@@ -423,7 +423,7 @@ watch(() => route.params.id, () => {
             </h1>
           <div class="flex items-center gap-3">
               <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition cursor-pointer">
-                  <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i>新增筆記
+                  <i class="fa-solid fa-plus mr-1"></i>新增筆記
               </button>
               <!-- Permission Button (Owner only) / Display (Non-owner) -->
               <button v-if="isOwner" @click="openInfoModal(book, 'permission', 'book')" 

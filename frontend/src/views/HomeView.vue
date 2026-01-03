@@ -736,12 +736,6 @@ onUnmounted(() => {
             <i class="fa-solid fa-plus text-3xl text-blue-500 mb-2"></i>
             <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
           </div>
-          <div
-              @click="createWhiteboard"
-              class="flex flex-col items-center justify-center bg-white dark:bg-dark-surface rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl transition cursor-pointer border-2 border-dashed border-purple-300 dark:border-purple-600 h-[140px]">
-            <i class="fa-solid fa-chalkboard text-3xl text-purple-500 mb-2"></i>
-            <p class="text-gray-600 dark:text-gray-300 font-medium">新增白板</p>
-          </div>
         </div>
 
         <!-- Empty State - List Mode -->

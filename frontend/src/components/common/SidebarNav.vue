@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import api from '@/composables/useApi'
 import { debounce } from '@/composables/useUtils'
 
@@ -14,7 +14,44 @@ const props = defineProps({
   appVersion: { type: String, default: '' }
 })
 
-const emit = defineEmits(['unpin', 'view-mode-change', 'create-note', 'create-book', 'open-profile', 'open-settings'])
+const emit = defineEmits(['unpin', 'view-mode-change', 'create-note', 'create-whiteboard', 'create-book', 'open-profile', 'open-settings'])
+
+// Create dropdown state
+const showCreateDropdown = ref(false)
+const createDropdownRef = ref(null)
+
+const toggleCreateDropdown = () => {
+  showCreateDropdown.value = !showCreateDropdown.value
+}
+
+const closeCreateDropdown = () => {
+  showCreateDropdown.value = false
+}
+
+const handleCreateNote = () => {
+  closeCreateDropdown()
+  emit('create-note')
+}
+
+const handleCreateWhiteboard = () => {
+  closeCreateDropdown()
+  emit('create-whiteboard')
+}
+
+// Handle click outside dropdown
+const handleClickOutside = (event) => {
+  if (createDropdownRef.value && !createDropdownRef.value.contains(event.target)) {
+    closeCreateDropdown()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 // Search Modal state
 const showSearchModal = ref(false)
@@ -219,17 +256,45 @@ const formatDate = (date) => {
 
     <!-- Create Buttons -->
     <div class="p-3 space-y-2 border-b border-gray-200 dark:border-gray-800">
-      <button
-        @click="emit('create-note')"
-        class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center text-sm cursor-pointer"
-      >
-        <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
-      </button>
+      <!-- Split Button: 新增筆記 with dropdown -->
+      <div class="relative" ref="createDropdownRef">
+        <div class="flex w-full">
+          <button
+            @click="emit('create-note')"
+            class="flex-1 bg-blue-600 text-white ps-4 py-2 rounded-l-lg hover:bg-blue-700 transition flex items-center justify-center text-sm cursor-pointer"
+          >
+            <i class="fa-solid fa-note-sticky mr-1"></i> 新增筆記
+          </button>
+          <button
+            @click="toggleCreateDropdown"
+            class="bg-blue-600 text-white px-2.5 py-2 rounded-r-lg hover:bg-blue-700 transition flex items-center justify-center text-sm cursor-pointer border-l border-blue-500">
+            <i class="fa-solid fa-chevron-down text-xs"></i>
+          </button>
+        </div>
+        <!-- Dropdown Menu -->
+        <div
+          v-show="showCreateDropdown"
+          class="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-blue-600 rounded-lg shadow-lg z-10 overflow-hidden"
+        >
+          <button
+            @click="handleCreateNote"
+            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center cursor-pointer"
+          >
+            <i class="fa-solid fa-note-sticky mr-2 text-blue-500"></i> 新增筆記
+          </button>
+          <button
+            @click="handleCreateWhiteboard"
+            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center cursor-pointer"
+          >
+            <i class="fa-solid fa-chalkboard mr-2 text-purple-500"></i> 新增白板
+          </button>
+        </div>
+      </div>
       <button
         @click="emit('create-book')"
         class="w-full bg-transparent text-green-600 px-4 py-1.5 rounded-lg hover:bg-green-600 hover:text-white transition flex items-center justify-center text-sm cursor-pointer border border-green-600"
       >
-        <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 新增書本
+        <i class="fa-solid fa-book mr-1"></i> 新增書本
       </button>
     </div>
 
