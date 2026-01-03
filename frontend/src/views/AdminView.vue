@@ -118,11 +118,11 @@ onMounted(loadData)
           <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
             <router-link to="/" class="hover:text-blue-500">Home</router-link>
             <span class="mx-2">/</span>
-            <span class="text-gray-800 dark:text-white font-medium">系統管理</span>
+            <span class="text-gray-800 dark:text-white font-medium">系統管理後台</span>
           </div>
           <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
             <i class="fa-solid fa-user-shield"></i>
-            系統管理
+            系統管理後台
           </h1>
         </div>
 

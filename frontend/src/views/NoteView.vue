@@ -2128,9 +2128,14 @@ watch(() => route.params.id, (newId, oldId) => {
                   <i class="fa-solid fa-file-export w-5 mr-2"></i>匯出筆記
                 </button>
                 <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
-                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center cursor-pointer">
+                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
                   <i class="fa-solid fa-cog w-5 mr-2"></i>筆記設定
                 </button>
+                <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                <a href="/s/sys-markdown" target="_blank" @click="showNoteMenu = false"
+                   class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg flex items-center">
+                  <i class="fa-brands fa-markdown w-5 mr-2"></i>語法教學
+                </a>
               </div>
               
               <!-- Click outside to close -->
