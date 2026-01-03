@@ -240,6 +240,7 @@ const commentTextareaFocused = ref(false)
 const noteOwner = ref(null)
 const lastEditor = ref(null)
 const lastContentEditedAt = ref(null)
+const noteCreatedAt = ref(null)
 
 // TOC
 const toc = ref([])
@@ -514,6 +515,7 @@ const loadNote = async () => {
     noteOwner.value = data.owner || null
     lastEditor.value = data.lastEditor || null
     lastContentEditedAt.value = data.lastContentEditedAt || data.updatedAt || null
+    noteCreatedAt.value = data.createdAt || null
     
     // Fetch book with Notes if note belongs to a book
     if (data.bookId) {
@@ -1449,6 +1451,30 @@ const relativeLastEditedTime = computed(() => {
   return dayjs(lastContentEditedAt.value).fromNow()
 })
 
+// Formatted created date (2025年01月02日)
+const formattedCreatedDate = computed(() => {
+  if (!noteCreatedAt.value) return null
+  return dayjs(noteCreatedAt.value).format('YYYY年MM月DD日')
+})
+
+// Detailed time for tooltip (2025年01月02日 08:36)
+const detailedCreatedTime = computed(() => {
+  if (!noteCreatedAt.value) return null
+  return dayjs(noteCreatedAt.value).format('YYYY年MM月DD日 HH:mm')
+})
+
+const detailedEditedTime = computed(() => {
+  if (!lastContentEditedAt.value) return null
+  return dayjs(lastContentEditedAt.value).format('YYYY年MM月DD日 HH:mm')
+})
+
+// Check if the note has been edited (different from created)
+const isEdited = computed(() => {
+  if (!noteCreatedAt.value || !lastContentEditedAt.value) return false
+  // Consider edited if difference > 1 minute
+  return Math.abs(dayjs(lastContentEditedAt.value).diff(dayjs(noteCreatedAt.value), 'minute')) > 1
+})
+
 // Extract title from first H1 heading
 const extractTitle = (text) => {
   const match = text.match(/^#\s+(.+)$/m)
@@ -2219,16 +2245,25 @@ watch(() => route.params.id, (newId, oldId) => {
               <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 shrink-0 sticky top-0 z-20"
                    :class="{'flex justify-center': !showEditor}">
                 <div :class="{'w-full px-8': !showEditor, 'px-4': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
-                  <div class="flex items-center space-x-4">
-                    <!-- Owner -->
-                    <div v-if="noteOwner" class="flex items-center">
-                      <div class="relative group mr-1.5">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                  <div class="flex items-center flex-wrap gap-y-1">
+                    <!-- Creation Date with Tooltip -->
+                    <span v-if="formattedCreatedDate" 
+                          class="cursor-help" 
+                          :title="detailedCreatedTime">
+                      {{ formattedCreatedDate }}
+                    </span>
+                    
+                    <!-- Author with Tooltip -->
+                    <template v-if="noteOwner">
+                      <span class="ms-2 me-1">作者</span>
+                      <div class="relative group inline-flex items-center">
+                        <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
                               style="font-size: 10px;"
                               :class="noteOwner.username && noteOwner.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                           <img v-if="noteOwner.avatar" :src="noteOwner.avatar" class="w-full h-full object-cover" alt="">
                           <template v-else>{{ noteOwner.username?.charAt(0).toUpperCase() || '?' }}</template>
-                        </span>
+                        </span> -->
+                        <span class="cursor-help hover:text-gray-700 dark:hover:text-gray-300">{{ noteOwner.name || noteOwner.username || '?' }}</span>
                         <!-- Owner Tooltip -->
                         <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
                           <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
@@ -2245,17 +2280,19 @@ watch(() => route.params.id, (newId, oldId) => {
                           </div>
                         </div>
                       </div>
-                      <span>{{ noteOwner.name || noteOwner.username || '?' }} 擁有這篇筆記</span>
-                    </div>
-                    <!-- Last Editor -->
-                    <div v-if="lastEditor" class="flex items-center">
-                      <div class="relative group mr-1.5">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help"
+                    </template>
+                    
+                    <!-- Last Editor (only if edited and different from owner) -->
+                    <template v-if="isEdited && lastEditor">
+                      <span class="mx-2 text-gray-400">|</span>
+                      <div class="relative group inline-flex items-center">
+                        <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
                               style="font-size: 10px;"
                               :class="lastEditor.username && lastEditor.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                           <img v-if="lastEditor.avatar" :src="lastEditor.avatar" class="w-full h-full object-cover" alt="">
                           <template v-else>{{ lastEditor.username?.charAt(0).toUpperCase() || '訪' }}</template>
-                        </span>
+                        </span> -->
+                        <span class="cursor-help hover:text-gray-700 dark:hover:text-gray-300">{{ lastEditor.name || lastEditor.username || '訪客' }}</span>
                         <!-- Editor Tooltip -->
                         <div class="absolute top-full left-0 mt-2 hidden group-hover:block z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-600" style="min-width: 200px;">
                           <div class="absolute -top-2 left-2 w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-600 transform rotate-45"></div>
@@ -2272,13 +2309,9 @@ watch(() => route.params.id, (newId, oldId) => {
                           </div>
                         </div>
                       </div>
-                      <span>{{ lastEditor.name || lastEditor.username || '訪客' }} 編輯</span>
-                    </div>
-                    <!-- Last Edited Time -->
-                    <div v-if="relativeLastEditedTime" class="flex items-center">
-                      <i class="fa-solid fa-pen mr-1 text-gray-400"></i>
-                      <span>編輯於 {{ relativeLastEditedTime }}</span>
-                    </div>
+                      <span class="ml-1">編輯於</span>
+                      <span class="ml-1 cursor-help" :title="detailedEditedTime">{{ relativeLastEditedTime }}</span>
+                    </template>
                   </div>
                 </div>
               </div>
