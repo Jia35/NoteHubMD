@@ -18,6 +18,7 @@ const loadSidebarData = inject('loadSidebarData')
 const loading = ref(true)
 const books = ref([])
 const notes = ref([])
+const autoDeleteDays = ref(0)
 
 // Load data (trash only - sidebar data is managed by App.vue)
 const loadData = async () => {
@@ -30,6 +31,7 @@ const loadData = async () => {
     const trashData = await api.getTrash()
     books.value = trashData.books || []
     notes.value = trashData.notes || []
+    autoDeleteDays.value = trashData.autoDeleteDays || 0
   } catch (e) {
     console.error('Failed to load data:', e)
     showAlert?.('載入資料失敗', 'error')
@@ -112,9 +114,14 @@ onMounted(loadData)
         <span>垃圾桶</span>
       </div>
 
-      <h1 class="text-2xl font-bold mb-8 text-gray-800 dark:text-white flex items-center">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
         <i class="fa-solid fa-trash-can mr-3"></i> 垃圾桶
       </h1>
+      <p v-if="autoDeleteDays > 0" class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        垃圾桶內的書本、筆記會在 {{ autoDeleteDays }} 天後自動永久刪除
+      </p>
+      <div v-else class="mb-8"></div>
 
       <!-- Content Grid -->
       <div>

@@ -2321,7 +2321,7 @@ router.get('/trash', async (req, res) => {
                 { model: db.User, as: 'deletedBy', attributes: ['id', 'username'] }
             ]
         });
-        res.json({ notes, books });
+        res.json({ notes, books, autoDeleteDays: config.trash.autoDeleteDays });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

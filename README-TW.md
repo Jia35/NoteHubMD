@@ -98,6 +98,8 @@ cp .env.example .env
 | **功能** | | |
 | `FEATURE_COMMENTS` | 啟用留言功能 | `true` |
 | `API_MASTER_KEY` | 外部存取用的 Master API Key | - |
+| **垃圾桶** | | |
+| `TRASH_AUTO_DELETE_DAYS` | 自動刪除垃圾桶內容的天數（設為 0 停用） | `90` |
 | **LDAP（選用）** | | |
 | `LDAP_ENABLED` | 啟用 LDAP 驗證 | `false` |
 | `LDAP_URL` | LDAP 伺服器 URL | - |

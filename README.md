@@ -98,6 +98,8 @@ cp .env.example .env
 | **Features** | | |
 | `FEATURE_COMMENTS` | Enable comments feature | `true` |
 | `API_MASTER_KEY` | Master API key for external access | - |
+| **Trash** | | |
+| `TRASH_AUTO_DELETE_DAYS` | Auto-delete trash after X days (0 to disable) | `90` |
 | **LDAP (Optional)** | | |
 | `LDAP_ENABLED` | Enable LDAP authentication | `false` |
 | `LDAP_URL` | LDAP server URL | - |

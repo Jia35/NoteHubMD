@@ -78,6 +78,9 @@ const config = {
         bindPassword: getEnv('LDAP_BIND_PASSWORD', ''),
         searchBase: getEnv('LDAP_SEARCH_BASE', ''),
         searchFilter: getEnv('LDAP_SEARCH_FILTER', '(sAMAccountName={{username}})')
+    },
+    trash: {
+        autoDeleteDays: getEnv('TRASH_AUTO_DELETE_DAYS', 90)
     }
 };
 
