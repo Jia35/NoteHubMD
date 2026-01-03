@@ -67,6 +67,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true,
             comment: 'Last revision save time for auto-save logic'
+        },
+        isSystem: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            comment: '系統文章標記'
         }
     }, {
         paranoid: true

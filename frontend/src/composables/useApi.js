@@ -493,6 +493,19 @@ const api = {
         const res = await fetch('/api/version')
         if (!res.ok) return { version: '' }
         return res.json()
+    },
+
+    // System articles
+    async getSystemArticles() {
+        const res = await fetch('/api/system/articles')
+        if (!res.ok) return { book: null, notes: [] }
+        return res.json()
+    },
+
+    async getSystemArticle(id) {
+        const res = await fetch('/api/system/articles/' + id)
+        if (!res.ok) throw new Error('System article not found')
+        return res.json()
     }
 }
 

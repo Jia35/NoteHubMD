@@ -84,10 +84,16 @@ if (spaHandler) {
 }
 
 
+// System articles initialization
+const { initSystemArticles } = require('./utils/systemArticles');
+
 // Sync DB and start server
 // Using force: false to preserve existing data (columns already exist)
 // Using alter: true to add new columns (change back to force: false after columns are added)
-db.sequelize.sync({ force: false }).then(() => {
+db.sequelize.sync({ force: false }).then(async () => {
+    // Initialize system articles after DB sync
+    await initSystemArticles();
+
     server.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
     });

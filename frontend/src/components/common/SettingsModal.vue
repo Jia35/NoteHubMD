@@ -131,6 +131,22 @@ const handleImportFolder = (event) => {
               <i class="fa-solid fa-chevron-right ml-2 text-sm opacity-30"></i>
             </router-link>
           </div>
+
+          <!-- Help & Guide -->
+          <div>
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">使用說明</h3>
+            <a href="/s/sys-intro" target="_blank" @click="emit('close')"
+               class="flex items-center w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
+              <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0">
+                <i class="fa-solid fa-book-open"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-sm text-gray-800 dark:text-white">NoteHubMD 使用手冊</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">瞭解平台功能與 Markdown 語法</div>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-gray-400 ml-2 text-sm"></i>
+            </a>
+          </div>
         </div>
         
         <!-- Footer -->

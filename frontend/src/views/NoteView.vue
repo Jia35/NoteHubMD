@@ -2635,13 +2635,13 @@ watch(() => route.params.id, (newId, oldId) => {
 .dark .editor-container .cm-gutters { border-color: #3c3c3c; }
 
 .markdown-body { font-size: 16px; line-height: 1.6; }
-.markdown-body h1 { font-size: 2em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
-.markdown-body h2 { font-size: 1.5em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h1 { font-size: 2em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
+.markdown-body h2 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 0.3em; scroll-margin-top: 3rem; }
 .markdown-body h3 { font-size: 1.25em; margin-top: 0.67em; margin-bottom: 0.5em; font-weight: bold; scroll-margin-top: 3rem; }
 .markdown-body h4, .markdown-body h5, .markdown-body h6 { margin-top: 0.33em; margin-bottom: 0.33em; font-weight: bold; scroll-margin-top: 3rem; }
 .markdown-body p { margin: 1em 0; }
 .markdown-body ul, .markdown-body ol { margin: 0.2em 0; padding-left: 2em; }
-.markdown-body code { background: #f0f0f0; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
+.markdown-body code { background: #e8e8e8; padding: 0.2em 0.4em; margin: 0 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; }
 .markdown-body pre.hljs { padding: 1em; }
@@ -2654,7 +2654,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body img { max-width: 100%; border-radius: 4px; }
 .markdown-body hr { margin: 24px 0;}
 
-.dark .markdown-body code { background: #2d2d2d; }
+.dark .markdown-body code { background: #505050; }
 .dark .markdown-body pre.hljs { }
 .dark .markdown-body blockquote { border-color: #444; color: #aaa; }
 .dark .markdown-body th, .dark .markdown-body td { border-color: #444; }

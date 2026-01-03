@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true,
             unique: true
+        },
+        isSystem: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            comment: '系統書本標記'
         }
     }, {
         paranoid: true

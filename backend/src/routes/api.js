@@ -112,6 +112,63 @@ router.post('/upload/avatar', avatarUpload.single('avatar'), (req, res) => {
     res.json({ url: avatarUrl, filename: req.file.filename });
 });
 
+// --- System Articles ---
+
+// Get System Articles (the system book with its notes)
+router.get('/system/articles', async (req, res) => {
+    try {
+        const systemBook = await db.Book.findOne({
+            where: { isSystem: true },
+            include: [
+                {
+                    model: db.Note,
+                    attributes: ['id', 'title', 'order', 'shareId'],
+                    where: { isSystem: true },
+                    required: false,
+                    order: [['order', 'ASC']]
+                }
+            ]
+        });
+
+        if (!systemBook) {
+            return res.json({ book: null, notes: [] });
+        }
+
+        res.json({
+            book: {
+                id: systemBook.id,
+                title: systemBook.title,
+                description: systemBook.description
+            },
+            notes: systemBook.Notes || []
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get Specific System Article
+router.get('/system/articles/:id', async (req, res) => {
+    try {
+        const note = await db.Note.findOne({
+            where: { id: req.params.id, isSystem: true }
+        });
+
+        if (!note) {
+            return res.status(404).json({ error: 'System article not found' });
+        }
+
+        res.json({
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            shareId: note.shareId
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 // Parse tags from markdown content
 // Supports: ###### tags: `tag1` `tag2` or ###### tags: `tag1`、`tag2`
@@ -1003,8 +1060,8 @@ router.get('/notes', async (req, res) => {
         const limit = parseInt(req.query.limit) || (includeBookNotes ? 100 : 20);
 
         const whereClause = includeBookNotes
-            ? {} // All notes
-            : { bookId: null }; // Only standalone notes
+            ? { isSystem: false } // All notes except system
+            : { bookId: null, isSystem: false }; // Only standalone notes, no system
 
         // Build include array with eager loading for permissions
         const include = [
@@ -1772,6 +1829,7 @@ router.get('/books', async (req, res) => {
     try {
         const userId = req.session.userId || null;
         const books = await db.Book.findAll({
+            where: { isSystem: false },
             order: [['updatedAt', 'DESC']],
             limit: 1000,
             include: [
