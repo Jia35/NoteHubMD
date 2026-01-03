@@ -410,12 +410,19 @@ md.renderer.rules.fence = (tokens, idx, options, env, self) => {
     finalCodeHtml = `<div class="code-line-numbers">${lineNumbersHtml}</div><div class="code-content">${codeHtml}</div>`
   }
 
-  // Construct HTML
+  // Construct HTML with copy button
+  // Escape content for data attribute (remove newlines and encode)
+  const escapedContent = content.replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  const copyBtnHtml = `<button class="code-copy-btn" data-code="${escapedContent}" title="複製程式碼"><i class="fa-regular fa-copy"></i></button>`
+  
   let output = '<div class="code-block-wrapper">'
   
-  // Add header if language is present
+  // Add header with language and copy button
   if (actualLang) {
-    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span></div>`
+    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span>${copyBtnHtml}</div>`
+  } else {
+    // Still add header for copy button even if no language
+    output += `<div class="code-block-header"><span class="code-lang"></span>${copyBtnHtml}</div>`
   }
 
   output += `<pre class="${classes.join(' ')}"><code>${finalCodeHtml}</code></pre>`
@@ -935,6 +942,30 @@ const renderMarkdown = async () => {
               c.classList.toggle('active', c.dataset.tabIndex === index)
             })
           })
+        })
+      })
+      
+      // Setup code copy buttons
+      const copyButtons = previewContent.value.querySelectorAll('.code-copy-btn')
+      copyButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const code = btn.dataset.code
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+          
+          try {
+            await navigator.clipboard.writeText(code)
+            // Visual feedback
+            const icon = btn.querySelector('i')
+            icon.className = 'fa-solid fa-check'
+            btn.classList.add('copied')
+            setTimeout(() => {
+              icon.className = 'fa-regular fa-copy'
+              btn.classList.remove('copied')
+            }, 2000)
+          } catch (e) {
+            console.error('Failed to copy:', e)
+          }
         })
       })
     }
@@ -2841,7 +2872,7 @@ watch(() => route.params.id, (newId, oldId) => {
     font-size: 0.75rem;
 }
 .dark .code-block-header {
-    background-color: #21252b;
+    background-color: #2D2D2D;
     border-bottom: 1px solid #181a1f;
 }
 
@@ -2851,6 +2882,36 @@ watch(() => route.params.id, (newId, oldId) => {
 }
 .dark .code-lang {
     color: #abb2bf;
+}
+
+/* Code Copy Button */
+.code-copy-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #8a9298;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+.code-copy-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #4b5563;
+}
+.code-copy-btn.copied {
+    color: #10b981;
+}
+.dark .code-copy-btn {
+    color: #6b7280;
+}
+.dark .code-copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+}
+.dark .code-copy-btn.copied {
+    color: #34d399;
 }
 
 /* Tabs Container Styles */
