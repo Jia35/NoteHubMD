@@ -298,15 +298,16 @@ export const loadKatexPlugin = async (md) => {
             document.head.appendChild(style)
         }
 
-        // Load and apply the plugin
-        const { default: markdownItKatex } = await import('markdown-it-katex')
-        md.use(markdownItKatex)
+        // Load and apply the plugin (using @mdit/plugin-katex for modern KaTeX support)
+        const { katex: katexPlugin } = await import('@mdit/plugin-katex')
+        md.use(katexPlugin)
 
         katexPluginLoaded = true
     } catch (e) {
         console.warn('Failed to load KaTeX:', e)
     }
 }
+
 
 /**
  * Get or create a markdown-it instance with KaTeX support

@@ -466,3 +466,80 @@ button {
 .markdown-body img:not(.mermaid img):hover {
     opacity: 0.85;
 }
+
+/* KaTeX rendering fixes for Tailwind */
+.katex table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+.katex table td,
+.katex table th {
+    padding: 0;
+    border: none;
+}
+
+.katex .base {
+    margin-top: 2px;
+    /* Slight adjustment for vertical alignment if needed */
+}
+
+/* Fix line-height issues that cause vertical misalignment */
+.katex {
+    line-height: 1.2 !important;
+}
+
+.katex .katex-html {
+    line-height: 1.2;
+}
+
+/* Fix subscript and superscript vertical alignment */
+.katex .msupsub,
+.katex .supsub {
+    text-align: left;
+}
+
+.katex sub,
+.katex sup {
+    position: relative;
+    vertical-align: baseline;
+}
+
+/* Ensure proper vertical alignment for array environments */
+.katex .arraycolsep {
+    width: 0.5em;
+}
+
+.katex .col-align-c>.vlist-t {
+    text-align: center;
+}
+
+.katex .col-align-l>.vlist-t {
+    text-align: left;
+}
+
+.katex .col-align-r>.vlist-t {
+    text-align: right;
+}
+
+/* Reset any inherited styles on spans within KaTeX */
+.katex span {
+    line-height: inherit;
+}
+
+/* Fix vertical list alignment */
+.katex .vlist-t {
+    display: inline-table;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.katex .vlist-r {
+    display: table-row;
+}
+
+.katex .vlist {
+    display: table-cell;
+    vertical-align: bottom;
+    position: relative;
+}
