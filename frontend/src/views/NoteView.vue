@@ -2057,15 +2057,15 @@ watch(() => route.params.id, (newId, oldId) => {
           <!-- Mode Toggle -->
           <div class="flex bg-gray-300 dark:bg-gray-800 rounded-lg p-0.5 space-x-0.5">
             <button @click="setMode('edit')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
-                    :class="mode === 'edit' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Edit">
+                    :class="mode === 'edit' ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Edit">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
             <button @click="setMode('both')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
-                    :class="mode === 'both' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Both">
+                    :class="mode === 'both' ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="Both">
               <i class="fa-solid fa-columns"></i>
             </button>
             <button @click="setMode('view')" class="w-7 h-7 flex items-center justify-center rounded transition text-sm cursor-pointer" 
-                    :class="mode === 'view' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="View">
+                    :class="mode === 'view' ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-black hover:bg-gray-400 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'" title="View">
               <i class="fa-solid fa-eye"></i>
             </button>
           </div>
@@ -2159,7 +2159,7 @@ watch(() => route.params.id, (newId, oldId) => {
                :style="showPreview ? { width: editorWidth + '%' } : { width: '100%' }">
             
             <!-- Markdown Toolbar -->
-            <div class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1.5 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
+            <div class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-1 py-1 flex items-center gap-1 shrink-0 z-20 overflow-x-auto custom-scrollbar">
                 <button @click="performUndo" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="上一步 (Ctrl+Z)">
                     <i class="fa-solid fa-rotate-left"></i>
                 </button>
@@ -2691,7 +2691,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .editor-container { height: 100%; }
 .editor-container .cm-editor { height: 100%; }
 .editor-container .cm-scroller { overflow: auto; }
-.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.6; padding: 4px 8px; }
+.editor-container .cm-content { font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.6; padding: 4px; }
 .editor-container .cm-line { padding: 0 4px; }
 .editor-container .cm-gutters { 
   font-family: 'Fira Code', monospace; 

@@ -227,7 +227,7 @@ const formatDate = (date) => {
       </button>
       <button
         @click="emit('create-book')"
-        class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center justify-center text-sm cursor-pointer"
+        class="w-full bg-transparent text-green-600 px-4 py-1.5 rounded-lg hover:bg-green-600 hover:text-white transition flex items-center justify-center text-sm cursor-pointer border border-green-600"
       >
         <i class="fa-solid fa-plus mr-1"></i><i class="fa-solid fa-book mr-1"></i> 新增書本
       </button>
