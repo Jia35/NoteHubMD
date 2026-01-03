@@ -349,38 +349,46 @@ router.put('/notes/:id', async (req, res) => {
         const userId = req.session.userId || null;
         const isOwner = note.ownerId && note.ownerId === userId;
 
-        // Resolve effective permission (handle 'inherit' from book)
-        const effectivePermission = await resolveNotePermission(note);
+        // Master API Key bypasses all permission checks
+        let canEdit = req.isMasterApiKey === true;
 
-        // Check user-specific permission override
-        const userPermOverride = await getUserPermission('note', note.id, userId);
+        if (!canEdit) {
+            // Resolve effective permission (handle 'inherit' from book)
+            const effectivePermission = await resolveNotePermission(note);
 
-        // Permission check for editing
-        let canEdit = false;
-        if (isOwner) {
-            canEdit = true;
-        } else if (userPermOverride === 'edit') {
-            canEdit = true;
-        } else if (effectivePermission === 'public-edit') {
-            canEdit = true;
-        } else if (effectivePermission === 'auth-edit' && userId) {
-            canEdit = true;
+            // Check user-specific permission override
+            const userPermOverride = await getUserPermission('note', note.id, userId);
+
+            // Permission check for editing
+            if (isOwner) {
+                canEdit = true;
+            } else if (userPermOverride === 'edit') {
+                canEdit = true;
+            } else if (effectivePermission === 'public-edit') {
+                canEdit = true;
+            } else if (effectivePermission === 'auth-edit' && userId) {
+                canEdit = true;
+            }
         }
 
         if (!canEdit) {
             return res.status(403).json({ error: 'Edit permission denied' });
         }
 
-        // Prevent permission from being updated via this endpoint
-        // Use PUT /notes/:id/permission instead
-        const { permission: _, commentsEnabled: requestedCommentsEnabled, isPublic: requestedIsPublic, ...updateData } = req.body;
+        // Prepare update data
+        const { permission: requestedPermission, commentsEnabled: requestedCommentsEnabled, isPublic: requestedIsPublic, ...updateData } = req.body;
 
-        // Only owner can update commentsEnabled and isPublic
-        if (isOwner && requestedCommentsEnabled !== undefined) {
-            updateData.commentsEnabled = requestedCommentsEnabled;
-        }
-        if (isOwner && requestedIsPublic !== undefined) {
-            updateData.isPublic = requestedIsPublic;
+        // Master API Key or owner can update permission, commentsEnabled and isPublic
+        if (req.isMasterApiKey || isOwner) {
+            if (requestedPermission !== undefined) {
+                updateData.permission = requestedPermission;
+            }
+            if (requestedCommentsEnabled !== undefined) {
+                updateData.commentsEnabled = requestedCommentsEnabled;
+            }
+            if (requestedIsPublic !== undefined) {
+                updateData.isPublic = requestedIsPublic;
+            }
         }
 
         // Auto-parse tags from content if content is being updated
