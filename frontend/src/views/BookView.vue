@@ -509,6 +509,12 @@ watch(() => route.params.id, () => {
           <div v-if="!sortedNotes || sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
               這本書裡還沒有筆記。
           </div>
+          <!-- Add Note Button at bottom -->
+          <div v-if="canAddNote" class="p-4">
+            <button @click="createNote" class="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition flex items-center justify-center cursor-pointer">
+              <i class="fa-solid fa-plus mr-2"></i>新增筆記
+            </button>
+          </div>
       </div>
     </div>
 
