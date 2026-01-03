@@ -6,6 +6,16 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(9),
             primaryKey: true
         },
+        noteType: {
+            type: DataTypes.ENUM('markdown', 'excalidraw'),
+            defaultValue: 'markdown',
+            comment: '筆記類型：markdown 或 excalidraw (白板)'
+        },
+        diagramData: {
+            type: DataTypes.JSON,
+            allowNull: true,
+            comment: 'Excalidraw JSON 資料（僅 excalidraw 類型使用）'
+        },
         title: {
             type: DataTypes.STRING,
             defaultValue: 'Untitled Note'

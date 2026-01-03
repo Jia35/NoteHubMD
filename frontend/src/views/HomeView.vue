@@ -338,6 +338,16 @@ const createNote = async () => {
   }
 }
 
+// Create whiteboard
+const createWhiteboard = async () => {
+  try {
+    const note = await api.createWhiteboard()
+    window.location.href = '/w/' + note.id
+  } catch (e) {
+    showAlert?.('建立白板失敗', 'error')
+  }
+}
+
 // Create Book logic moved to App.vue
 
 // Open note
@@ -726,6 +736,12 @@ onUnmounted(() => {
             <i class="fa-solid fa-plus text-3xl text-blue-500 mb-2"></i>
             <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
           </div>
+          <div
+              @click="createWhiteboard"
+              class="flex flex-col items-center justify-center bg-white dark:bg-dark-surface rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-800 hover:shadow-xl transition cursor-pointer border-2 border-dashed border-purple-300 dark:border-purple-600 h-[140px]">
+            <i class="fa-solid fa-chalkboard text-3xl text-purple-500 mb-2"></i>
+            <p class="text-gray-600 dark:text-gray-300 font-medium">新增白板</p>
+          </div>
         </div>
 
         <!-- Empty State - List Mode -->
@@ -737,6 +753,14 @@ onUnmounted(() => {
               <i class="fa-solid fa-plus"></i>
             </div>
             <p class="text-gray-600 dark:text-gray-300 font-medium">新增筆記</p>
+          </div>
+          <div
+              @click="createWhiteboard"
+              class="flex items-center p-3 bg-white dark:bg-dark-surface rounded shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer border-2 border-dashed border-purple-300 dark:border-purple-600 h-[70px]">
+            <div class="w-10 text-center text-xl mr-3 text-purple-500 flex-shrink-0">
+              <i class="fa-solid fa-chalkboard"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 font-medium">新增白板</p>
           </div>
         </div>
 

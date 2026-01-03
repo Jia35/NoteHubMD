@@ -224,7 +224,13 @@ router.post('/notes', async (req, res) => {
     }
 
     // Validate permission if provided (standalone note cannot use 'inherit')
-    const { permission, isPublic } = req.body || {};
+    const { permission, isPublic, noteType, diagramData } = req.body || {};
+
+    // Validate noteType
+    if (noteType && !['markdown', 'excalidraw'].includes(noteType)) {
+        return res.status(400).json({ error: 'Invalid noteType. Must be markdown or excalidraw' });
+    }
+
     if (permission !== undefined) {
         // Standalone notes cannot use 'inherit' - that's only for notes in books
         if (!VALID_PERMISSIONS.includes(permission)) {
@@ -242,10 +248,15 @@ router.post('/notes', async (req, res) => {
     let retry = 0;
     while (retry < 5) {
         try {
+            // Determine default title based on note type
+            const defaultTitle = noteType === 'excalidraw' ? 'Untitled Whiteboard' : 'Untitled Note';
+
             const noteData = {
                 id: id,
-                title: (req.body && req.body.title) || 'Untitled Note',
+                title: (req.body && req.body.title) || defaultTitle,
                 content: (req.body && req.body.content) || '',
+                noteType: noteType || 'markdown',
+                diagramData: noteType === 'excalidraw' ? (diagramData || { elements: [], appState: {}, files: {} }) : null,
                 ownerId: req.session.userId || null,
                 shareId: shareId  // Auto-generated share link
             };
@@ -351,10 +362,11 @@ router.put('/notes/:id', async (req, res) => {
 
         // Master API Key bypasses all permission checks
         let canEdit = req.isMasterApiKey === true;
+        let effectivePermission = null;
 
         if (!canEdit) {
             // Resolve effective permission (handle 'inherit' from book)
-            const effectivePermission = await resolveNotePermission(note);
+            effectivePermission = await resolveNotePermission(note);
 
             // Check user-specific permission override
             const userPermOverride = await getUserPermission('note', note.id, userId);
@@ -369,6 +381,9 @@ router.put('/notes/:id', async (req, res) => {
             } else if (effectivePermission === 'auth-edit' && userId) {
                 canEdit = true;
             }
+        } else {
+            // If canEdit is already true (Master API Key), still get effectivePermission for response
+            effectivePermission = await resolveNotePermission(note);
         }
 
         if (!canEdit) {
@@ -391,8 +406,8 @@ router.put('/notes/:id', async (req, res) => {
             }
         }
 
-        // Auto-parse tags from content if content is being updated
-        if (updateData.content !== undefined) {
+        // Auto-parse tags from content if content is being updated (markdown notes only)
+        if (updateData.content !== undefined && note.noteType !== 'excalidraw') {
             updateData.tags = parseTags(updateData.content);
             // Track when content was last edited
             updateData.lastEditedAt = new Date();
@@ -482,6 +497,11 @@ router.put('/notes/:id', async (req, res) => {
                     // Continue with note update even if revision fails
                 }
             }
+        }
+
+        // Handle diagramData update for excalidraw notes
+        if (updateData.diagramData !== undefined && note.noteType === 'excalidraw') {
+            updateData.lastEditedAt = new Date();
         }
 
         // Set last editor (content changes) and last updater (any changes)

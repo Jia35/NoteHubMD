@@ -89,6 +89,19 @@ const api = {
         return res.json()
     },
 
+    async createWhiteboard(title = 'Untitled Whiteboard') {
+        const res = await fetch('/api/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                noteType: 'excalidraw',
+                diagramData: { elements: [], appState: {}, files: {} }
+            })
+        })
+        return res.json()
+    },
+
     async getNote(id) {
         const res = await fetch('/api/notes/' + id)
         if (!res.ok) {

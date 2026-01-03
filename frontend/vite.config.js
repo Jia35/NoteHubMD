@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import veaury from 'veaury/vite'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    veaury({
+      type: 'vue',
+      // Include @excalidraw packages for React processing
+    })
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
@@ -35,7 +40,7 @@ export default defineConfig({
           // Highlight.js - split into separate chunk
           'highlight': ['highlight.js'],
           // KaTeX - split into separate chunk  
-          'katex': ['katex', 'markdown-it-katex'],
+          'katex': ['katex', '@mdit/plugin-katex'],
           // Reveal.js - split into separate chunk
           'reveal': ['reveal.js'],
           // CodeMirror core
@@ -62,7 +67,9 @@ export default defineConfig({
             'markdown-it-task-lists',
             'markdown-it-footnote',
             'markdown-it-abbr'
-          ]
+          ],
+          // Excalidraw + React (loaded dynamically for whiteboard)
+          'excalidraw': ['@excalidraw/excalidraw', 'react', 'react-dom']
         }
       }
     }

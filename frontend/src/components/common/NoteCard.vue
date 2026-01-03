@@ -70,7 +70,8 @@ const formatDate = (date) => {
 
     <div class="flex items-center mb-1">
       <span class="w-6 mr-2 text-center shrink-0 text-lg">
-        <i class="fa-solid fa-note-sticky text-blue-500"></i>
+        <i v-if="note.noteType === 'excalidraw'" class="fa-solid fa-chalkboard text-purple-500"></i>
+        <i v-else class="fa-solid fa-note-sticky text-blue-500"></i>
       </span>
       <h3 class="font-bold text-lg text-gray-800 dark:text-white truncate" :title="note.title || 'Untitled'">
         {{ note.title || 'Untitled' }}
@@ -114,8 +115,9 @@ const formatDate = (date) => {
     @click="emit('click')"
   >
     <!-- Icon -->
-    <div class="w-10 text-center text-xl mr-3 text-blue-500 flex-shrink-0">
-      <i class="fa-solid fa-note-sticky"></i>
+    <div class="w-10 text-center text-xl mr-3 flex-shrink-0" :class="note.noteType === 'excalidraw' ? 'text-purple-500' : 'text-blue-500'">
+      <i v-if="note.noteType === 'excalidraw'" class="fa-solid fa-chalkboard"></i>
+      <i v-else class="fa-solid fa-note-sticky"></i>
     </div>
 
     <!-- Main Info -->

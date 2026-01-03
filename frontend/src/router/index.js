@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 const HomeView = () => import('@/views/HomeView.vue')
 const BookView = () => import('@/views/BookView.vue')
 const NoteView = () => import('@/views/NoteView.vue')
+const NoteRouter = () => import('@/views/NoteRouter.vue')
+const WhiteboardView = () => import('@/views/WhiteboardView.vue')
 const LoginView = () => import('@/views/LoginView.vue')
 const NoteShareView = () => import('@/views/NoteShareView.vue')
 const BookShareView = () => import('@/views/BookShareView.vue')
@@ -52,7 +54,12 @@ const routes = [
     {
         path: '/n/:id',
         name: 'note',
-        component: NoteView
+        component: NoteRouter  // Smart router that determines note type
+    },
+    {
+        path: '/w/:id',
+        name: 'whiteboard',
+        component: WhiteboardView  // Direct whiteboard access
     },
     {
         path: '/login',
