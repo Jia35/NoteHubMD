@@ -36,6 +36,9 @@ import markdownItAbbr from 'markdown-it-abbr'
 // Dynamic loaders for bundle optimization
 import { loadMermaid, loadKatexPlugin, contentHasMath } from '@/composables/useDynamicLoaders'
 
+// Excalidraw for whiteboard notes
+import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
+
 // Note: mermaid and KaTeX are loaded dynamically via useDynamicLoaders
 
 // Highlight.js
@@ -137,6 +140,10 @@ const previewContent = ref(null)
 // Slide mode
 const showSlide = ref(false)
 const revealInstance = shallowRef(null)
+
+// Note type (markdown or excalidraw)
+const noteType = ref('markdown')
+const excalidrawData = ref({ elements: [], appState: {}, files: {} })
 
 // Plugin for colored blockquotes (CodiMD style)
 const blockquoteColorPlugin = (md) => {
@@ -385,6 +392,25 @@ const loadNote = async () => {
     noteCreatedAt.value = data.createdAt || null
     canEdit.value = data.canEdit || false
     
+    // Detect note type (markdown or excalidraw)
+    noteType.value = data.noteType || 'markdown'
+    
+    // Parse excalidraw data if whiteboard type
+    if (noteType.value === 'excalidraw') {
+      try {
+        // Excalidraw data can be stored in diagramData (from WhiteboardView) or content
+        const rawData = data.diagramData || content.value || '{}'
+        excalidrawData.value = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+        // Ensure required properties exist
+        if (!excalidrawData.value.elements) excalidrawData.value.elements = []
+        if (!excalidrawData.value.appState) excalidrawData.value.appState = {}
+        if (!excalidrawData.value.files) excalidrawData.value.files = {}
+      } catch (e) {
+        console.warn('Failed to parse excalidraw data:', e)
+        excalidrawData.value = { elements: [], appState: {}, files: {} }
+      }
+    }
+    
     // Handle API response: Book (capitalized) with Notes (capitalized)
     const bookData = data.book || data.Book
     if (bookData) {
@@ -402,8 +428,10 @@ const loadNote = async () => {
     error.value = e.message || '無法載入筆記'
   } finally {
     loading.value = false
-    // Render content after DOM update
-    nextTick(() => renderContent())
+    // Render content after DOM update (only for markdown)
+    if (noteType.value === 'markdown') {
+      nextTick(() => renderContent())
+    }
   }
 }
 
@@ -696,7 +724,7 @@ watch(() => route.params.shareId, () => {
           </template>
           <!-- Note Title -->
           <span class="text-sm bg-gray-300 dark:bg-gray-800 px-3 py-1 rounded truncate max-w-md">
-            <i class="fa-solid fa-note-sticky mr-2"></i>{{ title }}
+            <i :class="noteType === 'excalidraw' ? 'fa-solid fa-chalkboard mr-2 text-purple-500' : 'fa-solid fa-note-sticky mr-2'"></i>{{ title }}
           </span>
         </div>
         <div class="flex items-center space-x-3">
@@ -708,8 +736,9 @@ watch(() => route.params.shareId, () => {
           >
             <i :class="theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
           </button>
-          <!-- Slide Mode Button -->
+          <!-- Slide Mode Button (only for markdown) -->
           <button 
+            v-if="noteType === 'markdown'"
             @click="toggleSlide"
             class="px-2 py-1 text-xs border border-gray-500 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-400 hover:text-white dark:hover:bg-gray-700 transition cursor-pointer"
             title="簡報模式"
@@ -863,8 +892,17 @@ watch(() => route.params.shareId, () => {
             </div>
 
             <!-- Markdown Content -->
-            <div class="markdown-body dark:text-gray-300 flex justify-center flex-grow">
+            <div v-if="noteType === 'markdown'" class="markdown-body dark:text-gray-300 flex justify-center flex-grow">
               <div class="w-full px-4 md:px-8 py-4" style="max-width: 900px" ref="previewContent"></div>
+            </div>
+
+            <!-- Excalidraw Whiteboard (Read-only) -->
+            <div v-else-if="noteType === 'excalidraw'" class="flex-grow" style="min-height: 80vh;">
+              <ExcalidrawWrapper
+                :initial-data="excalidrawData"
+                :theme="theme"
+                :read-only="true"
+              />
             </div>
 
             <!-- Bottom Navigation -->
@@ -887,8 +925,8 @@ watch(() => route.params.shareId, () => {
           </div>
         </div>
 
-        <!-- TOC Sidebar -->
-        <div v-if="toc.length > 0" class="w-56 shrink-0 overflow-y-auto p-3 hidden lg:block border-l border-gray-200 dark:border-gray-700">
+        <!-- TOC Sidebar (only for markdown) -->
+        <div v-if="noteType === 'markdown' && toc.length > 0" class="w-56 shrink-0 overflow-y-auto p-3 hidden lg:block border-l border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               <i class="fa-solid fa-list mr-2"></i>目錄
@@ -1267,5 +1305,28 @@ details[open] summary {
 }
 .tab-content.active {
     display: block;
+}
+
+/* Excalidraw wrapper fix - Veaury creates a div with 'all: unset' that breaks height */
+.excalidraw-wrapper {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+}
+
+/* Fix Veaury React wrapper height issue */
+.excalidraw-wrapper > div {
+    height: 100% !important;
+    display: block !important;
+}
+
+.excalidraw-wrapper :deep(.excalidraw) {
+    width: 100%;
+    height: 100%;
+}
+
+.excalidraw-wrapper :deep(.excalidraw-container) {
+    width: 100%;
+    height: 100%;
 }
 </style>

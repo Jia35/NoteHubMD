@@ -291,6 +291,15 @@ const createNote = async () => {
   }
 }
 
+const createWhiteboard = async () => {
+  try {
+    const note = await api.createWhiteboard()
+    window.location.href = '/w/' + note.id
+  } catch (e) {
+    showAlert('建立白板失敗', 'error')
+  }
+}
+
 /* [DISABLED] 釘選功能暫時停用
 const unpinItem = async (type, id) => {
   try {
@@ -362,6 +371,7 @@ onMounted(async () => {
         :app-version="appVersion"
         @view-mode-change="setGlobalViewMode"
         @create-note="createNote"
+        @create-whiteboard="createWhiteboard"
         @create-book="showCreateBookModal = true"
         @open-profile="showUserProfileModal = true"
         @open-settings="showSettings = true"
