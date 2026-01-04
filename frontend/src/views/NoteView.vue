@@ -2050,8 +2050,8 @@ watch(() => route.params.id, (newId, oldId) => {
             <span class="text-sm bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
               <i class="fa-solid fa-note-sticky mr-1"></i>{{ note.title || 'Untitled' }}
             </span>
-            <span v-if="saving" class="text-xs text-gray-400 ml-2">Saving...</span>
-            <span v-else class="text-xs text-gray-500 ml-2">Saved</span>
+            <span v-if="saving" class="text-xs text-gray-400 ml-2">儲存中...</span>
+            <span v-else class="text-xs text-gray-500 ml-2">{{ getRelativeTime(lastSaved) }} 已儲存</span>
           </div>
           
           <!-- Mode Toggle -->

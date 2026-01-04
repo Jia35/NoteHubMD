@@ -315,7 +315,7 @@ watch(noteId, (newId, oldId) => {
               <input
                 ref="titleInput"
                 v-model="localTitle"
-                class="bg-transparent border-none outline-none text-sm w-40"
+                class="bg-transparent border-none outline-none text-md w-40"
                 @blur="saveTitle"
                 @keydown="handleTitleKeydown"
               />
