@@ -1507,7 +1507,7 @@ router.get('/books/:id', async (req, res) => {
             include: [
                 {
                     model: db.Note,
-                    attributes: ['id', 'title', 'updatedAt', 'permission', 'order', 'tags', 'lastEditedAt', 'noteType'],
+                    attributes: ['id', 'title', 'updatedAt', 'permission', 'order', 'tags', 'lastEditedAt', 'noteType', 'shareId', 'shareAlias', 'commentsEnabled', 'isPublic', 'ownerId'],
                     include: [
                         { model: db.User, as: 'owner', attributes: ['id', 'username'] },
                         { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }

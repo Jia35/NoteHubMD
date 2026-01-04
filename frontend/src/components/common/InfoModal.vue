@@ -358,6 +358,12 @@ const copyAliasUrl = async () => {
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
+              <div v-if="type === 'note'" class="flex flex-wrap gap-2 mt-2 mb-2">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    筆記標籤需在筆記內容中使用 <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">###### tags: `標籤名稱`</code> 語法進行編輯。
+                  </p>
+              </div>
             </div>
 
             <!-- Comments Toggle (for notes, Owner only) -->

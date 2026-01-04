@@ -243,11 +243,29 @@ const deleteNote = async (noteId) => {
 const openInfoModal = (item, tab = 'info', type = 'book') => {
   if (!book.value) return
   infoModalType.value = type
-  infoModalItem.value = item || book.value
   infoModalTab.value = tab
-  editableDescription.value = book.value.description || ''
-  editableTags.value = book.value.tags ? [...book.value.tags] : []
-  editablePermission.value = book.value.permission || 'private'
+  
+  if (type === 'note') {
+    // Enrich note with required properties from book context
+    const enrichedNote = {
+      ...item,
+      isOwner: isOwner.value, // Note owner = book owner in this context
+      canEdit: canEdit.value,
+      bookId: book.value.id,
+      book: book.value
+    }
+    infoModalItem.value = enrichedNote
+    editablePermission.value = item.permission || 'inherit'
+    infoCommentsEnabled.value = item.commentsEnabled !== false
+    // Note tags for display
+    editableTags.value = item.tags ? [...item.tags] : []
+  } else {
+    // For books, use the book's data
+    infoModalItem.value = item || book.value
+    editableDescription.value = book.value.description || ''
+    editableTags.value = book.value.tags ? [...book.value.tags] : []
+    editablePermission.value = book.value.permission || 'private'
+  }
   showInfoModal.value = true
 }
 
@@ -539,6 +557,12 @@ watch(() => route.params.id, () => {
                   <div>{{ dayjs(note.lastEditedAt || note.updatedAt).format('YYYY/MM/DD HH:mm') }}</div>
                   <div v-if="note.lastEditor || note.owner">by {{ note.lastEditor?.username || note.owner?.username }}</div>
               </div>
+              <!-- Info Button -->
+              <button @click.stop="openInfoModal(note, 'info', 'note')" 
+                      class="ml-4 p-2 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                      title="筆記資訊">
+                  <i class="fa-solid fa-circle-info"></i>
+              </button>
           </div>
           <div v-if="!sortedNotes || sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
               這本書裡還沒有筆記。
