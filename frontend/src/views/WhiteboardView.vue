@@ -8,6 +8,8 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
 import InfoModal from '@/components/common/InfoModal.vue'
+import SidebarNav from '@/components/common/SidebarNav.vue'
+import { SettingsModal, AboutModal, UserProfileModal, CreateBookModal } from '@/components'
 import { useSocket } from '@/composables/useSocket'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -52,6 +54,16 @@ const showNoteMenu = ref(false)
 const showNoteInfoModal = ref(false)
 const noteInfoModalTab = ref('info')
 
+// Sidebar state
+const showSidebar = ref(false)
+const pinnedItems = ref([]) // 空陣列代替，避免模板報錯
+const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
+const appVersion = ref('')
+const showSettingsModal = ref(false)
+const showUserProfileModal = ref(false)
+const showCreateBookModal = ref(false)
+const showAboutModal = ref(false)
+
 // Permission options (same as NoteView)
 const permissionOptions = [
   { value: 'public-edit', label: '可編輯' },
@@ -76,6 +88,15 @@ const noteInfoItem = computed(() => ({
   isOwner: isOwner.value,
   canEdit: canEdit.value
 }))
+
+// Sidebar computed
+const currentRoute = computed(() => '/n/' + route.params.id)
+const filteredSidebarBooks = computed(() => {
+  if (globalViewMode.value === 'my') {
+    return books.value.filter(b => b.isOwner)
+  }
+  return books.value.filter(b => b.isPublic)
+})
 
 // Load whiteboard data
 const loadWhiteboard = async () => {
@@ -120,6 +141,14 @@ const loadWhiteboard = async () => {
       }
     } else {
       book.value = null
+    }
+    
+    // Fetch app version for sidebar
+    try {
+      const versionData = await api.getAppVersion()
+      appVersion.value = versionData.version
+    } catch (e) {
+      appVersion.value = ''
     }
     
     // Join socket room for online users with actual username
@@ -259,6 +288,22 @@ const handleDocumentClick = (e) => {
   }
 }
 
+// Sidebar functions
+const setGlobalViewMode = (m) => {
+  globalViewMode.value = m
+  localStorage.setItem('NoteHubMD-viewMode', m)
+}
+
+const createNewNote = async () => {
+  try {
+    const newNote = await api.createNote()
+    window.location.href = '/n/' + newNote.id
+  } catch (e) {
+    console.error('Failed to create note:', e)
+    showAlert?.('建立筆記失敗', 'error')
+  }
+}
+
 // Handle permission change from InfoModal
 const handlePermissionChange = async (newPerm) => {
   try {
@@ -268,6 +313,39 @@ const handlePermissionChange = async (newPerm) => {
   } catch (e) {
     console.error('Failed to update permission:', e)
     showAlert?.('更新權限失敗', 'error')
+  }
+}
+
+// Settings Modal handlers
+const setTheme = (t) => {
+  if (t === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+  localStorage.setItem('NoteHubMD-theme', t)
+}
+
+const logout = async () => {
+  await api.logout()
+  window.location.href = '/login'
+}
+
+// Create book handler
+const handleCreateBook = async (data) => {
+  try {
+    const newBook = await api.createBook(data)
+    showCreateBookModal.value = false
+    router.push('/b/' + newBook.id)
+  } catch (e) {
+    showAlert?.('建立書本失敗', 'error')
+  }
+}
+
+// User profile update handler
+const handleUserProfileUpdate = (updatedUser) => {
+  if (updatedUser) {
+    currentUser.value = { ...currentUser.value, ...updatedUser }
   }
 }
 
@@ -304,24 +382,65 @@ watch(noteId, (newId, oldId) => {
 </script>
 
 <template>
-  <div class="whiteboard-view" :class="{ 'dark': theme === 'dark' }">
-    <!-- Loading State -->
-    <div v-if="loading" class="whiteboard-loading">
-      <div class="loading-spinner"></div>
-      <span>載入白板中...</span>
+  <div class="flex h-full bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-dark-text">
+    <!-- Collapsed Sidebar Strip -->
+    <div @click="showSidebar = true" 
+         class="w-12 bg-gray-200 dark:bg-gray-900 dark:text-white flex flex-col items-center py-3 border-r border-gray-300 dark:border-gray-800 shrink-0 z-30 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors"
+         title="展開選單">
+      <a href="/" @click.stop class="flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-800 transition">
+        <img src="@/assets/images/logo.png" alt="NoteHubMD" class="w-8 h-8">
+      </a>
+      <div class="flex-1"></div>
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white overflow-hidden"
+           :class="currentUser ? 'bg-blue-600' : 'bg-gray-500'">
+        <img v-if="currentUser?.avatar" :src="currentUser.avatar" class="w-full h-full object-cover" alt="Avatar">
+        <span v-else>{{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}</span>
+      </div>
     </div>
+
+    <!-- Expanded Sidebar -->
+    <Transition name="note-sidebar-slide">
+      <div v-if="showSidebar" class="fixed inset-0 z-40" @click="showSidebar = false">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="absolute top-0 h-full" @click.stop>
+          <SidebarNav 
+            :user="currentUser"
+            :books="filteredSidebarBooks"
+            :pinned-items="pinnedItems"
+            :show-pinned="true"
+            :show-more-books="false"
+            :current-route="currentRoute"
+            :global-view-mode="globalViewMode"
+            :app-version="appVersion"
+            @view-mode-change="setGlobalViewMode"
+            @create-note="createNewNote"
+            @create-book="showCreateBookModal = true"
+            @open-profile="showUserProfileModal = true"
+            @open-settings="showSettingsModal = true"
+          />
+        </div>
+      </div>
+    </Transition>
     
     <!-- Main Content -->
-    <template v-else-if="note">
-      <!-- Header (matching NoteView styling) -->
-      <header class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex-1 flex items-center justify-center">
+        <div class="loading-spinner"></div>
+        <span class="ml-3">載入白板中...</span>
+      </div>
+      
+      <!-- Whiteboard Content -->
+      <template v-else-if="note">
+        <!-- Header (matching NoteView styling) -->
+        <header class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
         <!-- Left: Back + Title + Save Status -->
         <div class="flex-1 flex items-center space-x-2">
-          <button @click="goBack" 
+          <!-- <button @click="goBack" 
                   class="px-2 py-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
                   title="返回">
             <i class="fas fa-arrow-left"></i>
-          </button>
+          </button> -->
           
           <!-- Book Title with Notes Tooltip -->
           <template v-if="book">
@@ -466,6 +585,7 @@ watch(noteId, (newId, oldId) => {
         />
       </div>
     </template>
+    </div>
     
     <!-- Info Modal -->
     <InfoModal
@@ -478,6 +598,33 @@ watch(noteId, (newId, oldId) => {
       @close="showNoteInfoModal = false"
       @update:tab="noteInfoModalTab = $event"
       @update:permission="handlePermissionChange"
+    />
+    
+    <!-- Other Modals -->
+    <SettingsModal 
+      :show="showSettingsModal" 
+      :user="currentUser" 
+      :theme="theme" 
+      :app-version="appVersion"
+      @close="showSettingsModal = false"
+      @set-theme="setTheme"
+      @logout="logout"
+      @open-about="showAboutModal = true"
+    />
+    
+    <AboutModal :show="showAboutModal" :app-version="appVersion" @close="showAboutModal = false" />
+    
+    <UserProfileModal 
+      :show="showUserProfileModal" 
+      :user="currentUser"
+      @close="showUserProfileModal = false"
+      @updated="handleUserProfileUpdate"
+    />
+    
+    <CreateBookModal 
+      :show="showCreateBookModal"
+      @close="showCreateBookModal = false"
+      @book-created="handleCreateBook"
     />
   </div>
 </template>
@@ -799,5 +946,26 @@ watch(noteId, (newId, oldId) => {
 .dark .readonly-badge {
   background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
+}
+
+/* Sidebar transition */
+.note-sidebar-slide-enter-active,
+.note-sidebar-slide-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.note-sidebar-slide-enter-active > div:last-child,
+.note-sidebar-slide-leave-active > div:last-child {
+  transition: transform 0.25s ease;
+}
+
+.note-sidebar-slide-enter-from,
+.note-sidebar-slide-leave-to {
+  opacity: 0;
+}
+
+.note-sidebar-slide-enter-from > div:last-child,
+.note-sidebar-slide-leave-to > div:last-child {
+  transform: translateX(-100%);
 }
 </style>
