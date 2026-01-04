@@ -1507,7 +1507,7 @@ router.get('/books/:id', async (req, res) => {
             include: [
                 {
                     model: db.Note,
-                    attributes: ['id', 'title', 'updatedAt', 'permission', 'order', 'tags', 'lastEditedAt', 'noteType', 'shareId', 'shareAlias', 'commentsEnabled', 'isPublic', 'ownerId'],
+                    attributes: ['id', 'title', 'bookId', 'permission', 'order', 'tags', 'createdAt', 'lastEditedAt', 'lastEditorId', 'updatedAt', 'lastUpdaterId', 'deletedById', 'savedAt', 'noteType', 'shareId', 'shareAlias', 'commentsEnabled', 'isPublic', 'ownerId'],
                     include: [
                         { model: db.User, as: 'owner', attributes: ['id', 'username'] },
                         { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
@@ -1555,7 +1555,7 @@ router.get('/books/:id', async (req, res) => {
             canEdit = true;
             canAddNote = true;
         }
-
+        
         res.json({
             ...book.toJSON(),
             isOwner,

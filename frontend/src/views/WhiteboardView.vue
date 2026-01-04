@@ -543,7 +543,7 @@ watch(noteId, (newId, oldId) => {
         </div>
         
         <!-- Right Actions -->
-        <div class="flex-1 flex justify-end items-center space-x-3">
+        <div class="flex-1 flex justify-end items-center space-x-2">
           <!-- Read-only Badge -->
           <div v-if="!canEdit" class="flex items-center space-x-1 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded text-sm text-yellow-700 dark:text-yellow-400">
             <i class="fas fa-eye text-xs"></i>
@@ -584,6 +584,13 @@ watch(noteId, (newId, oldId) => {
             <i class="fas fa-lock text-xs"></i>
             <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
           </button>
+
+          <!-- Note Info -->
+          <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;" 
+                  class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+            <i class="fas fa-cog text-xs"></i>
+            <span>筆記設定</span>
+          </button>
           
           <!-- Note Menu Dropdown -->
           <div class="relative">
@@ -600,10 +607,6 @@ watch(noteId, (newId, oldId) => {
               <button @click="exportWhiteboard"
                       class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-t-lg">
                 <i class="fas fa-file-export w-5 mr-2"></i>匯出筆記
-              </button>
-              <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
-                      class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-b-lg">
-                <i class="fas fa-cog w-5 mr-2"></i>白板設定
               </button>
             </div>
             
@@ -640,6 +643,7 @@ watch(noteId, (newId, oldId) => {
       :item="noteInfoItem"
       :tab="noteInfoModalTab"
       :editable-permission="permission"
+      :editable-tags="note?.tags || []"
       :books="books"
       @close="showNoteInfoModal = false"
       @update:tab="noteInfoModalTab = $event"

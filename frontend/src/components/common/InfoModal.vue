@@ -274,16 +274,34 @@ const copyAliasUrl = async () => {
               <div class="text-gray-500 dark:text-gray-400 mb-1">
                 ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ item?.id }}</span>
               </div>
+              <!-- Creator / Owner -->
               <div class="text-gray-500 dark:text-gray-400 mb-1">
-                {{ type === 'book' ? '建立者' : '擁有者' }}：
+                建立者：
                 <span class="text-gray-700 dark:text-gray-300">{{ item?.owner?.username || '(未知)' }}</span>
               </div>
-              <div v-if="type === 'book'" class="text-gray-500 dark:text-gray-400 mb-1">
+              <!-- Created Time -->
+              <div class="text-gray-500 dark:text-gray-400 mb-1">
                 建立時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item?.createdAt) }}</span>
               </div>
+              <!-- Last Updater -->
+              <div class="text-gray-500 dark:text-gray-400 mb-1">
+                最後更新者：
+                <span class="text-gray-700 dark:text-gray-300">{{ item?.lastUpdater?.username || item?.owner?.username || '(未知)' }}</span>
+              </div>
+              <!-- Last Updated Time -->
               <div class="text-gray-500 dark:text-gray-400 mb-1">
                 最後更新時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item?.updatedAt) }}</span>
               </div>
+              <!-- Note Only: Last Editor and Last Edited Time -->
+              <template v-if="type === 'note'">
+                <div class="text-gray-500 dark:text-gray-400 mb-1">
+                  最後編輯者：
+                  <span class="text-gray-700 dark:text-gray-300">{{ item?.lastEditor?.username || item?.owner?.username || '(未知)' }}</span>
+                </div>
+                <div class="text-gray-500 dark:text-gray-400 mb-1">
+                  最後編輯時間：<span class="text-gray-700 dark:text-gray-300">{{ formatDate(item?.lastEditedAt) }}</span>
+                </div>
+              </template>
             </div>
 
             <!-- Description (for books) -->

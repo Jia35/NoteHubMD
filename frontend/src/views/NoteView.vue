@@ -2078,7 +2078,7 @@ watch(() => route.params.id, (newId, oldId) => {
           </div>
           
           <!-- Right Actions -->
-          <div class="flex-1 flex justify-end items-center space-x-3">
+          <div class="flex-1 flex justify-end items-center space-x-2">
             <!-- Online Users -->
             <div class="relative">
               <button @click="toggleOnlineUsersPopup" 
@@ -2114,6 +2114,13 @@ watch(() => route.params.id, (newId, oldId) => {
               <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
             </button>
             
+            <!-- Note Info -->
+            <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fa-solid fa-cog text-xs mr-1"></i>
+              <span>筆記設定</span>
+            </button>
+            
             <!-- Note Menu Dropdown -->
             <div class="relative">
               <button @click="showNoteMenu = !showNoteMenu" 
@@ -2133,10 +2140,6 @@ watch(() => route.params.id, (newId, oldId) => {
                 <button @click="showExportModal = true; showNoteMenu = false;"
                         class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg flex items-center cursor-pointer">
                   <i class="fa-solid fa-file-export w-5 mr-2"></i>匯出筆記
-                </button>
-                <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
-                        class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer">
-                  <i class="fa-solid fa-cog w-5 mr-2"></i>筆記設定
                 </button>
                 <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                 <a href="/s/sys-markdown" target="_blank" @click="showNoteMenu = false"
@@ -2592,6 +2595,7 @@ watch(() => route.params.id, (newId, oldId) => {
       :tab="noteInfoModalTab"
       :editable-permission="permission"
       :comments-enabled="noteCommentsEnabled"
+      :editable-tags="note?.tags || []"
       :user-permissions="userPermissions"
       :loading-user-permissions="loadingUserPermissions"
       :user-search-query="userSearchQuery"

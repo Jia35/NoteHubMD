@@ -243,25 +243,15 @@ const deleteNote = async (noteId) => {
 const openInfoModal = (item, tab = 'info', type = 'book') => {
   if (!book.value) return
   infoModalType.value = type
+  infoModalItem.value = item || book.value
   infoModalTab.value = tab
   
   if (type === 'note') {
-    // Enrich note with required properties from book context
-    const enrichedNote = {
-      ...item,
-      isOwner: isOwner.value, // Note owner = book owner in this context
-      canEdit: canEdit.value,
-      bookId: book.value.id,
-      book: book.value
-    }
-    infoModalItem.value = enrichedNote
+    // For notes, use the note's data
     editablePermission.value = item.permission || 'inherit'
     infoCommentsEnabled.value = item.commentsEnabled !== false
-    // Note tags for display
-    editableTags.value = item.tags ? [...item.tags] : []
   } else {
     // For books, use the book's data
-    infoModalItem.value = item || book.value
     editableDescription.value = book.value.description || ''
     editableTags.value = book.value.tags ? [...book.value.tags] : []
     editablePermission.value = book.value.permission || 'private'
