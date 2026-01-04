@@ -261,6 +261,7 @@ const autoSaveCommentsEnabled = async (enabled) => {
   }
 }
 
+// Auto save isPublic
 const autoSaveIsPublic = async (isPublic) => {
   infoModalItem.value.isPublic = isPublic
   if (!infoModalItem.value.isOwner) return
@@ -278,6 +279,34 @@ const autoSaveIsPublic = async (isPublic) => {
     showAlert?.('公開設定儲存失敗', 'error')
   }
 }
+
+// Share update handlers
+const handleShareIdUpdate = (newShareId) => {
+  if (!infoModalItem.value) return
+  infoModalItem.value.shareId = newShareId
+  
+  if (infoModalType.value === 'book') {
+     const book = books.value.find(b => b.id === infoModalItem.value.id)
+     if (book) book.shareId = newShareId
+  } else {
+     const note = notes.value.find(n => n.id === infoModalItem.value.id)
+     if (note) note.shareId = newShareId
+  }
+}
+
+const handleShareAliasUpdate = (newAlias) => {
+  if (!infoModalItem.value) return
+  infoModalItem.value.shareAlias = newAlias
+  
+  if (infoModalType.value === 'book') {
+     const book = books.value.find(b => b.id === infoModalItem.value.id)
+     if (book) book.shareAlias = newAlias
+  } else {
+     const note = notes.value.find(n => n.id === infoModalItem.value.id)
+     if (note) note.shareAlias = newAlias
+  }
+}
+
 
 // Move Note
 const handleMoveNote = async (bookId) => {
@@ -832,6 +861,8 @@ onUnmounted(() => {
         @update:permission="autoSavePermission"
         @update:commentsEnabled="autoSaveCommentsEnabled"
         @update:isPublic="autoSaveIsPublic"
+        @update:shareId="handleShareIdUpdate"
+        @update:shareAlias="handleShareAliasUpdate"
         @add-tag="addEditableTag"
         @remove-tag="removeEditableTag"
         @move-note="handleMoveNote"

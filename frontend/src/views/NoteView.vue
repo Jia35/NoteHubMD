@@ -1633,6 +1633,19 @@ const autoSaveIsPublic = async (isPublic) => {
   }
 }
 
+// Share handlers
+const handleShareIdUpdate = (newShareId) => {
+  if (note.value) {
+    note.value.shareId = newShareId
+  }
+}
+
+const handleShareAliasUpdate = (newAlias) => {
+  if (note.value) {
+    note.value.shareAlias = newAlias
+  }
+}
+
 // Move note to book
 const moveNoteToBook = async (bookId) => {
   try {
@@ -2127,7 +2140,6 @@ watch(() => route.params.id, (newId, oldId) => {
                       class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
                 <i class="fa-solid fa-ellipsis-v text-xs"></i>
                 <span>更多</span>
-                <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
               </button>
               
               <div v-if="showNoteMenu" 
@@ -2607,6 +2619,8 @@ watch(() => route.params.id, (newId, oldId) => {
       @update:permission="handlePermissionChange"
       @update:commentsEnabled="autoSaveCommentsEnabled"
       @update:isPublic="autoSaveIsPublic"
+      @update:shareId="handleShareIdUpdate"
+      @update:shareAlias="handleShareAliasUpdate"
       @update:newUserPermission="newUserPermission = $event"
       @search-users="(q) => { userSearchQuery = q; searchUsers(); }"
       @add-user-permission="addUserPermission"

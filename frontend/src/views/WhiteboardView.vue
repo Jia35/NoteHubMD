@@ -351,7 +351,6 @@ const handlePermissionChange = async (newPerm) => {
   try {
     await api.updateNote(note.value.id, { permission: newPerm })
     permission.value = newPerm
-    showAlert?.('權限已更新', 'success')
   } catch (e) {
     console.error('Failed to update permission:', e)
     showAlert?.('更新權限失敗', 'error')
@@ -439,6 +438,63 @@ const removeTag = async (tag) => {
   } catch (e) {
     editableTags.value = prevTags
     showAlert?.('移除標籤失敗', 'error')
+  }
+}
+
+// Share handlers
+const handleShareIdUpdate = (newShareId) => {
+  if (note.value) {
+    note.value.shareId = newShareId
+  }
+}
+
+const handleShareAliasUpdate = (newAlias) => {
+  if (note.value) {
+    note.value.shareAlias = newAlias
+  }
+}
+
+const handleIsPublicUpdate = async (isPublic) => {
+  if (!note.value) return
+  try {
+    await api.updateNote(note.value.id, { isPublic })
+    note.value.isPublic = isPublic
+  } catch (e) {
+    showAlert?.('更新失敗', 'error')
+  }
+}
+
+// Move note to book
+const moveNoteToBook = async (bookId) => {
+  if (!note.value) return
+  try {
+    await api.updateNote(note.value.id, { bookId: bookId || null })
+    note.value.bookId = bookId || null
+    
+    // Update local book reference
+    if (bookId) {
+      // If we have the books list loaded, try to find the book object
+      const targetBook = books.value.find(b => b.id === bookId)
+      if (targetBook) {
+        book.value = targetBook
+      } else {
+        // If not in list, try fetching it
+        try {
+          book.value = await api.getBook(bookId)
+        } catch (e) {
+          // If fetch fails, just clear book value to be safe or keep old one? 
+          // Better to reload
+          loadWhiteboard() 
+        }
+      }
+    } else {
+      book.value = null
+    }
+    
+    showAlert?.('筆記已移動', 'success')
+  } catch (e) {
+    console.error('Failed to move note:', e)
+    showAlert?.('移動筆記失敗', 'error')
   }
 }
 
@@ -649,7 +705,6 @@ watch(noteId, (newId, oldId) => {
                     class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
               <i class="fas fa-ellipsis-v text-xs"></i>
               <span>更多</span>
-              <i class="fas fa-chevron-down text-xs ml-1"></i>
             </button>
             
             <div v-if="showNoteMenu" 
@@ -704,6 +759,10 @@ watch(noteId, (newId, oldId) => {
       @update:newTag="newTagInput = $event"
       @add-tag="addTag"
       @remove-tag="removeTag"
+      @update:shareId="handleShareIdUpdate"
+      @update:shareAlias="handleShareAliasUpdate"
+      @update:isPublic="handleIsPublicUpdate"
+      @move-note="moveNoteToBook"
     />
     
     <!-- Other Modals -->

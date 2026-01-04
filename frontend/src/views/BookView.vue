@@ -369,14 +369,50 @@ const autoSaveCommentsEnabled = async (enabled) => {
 }
 
 // Auto save isPublic
+// Auto save isPublic
 const autoSaveIsPublic = async (isPublic) => {
   if (!infoModalItem.value) return
   try {
-    await api.updateNote(infoModalItem.value.id, { isPublic })
-    const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
-    if (note) note.isPublic = isPublic
+    if (infoModalType.value === 'book') {
+      await api.updateBook(infoModalItem.value.id, { isPublic })
+      if (book.value) book.value.isPublic = isPublic
+    } else {
+      await api.updateNote(infoModalItem.value.id, { isPublic })
+      const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
+      if (note) note.isPublic = isPublic
+    }
+    infoModalItem.value.isPublic = isPublic
   } catch (e) {
     showAlert?.('更新失敗', 'error')
+  }
+}
+
+// Share update handlers
+const handleShareIdUpdate = (newShareId) => {
+  if (!infoModalItem.value) return
+  infoModalItem.value.shareId = newShareId
+  
+  if (infoModalType.value === 'book') {
+     if (book.value) book.value.shareId = newShareId
+  } else {
+     if (book.value && book.value.notes) {
+       const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
+       if (note) note.shareId = newShareId
+     }
+  }
+}
+
+const handleShareAliasUpdate = (newAlias) => {
+  if (!infoModalItem.value) return
+  infoModalItem.value.shareAlias = newAlias
+  
+  if (infoModalType.value === 'book') {
+     if (book.value) book.value.shareAlias = newAlias
+  } else {
+     if (book.value && book.value.notes) {
+       const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
+       if (note) note.shareAlias = newAlias
+     }
   }
 }
 
@@ -649,6 +685,8 @@ watch(() => route.params.id, () => {
     @update:permission="autoSavePermission"
     @update:commentsEnabled="autoSaveCommentsEnabled"
     @update:isPublic="autoSaveIsPublic"
+    @update:shareId="handleShareIdUpdate"
+    @update:shareAlias="handleShareAliasUpdate"
   />
 </template>
 ```
