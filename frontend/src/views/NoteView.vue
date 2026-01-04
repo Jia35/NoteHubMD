@@ -2032,6 +2032,7 @@ watch(() => route.params.id, (newId, oldId) => {
                       </div>
                       <ul class="space-y-1 max-h-64 overflow-y-auto">
                         <li v-for="bookNote in book.Notes" :key="bookNote.id">
+                          {{bookNote}}
                           <a 
                             :href="'/n/' + bookNote.id"
                             class="flex items-center text-sm py-1.5 px-2 rounded transition"

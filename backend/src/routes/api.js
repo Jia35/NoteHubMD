@@ -292,7 +292,7 @@ router.get('/notes/:id', async (req, res) => {
                     model: db.Book,
                     attributes: ['id', 'title'],
                     include: [
-                        { model: db.Note, attributes: ['id', 'title', 'order'], order: [['order', 'ASC']] }
+                        { model: db.Note, attributes: ['id', 'title', 'order', 'noteType'], order: [['order', 'ASC']] }
                     ]
                 },
                 { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
@@ -1388,7 +1388,7 @@ router.get('/share/:shareIdOrAlias', async (req, res) => {
                     model: db.Book,
                     attributes: ['id', 'title', 'permission', 'shareId', 'shareAlias'],
                     include: [
-                        { model: db.Note, attributes: ['id', 'title', 'order', 'shareId', 'shareAlias'], order: [['order', 'ASC']] }
+                        { model: db.Note, attributes: ['id', 'title', 'order', 'shareId', 'shareAlias', 'noteType'], order: [['order', 'ASC']] }
                     ]
                 },
                 { model: db.User, as: 'owner', attributes: ['id', 'username', 'name', 'avatar'] },
@@ -1507,7 +1507,7 @@ router.get('/books/:id', async (req, res) => {
             include: [
                 {
                     model: db.Note,
-                    attributes: ['id', 'title', 'updatedAt', 'permission', 'order', 'tags', 'lastEditedAt'],
+                    attributes: ['id', 'title', 'updatedAt', 'permission', 'order', 'tags', 'lastEditedAt', 'noteType'],
                     include: [
                         { model: db.User, as: 'owner', attributes: ['id', 'username'] },
                         { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }
@@ -2111,7 +2111,7 @@ router.get('/book-share/:shareId', async (req, res) => {
             include: [
                 {
                     model: db.Note,
-                    attributes: ['id', 'title', 'order', 'shareId', 'shareAlias', 'tags', 'lastEditedAt'],
+                    attributes: ['id', 'title', 'order', 'shareId', 'shareAlias', 'tags', 'lastEditedAt', 'noteType'],
                     order: [['order', 'ASC']],
                     include: [
                         { model: db.User, as: 'lastEditor', attributes: ['id', 'username'] }

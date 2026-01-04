@@ -38,6 +38,7 @@ const excalidrawRef = ref(null)
 const permission = ref('private')
 const currentUser = ref(null)
 const books = ref([])
+const book = ref(null)
 
 // Title editing
 const editingTitle = ref(false)
@@ -108,6 +109,17 @@ const loadWhiteboard = async () => {
       books.value = await api.getBooks()
     } catch (e) {
       books.value = []
+    }
+    
+    // Fetch book data if note belongs to a book
+    if (data.bookId) {
+      try {
+        book.value = await api.getBook(data.bookId)
+      } catch (e) {
+        book.value = data.book || null
+      }
+    } else {
+      book.value = null
     }
     
     // Join socket room for online users with actual username
@@ -311,7 +323,41 @@ watch(noteId, (newId, oldId) => {
             <i class="fas fa-arrow-left"></i>
           </button>
           
-          <!-- Title -->
+          <!-- Book Title with Notes Tooltip -->
+          <template v-if="book">
+            <div class="relative group">
+              <a :href="'/b/' + book.id" class="hover:text-blue-400 transition">
+                <i class="fas fa-book mr-1"></i>{{ book.title }}
+              </a>
+              <!-- Book Notes Tooltip -->
+              <div v-if="book.Notes && book.Notes.length > 0" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 280px; max-width: 400px;">
+                  <!-- Arrow -->
+                  <div class="absolute top-0 left-4 w-4 h-4 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                  <div class="relative z-10 p-3">
+                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center">
+                      <i class="fas fa-list mr-2"></i>
+                      書本筆記 ({{ book.Notes.length }})
+                    </div>
+                    <ul class="space-y-1 max-h-64 overflow-y-auto">
+                      <li v-for="bookNote in book.Notes" :key="bookNote.id">
+                        <a 
+                          :href="bookNote.noteType === 'excalidraw' ? '/w/' + bookNote.id : '/n/' + bookNote.id"
+                          class="flex items-center text-sm py-1.5 px-2 rounded transition"
+                          :class="bookNote.id === note.id ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
+                          <i :class="[bookNote.noteType === 'excalidraw' ? 'fas fa-chalkboard' : 'fas fa-note-sticky', 'mr-2 text-xs', bookNote.id === note.id ? 'text-white' : (bookNote.noteType === 'excalidraw' ? 'text-purple-500' : 'text-blue-500')]"></i>
+                          <span class="truncate" :title="bookNote.title || 'Untitled'">{{ bookNote.title || 'Untitled' }}</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <span class="text-gray-600">/</span>
+          </template>
+          
+          <!-- Whiteboard Title -->
           <span class="text-md bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
             <i class="fas fa-chalkboard mr-1 text-purple-500"></i>
             <template v-if="editingTitle">
