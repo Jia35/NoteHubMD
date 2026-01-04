@@ -1555,7 +1555,7 @@ router.get('/books/:id', async (req, res) => {
             canEdit = true;
             canAddNote = true;
         }
-        
+
         res.json({
             ...book.toJSON(),
             isOwner,
@@ -2836,7 +2836,8 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
                             tags: tags,
                             bookId: book.id,
                             order: i,
-                            ownerId: userId
+                            ownerId: userId,
+                            shareId: generateId()
                         });
                         createdNotes.push({ id: note.id, title: note.title, bookId: book.id });
                         break;
@@ -2883,7 +2884,8 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
                         noteType: isWhiteboard ? 'excalidraw' : 'markdown',
                         diagramData: diagramData,
                         tags: tags,
-                        ownerId: userId
+                        ownerId: userId,
+                        shareId: generateId()
                     });
                     createdNotes.push({ id: note.id, title: note.title });
                     break;
