@@ -342,7 +342,7 @@ const createNote = async () => {
 const createWhiteboard = async () => {
   try {
     const note = await api.createWhiteboard()
-    window.location.href = '/w/' + note.id
+    window.location.href = '/n/' + note.id
   } catch (e) {
     showAlert?.('建立白板失敗', 'error')
   }

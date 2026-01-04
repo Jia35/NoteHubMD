@@ -342,7 +342,7 @@ watch(noteId, (newId, oldId) => {
                     <ul class="space-y-1 max-h-64 overflow-y-auto">
                       <li v-for="bookNote in book.Notes" :key="bookNote.id">
                         <a 
-                          :href="bookNote.noteType === 'excalidraw' ? '/w/' + bookNote.id : '/n/' + bookNote.id"
+                          :href="'/n/' + bookNote.id"
                           class="flex items-center text-sm py-1.5 px-2 rounded transition"
                           :class="bookNote.id === note.id ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
                           <i :class="[bookNote.noteType === 'excalidraw' ? 'fas fa-chalkboard' : 'fas fa-note-sticky', 'mr-2 text-xs', bookNote.id === note.id ? 'text-white' : (bookNote.noteType === 'excalidraw' ? 'text-purple-500' : 'text-blue-500')]"></i>

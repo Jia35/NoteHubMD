@@ -486,7 +486,9 @@ watch(() => route.params.id, () => {
               </span>
               <!-- Note Icon and Title/Tags -->
               <div class="flex items-center flex-1 min-w-0">
-                  <span class="mr-3 text-gray-400 shrink-0"><i class="fa-solid fa-note-sticky"></i></span>
+                  <span class="mr-3 text-gray-400 shrink-0">
+                    <i :class="[note.noteType === 'excalidraw' ? 'fas fa-chalkboard' : 'fas fa-note-sticky', note.noteType === 'excalidraw' ? 'text-purple-500' : 'text-blue-500']"></i>
+                  </span>
                   <div class="flex-1 min-w-0">
                       <span class="font-medium text-lg text-gray-800 dark:text-gray-200 truncate block" :title="note.title">{{ note.title }}</span>
                       <!-- Tags below title -->

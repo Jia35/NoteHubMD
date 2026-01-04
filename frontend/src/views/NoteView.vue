@@ -2032,12 +2032,11 @@ watch(() => route.params.id, (newId, oldId) => {
                       </div>
                       <ul class="space-y-1 max-h-64 overflow-y-auto">
                         <li v-for="bookNote in book.Notes" :key="bookNote.id">
-                          {{bookNote}}
                           <a 
                             :href="'/n/' + bookNote.id"
                             class="flex items-center text-sm py-1.5 px-2 rounded transition"
                             :class="bookNote.id === note.id ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-400 hover:text-black dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'">
-                            <i class="fa-solid fa-note-sticky mr-2 text-xs" :class="bookNote.id === note.id ? 'text-white' : 'text-gray-500'"></i>
+                            <i :class="[bookNote.noteType === 'excalidraw' ? 'fas fa-chalkboard' : 'fas fa-note-sticky', 'mr-2 text-xs', bookNote.id === note.id ? 'text-white' : (bookNote.noteType === 'excalidraw' ? 'text-purple-500' : 'text-blue-500')]"></i>
                             <span class="truncate" :title="bookNote.title || 'Untitled'">{{ bookNote.title || 'Untitled' }}</span>
                           </a>
                         </li>
@@ -2048,8 +2047,8 @@ watch(() => route.params.id, (newId, oldId) => {
               </div>
               <span class="text-gray-600">/</span>
             </template>
-            <span class="text-sm bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
-              <i class="fa-solid fa-note-sticky mr-1"></i>{{ note.title || 'Untitled' }}
+            <span class="text-md bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
+              <i class="fa-solid fa-note-sticky text-blue-500 mr-1"></i>{{ note.title || 'Untitled' }}
             </span>
             <span v-if="saving" class="text-xs text-gray-400 ml-2">儲存中...</span>
             <span v-else class="text-xs text-gray-500 ml-2">{{ getRelativeTime(lastSaved) }} 已儲存</span>
