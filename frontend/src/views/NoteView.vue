@@ -111,6 +111,13 @@ const note = ref(null)
 const book = ref(null)
 const loading = ref(true)
 const saving = ref(false)
+const lastSaved = ref(null)
+
+// Time formatting
+const getRelativeTime = (time) => {
+  if (!time) return ''
+  return dayjs(time).fromNow()
+}
 const content = ref('')
 
 // User & permissions
@@ -1495,6 +1502,7 @@ const saveNote = async () => {
   try {
     const newTitle = extractTitle(content.value)
     await api.updateNote(note.value.id, { content: content.value, title: newTitle })
+    lastSaved.value = new Date()
   } catch (e) {
     console.error('Failed to save note:', e)
   } finally {
@@ -1752,7 +1760,6 @@ const exportAsPDF = async () => {
 
 // Format date
 const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
-const getRelativeTime = (date) => dayjs(date).fromNow()
 
 
 // Comment methods
