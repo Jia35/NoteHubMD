@@ -391,6 +391,57 @@ const handleUserProfileUpdate = (updatedUser) => {
   }
 }
 
+// Handle title update from InfoModal
+const handleTitleUpdate = async (newTitle) => {
+  if (!note.value || newTitle === note.value.title) return
+  try {
+    await api.updateNote(note.value.id, { title: newTitle })
+    note.value.title = newTitle
+    localTitle.value = newTitle
+  } catch (e) {
+    console.error('Failed to update title:', e)
+    showAlert?.('更新標題失敗', 'error')
+  }
+}
+
+// Tags management for whiteboard notes
+const editableTags = ref([])
+const newTagInput = ref('')
+
+// Sync editable tags when note loads
+watch(() => note.value?.tags, (newTags) => {
+  editableTags.value = newTags ? [...newTags] : []
+}, { immediate: true })
+
+const addTag = async () => {
+  const tag = newTagInput.value?.trim()
+  if (!tag || !note.value) return
+  if (editableTags.value.includes(tag)) return
+  
+  editableTags.value.push(tag)
+  newTagInput.value = ''
+  try {
+    await api.updateNote(note.value.id, { tags: editableTags.value })
+    note.value.tags = [...editableTags.value]
+  } catch (e) {
+    editableTags.value = editableTags.value.filter(t => t !== tag)
+    showAlert?.('新增標籤失敗', 'error')
+  }
+}
+
+const removeTag = async (tag) => {
+  if (!note.value) return
+  const prevTags = [...editableTags.value]
+  editableTags.value = editableTags.value.filter(t => t !== tag)
+  try {
+    await api.updateNote(note.value.id, { tags: editableTags.value })
+    note.value.tags = [...editableTags.value]
+  } catch (e) {
+    editableTags.value = prevTags
+    showAlert?.('移除標籤失敗', 'error')
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
@@ -643,11 +694,16 @@ watch(noteId, (newId, oldId) => {
       :item="noteInfoItem"
       :tab="noteInfoModalTab"
       :editable-permission="permission"
-      :editable-tags="note?.tags || []"
+      :editable-tags="editableTags"
+      :new-tag-input="newTagInput"
       :books="books"
       @close="showNoteInfoModal = false"
       @update:tab="noteInfoModalTab = $event"
+      @update:title="handleTitleUpdate"
       @update:permission="handlePermissionChange"
+      @update:newTag="newTagInput = $event"
+      @add-tag="addTag"
+      @remove-tag="removeTag"
     />
     
     <!-- Other Modals -->

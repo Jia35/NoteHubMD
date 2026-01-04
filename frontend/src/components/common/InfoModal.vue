@@ -56,6 +56,13 @@ const moveNote = () => {
   emit('move-note', selectedMoveBookId.value || null)
 }
 
+// Computed: Can edit tags (books and whiteboard notes only, not markdown)
+const canEditTags = computed(() => {
+  if (props.type === 'book' && props.item?.canEdit) return true
+  if (props.type === 'note' && props.item?.noteType === 'excalidraw' && props.item?.canEdit) return true
+  return false
+})
+
 // Share functionality
 const copyStatus = ref('')
 const resettingShare = ref(false)
@@ -254,16 +261,18 @@ const copyAliasUrl = async () => {
             <!-- Title Section -->
             <div>
               <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                <i :class="type === 'book' ? 'fa-solid fa-book' : 'fa-solid fa-note-sticky'" class="mr-1"></i> 標題
+                <i :class="type === 'book' ? 'fa-solid fa-book' : (item?.noteType === 'excalidraw' ? 'fa-solid fa-chalkboard' : 'fa-solid fa-note-sticky')" class="mr-1"></i> 標題
               </label>
+              <!-- Editable title for books and non-markdown notes -->
               <input
-                v-if="type === 'book' && item?.canEdit"
+                v-if="(type === 'book' && item?.canEdit) || (type === 'note' && item?.noteType === 'excalidraw' && item?.canEdit)"
                 :value="item?.title || ''"
                 @blur="emit('update:title', $event.target.value)"
                 type="text"
                 placeholder="輸入標題..."
                 class="w-full px-3 py-2 text-sm font-bold border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <!-- Read-only title display -->
               <div v-else class="px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded">
                 {{ item?.title || 'Untitled' }}
               </div>
@@ -353,17 +362,19 @@ const copyAliasUrl = async () => {
                 <span
                   v-for="tag in editableTags"
                   :key="tag"
-                  :class="type === 'book' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'"
+                  :class="type === 'book' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : (item?.noteType === 'excalidraw' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300')"
                   class="px-3 py-1 text-sm rounded-full flex items-center"
                 >
                   {{ tag }}
-                  <button v-if="type === 'book' && item?.canEdit" @click="emit('remove-tag', tag)" class="ml-2 hover:text-red-500 cursor-pointer">
+                  <!-- Allow remove for books and whiteboard notes -->
+                  <button v-if="canEditTags" @click="emit('remove-tag', tag)" class="ml-2 hover:text-red-500 cursor-pointer">
                     <i class="fa-solid fa-xmark"></i>
                   </button>
                 </span>
                 <span v-if="editableTags.length === 0" class="text-gray-400 text-sm italic">無標籤</span>
               </div>
-              <div v-if="type === 'book' && item?.canEdit" class="flex gap-2">
+              <!-- Tag input for books and whiteboard notes -->
+              <div v-if="canEditTags" class="flex gap-2">
                 <input
                   :value="newTagInput"
                   @input="emit('update:newTag', $event.target.value)"
@@ -376,7 +387,8 @@ const copyAliasUrl = async () => {
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
-              <div v-if="type === 'note'" class="flex flex-wrap gap-2 mt-2 mb-2">
+              <!-- Info message only for markdown notes -->
+              <div v-if="type === 'note' && item?.noteType !== 'excalidraw'" class="flex flex-wrap gap-2 mt-2 mb-2">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     <i class="fa-solid fa-info-circle mr-1"></i>
                     筆記標籤需在筆記內容中使用 <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">###### tags: `標籤名稱`</code> 語法進行編輯。
