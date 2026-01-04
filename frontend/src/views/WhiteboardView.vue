@@ -276,6 +276,48 @@ const shareNote = () => {
   showNoteInfoModal.value = true
 }
 
+// Export whiteboard as .excalidraw file
+const exportWhiteboard = () => {
+  if (!diagramData.value || !note.value) return
+  
+  // Get the current data from excalidraw ref if available
+  let exportData = diagramData.value
+  if (excalidrawRef.value?.getData) {
+    exportData = excalidrawRef.value.getData()
+  }
+  
+  // Create final export structure matching Excalidraw format
+  const finalData = {
+    type: 'excalidraw',
+    version: 2,
+    source: window.location.origin,
+    elements: exportData.elements || [],
+    appState: {
+      ...(exportData.appState || {}),
+      viewBackgroundColor: exportData.appState?.viewBackgroundColor || '#ffffff',
+      currentItemFontFamily: exportData.appState?.currentItemFontFamily || 1
+    },
+    files: exportData.files || {}
+  }
+  
+  // Create the file content
+  const jsonContent = JSON.stringify(finalData, null, 2)
+  const blob = new Blob([jsonContent], { type: 'application/json' })
+  
+  // Create download link
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${localTitle.value || 'whiteboard'}.excalidraw`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  
+  showNoteMenu.value = false
+  showAlert?.('已匯出白板', 'success')
+}
+
 // Click outside handlers
 const handleDocumentClick = (e) => {
   // Close online users popup
@@ -555,8 +597,12 @@ watch(noteId, (newId, oldId) => {
             <div v-if="showNoteMenu" 
                  class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[60]"
                  @click.stop>
+              <button @click="exportWhiteboard"
+                      class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-t-lg">
+                <i class="fas fa-file-export w-5 mr-2"></i>匯出筆記
+              </button>
               <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
-                      class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-lg">
+                      class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-b-lg">
                 <i class="fas fa-cog w-5 mr-2"></i>白板設定
               </button>
             </div>

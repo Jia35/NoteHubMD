@@ -2477,7 +2477,7 @@ watch(() => route.params.id, (newId, oldId) => {
               </div>
 
               <!-- Floating TOC Button (visible on small screens or in both mode) -->
-              <div v-if="toc.length > 0 && (mode === 'view' || mode === 'both')" 
+              <div v-if="toc.length > 0 && (mode === 'view' || mode === 'both') && !showFloatingToc" 
                    class="fixed right-0 top-40 z-40"
                    :class="{ 'lg:hidden': mode === 'view' }">
                 <button 
