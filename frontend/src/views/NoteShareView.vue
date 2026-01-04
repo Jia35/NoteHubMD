@@ -1312,21 +1312,36 @@ details[open] summary {
     width: 100%;
     height: 100%;
     min-height: 600px;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
-/* Fix Veaury React wrapper height issue */
+/* Fix Veaury React wrapper height issue using flexbox */
 .excalidraw-wrapper > div {
-    height: 100% !important;
-    display: block !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+}
+
+/* Ensure grandchildren also expand */
+.excalidraw-wrapper > div > div {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
 }
 
 .excalidraw-wrapper :deep(.excalidraw) {
     width: 100%;
     height: 100%;
+    flex: 1;
 }
 
 .excalidraw-wrapper :deep(.excalidraw-container) {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 </style>
