@@ -189,19 +189,6 @@ const api = {
         return res.json()
     },
 
-    async updatePermission(id, permission) {
-        const res = await fetch('/api/notes/' + id + '/permission', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ permission })
-        })
-        if (!res.ok) {
-            const data = await res.json()
-            throw new Error(data.error || 'Failed to update permission')
-        }
-        return res.json()
-    },
-
     async updateBookPermission(id, permission) {
         const res = await fetch('/api/books/' + id + '/permission', {
             method: 'PUT',

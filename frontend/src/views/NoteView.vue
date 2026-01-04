@@ -1606,7 +1606,7 @@ const toggleOnlineUsersPopup = () => {
 // Handle permission change
 const handlePermissionChange = async (newPerm) => {
   try {
-    await api.updatePermission(note.value.id, newPerm)
+    await api.updateNote(note.value.id, { newPerm })
     permission.value = newPerm
   } catch (e) {
     showAlert?.('更新權限失敗', 'error')

@@ -393,9 +393,26 @@ router.put('/notes/:id', async (req, res) => {
         // Prepare update data
         const { permission: requestedPermission, commentsEnabled: requestedCommentsEnabled, isPublic: requestedIsPublic, ...updateData } = req.body;
 
+        // Track if permission is being changed (for WebSocket broadcast later)
+        let permissionChanged = false;
+        let newPermission = null;
+
         // Master API Key or owner can update permission, commentsEnabled and isPublic
         if (req.isMasterApiKey || isOwner) {
             if (requestedPermission !== undefined) {
+                // Validate 'inherit' permission - only valid for notes inside a book
+                if (requestedPermission === 'inherit' && !note.bookId) {
+                    return res.status(400).json({ error: 'inherit permission is only valid for notes inside a book' });
+                }
+                // Validate permission value
+                if (!['public-edit', 'auth-edit', 'public-view', 'auth-view', 'private', 'inherit'].includes(requestedPermission)) {
+                    return res.status(400).json({ error: 'Invalid permission value' });
+                }
+                // Check if permission actually changed
+                if (note.permission !== requestedPermission) {
+                    permissionChanged = true;
+                    newPermission = requestedPermission;
+                }
                 updateData.permission = requestedPermission;
             }
             if (requestedCommentsEnabled !== undefined) {
@@ -528,6 +545,18 @@ router.put('/notes/:id', async (req, res) => {
         }
 
         await note.update(updateData);
+
+        // Broadcast permission change to all clients in the note room (if permission changed)
+        if (permissionChanged && newPermission !== null) {
+            const io = getIo();
+            if (io) {
+                io.to(note.id).emit('permission-changed', {
+                    noteId: note.id,
+                    permission: newPermission
+                });
+            }
+        }
+
         res.json({
             ...note.toJSON(),
             isOwner,
@@ -572,50 +601,6 @@ async function checkUserPermission(targetType, targetId, userId, requiredLevel) 
     if (requiredLevel === 'edit') return userPerm === 'edit';
     return false;
 }
-
-// Update Note Permission (owner only)
-router.put('/notes/:id/permission', async (req, res) => {
-    try {
-        const note = await db.Note.findByPk(req.params.id);
-        if (!note) return res.status(404).json({ error: 'Note not found' });
-
-        const userId = req.session.userId;
-        if (!userId) {
-            return res.status(401).json({ error: 'Login required' });
-        }
-
-        const isOwner = note.ownerId && note.ownerId === userId;
-        if (!isOwner) {
-            return res.status(403).json({ error: 'Only owner can change permission' });
-        }
-
-        const { permission } = req.body;
-
-        // 'inherit' is only valid for notes inside a book
-        if (permission === 'inherit' && !note.bookId) {
-            return res.status(400).json({ error: 'inherit permission is only valid for notes inside a book' });
-        }
-
-        if (!VALID_NOTE_PERMISSIONS.includes(permission)) {
-            return res.status(400).json({ error: 'Invalid permission value' });
-        }
-
-        await note.update({ permission, lastUpdaterId: userId });
-
-        // Broadcast permission change to all clients in the note room
-        const io = getIo();
-        if (io) {
-            io.to(note.id).emit('permission-changed', {
-                noteId: note.id,
-                permission
-            });
-        }
-
-        res.json({ success: true, permission });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
 
 // Get Note User Permissions (owner only)
 router.get('/notes/:id/user-permissions', async (req, res) => {
