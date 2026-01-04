@@ -7,6 +7,8 @@ import { ref, computed, onMounted, onUnmounted, inject, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
+import InfoModal from '@/components/common/InfoModal.vue'
+import { useSocket } from '@/composables/useSocket'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-tw'
@@ -16,6 +18,9 @@ dayjs.locale('zh-tw')
 
 const route = useRoute()
 const router = useRouter()
+
+// Socket
+const { joinNote, leaveNote, onUsersInNote, offUsersInNote, onPermissionChanged, offPermissionChanged } = useSocket()
 
 // Inject global functions
 const theme = inject('theme', ref('dark'))
@@ -30,11 +35,29 @@ const diagramData = ref({ elements: [], appState: {}, files: {} })
 const canEdit = ref(false)
 const isOwner = ref(false)
 const excalidrawRef = ref(null)
+const permission = ref('private')
 
 // Title editing
 const editingTitle = ref(false)
 const titleInput = ref(null)
 const localTitle = ref('')
+
+// Right actions UI state
+const onlineUsers = ref([])
+const showOnlineUsersPopup = ref(false)
+const showNoteMenu = ref(false)
+const showNoteInfoModal = ref(false)
+const noteInfoModalTab = ref('info')
+
+// Permission options (same as NoteView)
+const permissionOptions = [
+  { value: 'public-edit', label: '可編輯' },
+  { value: 'auth-edit', label: '可編輯(需登入)' },
+  { value: 'public-view', label: '唯讀' },
+  { value: 'auth-view', label: '唯讀(需登入)' },
+  { value: 'private', label: '私人' },
+  { value: 'inherit', label: '繼承書本' }
+]
 
 // Computed
 const noteId = computed(() => route.params.id)
@@ -43,6 +66,13 @@ const lastSavedText = computed(() => {
   if (!lastSaved.value) return ''
   return dayjs(lastSaved.value).fromNow()
 })
+
+// Note info for InfoModal
+const noteInfoItem = computed(() => ({
+  ...note.value,
+  isOwner: isOwner.value,
+  canEdit: canEdit.value
+}))
 
 // Load whiteboard data
 const loadWhiteboard = async () => {
@@ -61,7 +91,19 @@ const loadWhiteboard = async () => {
     diagramData.value = data.diagramData || { elements: [], appState: {}, files: {} }
     canEdit.value = data.canEdit
     isOwner.value = data.isOwner
+    permission.value = data.permission || 'private'
     lastSaved.value = data.lastEditedAt || data.updatedAt
+    
+    // Join socket room for online users
+    joinNote(data.id)
+    onUsersInNote((users) => {
+      onlineUsers.value = users
+    })
+    onPermissionChanged((newPerm) => {
+      permission.value = newPerm
+      // Reload to get updated canEdit status
+      loadWhiteboard()
+    })
   } catch (e) {
     console.error('Failed to load whiteboard:', e)
     if (e.message?.includes('404') || e.message?.includes('not found')) {
@@ -165,18 +207,80 @@ const forceSave = async () => {
   }
 }
 
+// Right actions functions
+const toggleOnlineUsersPopup = () => {
+  showOnlineUsersPopup.value = !showOnlineUsersPopup.value
+}
+
+const shareNote = async () => {
+  if (!note.value) return
+  
+  // Generate share link
+  const shareId = note.value.shareId || note.value.id
+  const shareUrl = `${window.location.origin}/s/${shareId}`
+  
+  try {
+    await navigator.clipboard.writeText(shareUrl)
+    showAlert?.('已複製分享連結', 'success')
+  } catch (e) {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea')
+    textarea.value = shareUrl
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    showAlert?.('已複製分享連結', 'success')
+  }
+}
+
+// Click outside handlers
+const handleDocumentClick = (e) => {
+  // Close online users popup
+  if (showOnlineUsersPopup.value) {
+    const isOnlineUsersBtn = e.target.closest('[data-online-users-btn]')
+    const isOnlineUsersPopup = e.target.closest('[data-online-users-popup]')
+    if (!isOnlineUsersBtn && !isOnlineUsersPopup) {
+      showOnlineUsersPopup.value = false
+    }
+  }
+}
+
+// Handle InfoModal update
+const handleNoteInfoUpdate = (updatedNote) => {
+  if (updatedNote) {
+    note.value = { ...note.value, ...updatedNote }
+    permission.value = updatedNote.permission || permission.value
+    localTitle.value = updatedNote.title || localTitle.value
+  }
+  showNoteInfoModal.value = false
+}
+
 // Lifecycle
 onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
   loadWhiteboard()
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
   // Save any pending changes
   forceSave()
+  // Leave socket room
+  if (note.value) {
+    leaveNote(note.value.id)
+    offUsersInNote()
+    offPermissionChanged()
+  }
 })
 
 // Watch for route changes
 watch(noteId, (newId, oldId) => {
+  if (oldId && note.value) {
+    leaveNote(note.value.id)
+    offUsersInNote()
+    offPermissionChanged()
+  }
   if (newId !== oldId) {
     forceSave()
     loadWhiteboard()
@@ -194,53 +298,111 @@ watch(noteId, (newId, oldId) => {
     
     <!-- Main Content -->
     <template v-else-if="note">
-      <!-- Header -->
-      <header class="whiteboard-header">
-        <div class="header-left">
-          <button class="back-btn" @click="goBack" title="返回">
+      <!-- Header (matching NoteView styling) -->
+      <header class="bg-gray-200 dark:bg-gray-900 dark:text-white px-3 py-2 flex items-center shadow-md z-30 shrink-0 relative">
+        <!-- Left: Back + Title + Save Status -->
+        <div class="flex-1 flex items-center space-x-2">
+          <button @click="goBack" 
+                  class="px-2 py-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
+                  title="返回">
             <i class="fas fa-arrow-left"></i>
           </button>
           
           <!-- Title -->
-          <div class="title-container">
-            <input
-              v-if="editingTitle"
-              ref="titleInput"
-              v-model="localTitle"
-              class="title-input"
-              @blur="saveTitle"
-              @keydown="handleTitleKeydown"
-            />
-            <h1 
-              v-else 
-              class="title"
-              :class="{ editable: canEdit }"
-              @click="startEditingTitle"
-            >
-              <i class="fas fa-chalkboard title-icon"></i>
-              {{ localTitle }}
-            </h1>
-          </div>
+          <span class="text-md bg-gray-300 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-xs">
+            <i class="fas fa-chalkboard mr-1 text-purple-500"></i>
+            <template v-if="editingTitle">
+              <input
+                ref="titleInput"
+                v-model="localTitle"
+                class="bg-transparent border-none outline-none text-sm w-40"
+                @blur="saveTitle"
+                @keydown="handleTitleKeydown"
+              />
+            </template>
+            <template v-else>
+              <span :class="{ 'cursor-pointer hover:text-blue-400': canEdit }" @click="startEditingTitle">
+                {{ localTitle }}
+              </span>
+            </template>
+          </span>
+          
+          <!-- Save Status -->
+          <span v-if="saving" class="text-xs text-gray-400 ml-2">儲存中...</span>
+          <span v-else class="text-xs text-gray-500 ml-2">{{ lastSavedText }} 已儲存</span>
         </div>
         
-        <div class="header-right">
-          <!-- Save Status -->
-          <div class="save-status">
-            <template v-if="saving">
-              <i class="fas fa-spinner fa-spin"></i>
-              <span>儲存中...</span>
-            </template>
-            <template v-else-if="lastSaved">
-              <i class="fas fa-check text-success"></i>
-              <span>{{ lastSavedText }} 已儲存</span>
-            </template>
+        <!-- Right Actions -->
+        <div class="flex-1 flex justify-end items-center space-x-3">
+          <!-- Read-only Badge -->
+          <div v-if="!canEdit" class="flex items-center space-x-1 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded text-sm text-yellow-700 dark:text-yellow-400">
+            <i class="fas fa-eye text-xs"></i>
+            <span>唯讀</span>
           </div>
           
-          <!-- Read-only Badge -->
-          <div v-if="!canEdit" class="readonly-badge">
-            <i class="fas fa-eye"></i>
-            <span>唯讀模式</span>
+          <!-- Online Users -->
+          <div class="relative">
+            <button @click="toggleOnlineUsersPopup" 
+                    data-online-users-btn
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fas fa-users text-xs"></i>
+              <span class="font-medium">{{ onlineUsers.length }}</span>
+            </button>
+            <div v-if="showOnlineUsersPopup" 
+                 data-online-users-popup
+                 class="absolute right-0 top-full mt-2 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 z-[60]">
+              <div class="p-3">
+                <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">
+                  <i class="fas fa-users mr-1"></i> 在線用戶 ({{ onlineUsers.length }})
+                </div>
+                <ul class="space-y-1 max-h-48 overflow-y-auto">
+                  <li v-for="(user, index) in onlineUsers" :key="index" class="flex items-center text-sm text-gray-800 dark:text-gray-200 py-1">
+                    <span class="w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium text-white shrink-0"
+                          :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
+                      {{ user.username?.charAt(0).toUpperCase() || '?' }}
+                    </span>
+                    <span class="truncate">{{ user.username || 'Guest' }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
+          
+          <!-- Permission -->
+          <button v-if="isOwner" @click="noteInfoModalTab = 'permission'; showNoteInfoModal = true;" 
+                  class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+            <i class="fas fa-lock text-xs"></i>
+            <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
+          </button>
+          
+          <!-- Note Menu Dropdown -->
+          <div class="relative">
+            <button @click="showNoteMenu = !showNoteMenu" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer">
+              <i class="fas fa-ellipsis-v text-xs"></i>
+              <span>更多</span>
+              <i class="fas fa-chevron-down text-xs ml-1"></i>
+            </button>
+            
+            <div v-if="showNoteMenu" 
+                 class="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[60]"
+                 @click.stop>
+              <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;"
+                      class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center cursor-pointer rounded-lg">
+                <i class="fas fa-cog w-5 mr-2"></i>白板設定
+              </button>
+            </div>
+            
+            <!-- Click outside to close -->
+            <div v-if="showNoteMenu" class="fixed inset-0 z-[55]" @click="showNoteMenu = false"></div>
+          </div>
+          
+          <!-- Share -->
+          <button v-if="canEdit || isOwner" @click="shareNote" 
+                  class="flex items-center space-x-1 bg-transparent hover:bg-green-600 dark:bg-gray-800 border border-green-600 px-3 py-1 rounded text-sm text-green-600 dark:text-green-500 hover:text-white transition cursor-pointer">
+            <i class="fas fa-share-alt text-xs"></i>
+            <span>分享</span>
+          </button>
         </div>
       </header>
       
@@ -255,6 +417,16 @@ watch(noteId, (newId, oldId) => {
         />
       </div>
     </template>
+    
+    <!-- Info Modal -->
+    <InfoModal
+      v-if="showNoteInfoModal"
+      :item="noteInfoItem"
+      type="note"
+      :initial-tab="noteInfoModalTab"
+      @close="showNoteInfoModal = false"
+      @update="handleNoteInfoUpdate"
+    />
   </div>
 </template>
 
@@ -303,7 +475,7 @@ watch(noteId, (newId, oldId) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 0.4rem 0.75rem;
   background: var(--bg-secondary, #f5f5f5);
   border-bottom: 1px solid var(--border-color, #e0e0e0);
   flex-shrink: 0;
@@ -312,7 +484,7 @@ watch(noteId, (newId, oldId) => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex: 1;
   min-width: 0;
 }
@@ -320,11 +492,11 @@ watch(noteId, (newId, oldId) => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .back-btn {
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.5rem;
   background: transparent;
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
@@ -346,7 +518,7 @@ watch(noteId, (newId, oldId) => {
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary, #333);
   margin: 0;
@@ -368,13 +540,13 @@ watch(noteId, (newId, oldId) => {
 
 .title-icon {
   color: var(--primary, #0066cc);
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .title-input {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.4rem;
   border: 2px solid var(--primary, #0066cc);
   border-radius: 6px;
   background: var(--bg-primary, #fff);
@@ -387,8 +559,8 @@ watch(noteId, (newId, oldId) => {
 .save-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.35rem;
+  font-size: 0.75rem;
   color: var(--text-secondary, #666);
 }
 
@@ -400,12 +572,148 @@ watch(noteId, (newId, oldId) => {
 .readonly-badge {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
   background: var(--warning-bg, #fff3cd);
   color: var(--warning, #856404);
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+}
+
+/* Action Buttons */
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-tertiary, #e5e5e5);
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary, #333);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--bg-hover, #d5d5d5);
+}
+
+.dark .action-btn {
+  background: var(--bg-tertiary, #3c3c3c);
+  color: var(--text-primary, #d4d4d4);
+}
+
+.dark .action-btn:hover {
+  background: var(--bg-hover, #4a4a4a);
+}
+
+/* Share Button */
+.share-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--success, #28a745);
+  border-radius: 6px;
+  color: var(--success, #28a745);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.share-btn:hover {
+  background: var(--success, #28a745);
+  color: white;
+}
+
+/* Popup Menu */
+.popup-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.35rem;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 60;
+}
+
+.popup-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary, #666);
+}
+
+.popup-list {
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.popup-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-primary, #333);
+}
+
+.user-avatar {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Menu Dropdown */
+.menu-dropdown {
+  min-width: 140px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--text-primary, #333);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background: var(--bg-hover, #f0f0f0);
+}
+
+.dark .popup-menu {
+  background: var(--bg-secondary, #252526);
+  border-color: var(--border-color, #3c3c3c);
+}
+
+.dark .popup-list-item,
+.dark .menu-item {
+  color: var(--text-primary, #d4d4d4);
+}
+
+.dark .menu-item:hover {
+  background: var(--bg-hover, #3a3a3a);
 }
 
 /* Whiteboard Container */
