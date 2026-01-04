@@ -147,7 +147,7 @@ io.on('connection', (socket) => {
 
         // Broadcast updated user list
         broadcastUsersInNote(noteId);
-        console.log(`User ${username} joined note ${noteId}`);
+        // console.log(`User ${username} joined note ${noteId}`);
     });
 
     socket.on('leave-note', (noteId) => {
@@ -165,7 +165,7 @@ io.on('connection', (socket) => {
                     broadcastUsersInNote(noteId);
                 }
             }
-            console.log(`Socket ${socket.id} left note ${noteId}`);
+            // console.log(`Socket ${socket.id} left note ${noteId}`);
         }
     });
 

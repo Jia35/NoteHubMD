@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import api from '@/composables/useApi'
+import { copyToClipboard } from '@/utils/clipboard'
 
 const props = defineProps({
   show: Boolean,
@@ -99,12 +100,12 @@ watch(() => props.item, (newItem) => {
 }, { immediate: true })
 
 const copyShareLink = async () => {
-  try {
-    await navigator.clipboard.writeText(shareUrl.value)
+  const success = await copyToClipboard(shareUrl.value)
+  if (success) {
     shareCopied.value = true
     setTimeout(() => { shareCopied.value = false }, 2000)
-  } catch (e) {
-    console.error('Failed to copy:', e)
+  } else {
+    console.error('Failed to copy')
   }
 }
 
@@ -202,12 +203,12 @@ const clearAlias = async () => {
 }
 
 const copyAliasUrl = async () => {
-  try {
-    await navigator.clipboard.writeText(aliasUrl.value)
+  const success = await copyToClipboard(aliasUrl.value)
+  if (success) {
     aliasCopied.value = true
     setTimeout(() => { aliasCopied.value = false }, 2000)
-  } catch (e) {
-    console.error('Failed to copy alias URL:', e)
+  } else {
+    console.error('Failed to copy alias URL')
   }
 }
 </script>

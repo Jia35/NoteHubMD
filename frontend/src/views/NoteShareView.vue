@@ -5,6 +5,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
+import { copyToClipboard } from '@/utils/clipboard'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-tw'
@@ -501,8 +502,8 @@ const renderContent = async () => {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
       
-      try {
-        await navigator.clipboard.writeText(code)
+      const success = await copyToClipboard(code)
+      if (success) {
         // Visual feedback
         const icon = btn.querySelector('i')
         icon.className = 'fa-solid fa-check'
@@ -511,8 +512,8 @@ const renderContent = async () => {
           icon.className = 'fa-regular fa-copy'
           btn.classList.remove('copied')
         }, 2000)
-      } catch (e) {
-        console.error('Failed to copy:', e)
+      } else {
+        console.error('Failed to copy')
       }
     })
   })
@@ -1189,6 +1190,7 @@ details[open] summary {
 .code-block-header {
     display: flex;
     justify-content: flex-start;
+    align-items: center;
     background-color: #f4f4f4;
     padding: 4px 12px;
     border-bottom: 1px solid #d3d3d3;
@@ -1217,7 +1219,7 @@ details[open] summary {
     padding: 2px 6px;
     border-radius: 4px;
     transition: all 0.2s ease;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 }
 .code-copy-btn:hover {
     background-color: rgba(0, 0, 0, 0.1);
