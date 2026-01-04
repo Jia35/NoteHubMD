@@ -49,7 +49,7 @@ const handleImportFolder = (event) => {
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ml-1">外觀</h3>
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                <i class="fa-solid fa-palette mr-2 text-gray-400"></i>主題模式
+                <i class="fa-solid fa-palette mr-2 text-gray-800 dark:text-white"></i>主題模式
               </span>
               <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
                 <button
@@ -80,7 +80,7 @@ const handleImportFolder = (event) => {
                 <i class="fa-solid fa-file-export"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="font-bold text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
+                <div class="text-sm text-gray-800 dark:text-white">匯出我的筆記</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate">下載所有筆記為 .zip 檔案</div>
               </div>
             </button>
@@ -94,7 +94,7 @@ const handleImportFolder = (event) => {
                   <i class="fa-solid fa-file-import"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="font-bold text-sm text-gray-800 dark:text-white">匯入筆記</div>
+                  <div class="text-sm text-gray-800 dark:text-white">匯入筆記</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
                 </div>
                 <i class="fa-solid fa-chevron-down text-gray-400 ml-2 text-sm"></i>
@@ -141,7 +141,7 @@ const handleImportFolder = (event) => {
                 <i class="fa-solid fa-book-open"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="font-bold text-sm text-gray-800 dark:text-white">NoteHubMD 使用手冊</div>
+                <div class="text-sm text-gray-800 dark:text-white">NoteHubMD 使用手冊</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 truncate">瞭解平台功能與 Markdown 語法</div>
               </div>
               <i class="fa-solid fa-arrow-up-right-from-square text-gray-400 ml-2 text-sm"></i>
