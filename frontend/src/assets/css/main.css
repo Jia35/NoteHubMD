@@ -9,6 +9,12 @@
     --color-dark-text: #e0e0e0;
 }
 
+html, body, #app {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Prevent body scroll, let app handle it */
+}
+
 button {
     cursor: pointer;
 }
