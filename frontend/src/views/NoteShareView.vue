@@ -759,7 +759,7 @@ watch(() => route.params.shareId, () => {
       <div class="flex-1 flex overflow-hidden">
         <!-- Book TOC Sidebar -->
         <div 
-          v-if="book && bookNotes.length > 1" 
+          v-if="book && bookNotes.length > 0" 
           v-show="showBookToc" 
           class="w-60 shrink-0 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col"
         >
@@ -786,7 +786,7 @@ watch(() => route.params.shareId, () => {
         </div>
 
         <!-- Expand Book TOC Button -->
-        <div v-if="book && bookNotes.length > 1 && !showBookToc" class="absolute left-0 top-40 z-30">
+        <div v-if="book && bookNotes.length > 0 && !showBookToc" class="absolute left-0 top-50 z-30">
           <button 
             @click="toggleBookToc" 
             class="bg-gray-100 dark:bg-gray-700 hover:bg-white dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 border-l-0 rounded-r-md shadow-md py-3 px-1.5 cursor-pointer flex flex-col items-center gap-1"
@@ -797,8 +797,8 @@ watch(() => route.params.shareId, () => {
         </div>
 
         <!-- Preview Content -->
-        <div class="flex-1 overflow-auto" ref="previewContainer" @scroll="handlePreviewScroll">
-          <div class="flex flex-col min-h-full">
+        <div class="flex-1" :class="noteType === 'excalidraw' ? 'overflow-hidden' : 'overflow-auto'" ref="previewContainer" @scroll="handlePreviewScroll">
+          <div class="flex flex-col" :class="noteType === 'excalidraw' ? 'h-full' : 'min-h-full'">
             <!-- Top Navigation -->
             <div v-if="book && bookNotes.length > 1" class="flex justify-center border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0">
               <div class="w-full px-2 py-0" style="max-width: 900px">
@@ -897,7 +897,7 @@ watch(() => route.params.shareId, () => {
             </div>
 
             <!-- Excalidraw Whiteboard (Read-only) -->
-            <div v-else-if="noteType === 'excalidraw'" class="flex-grow" style="min-height: 80vh;">
+            <div v-else-if="noteType === 'excalidraw'" class="flex-1 flex flex-col relative">
               <ExcalidrawWrapper
                 :initial-data="excalidrawData"
                 :theme="theme"
@@ -906,7 +906,7 @@ watch(() => route.params.shareId, () => {
             </div>
 
             <!-- Bottom Navigation -->
-            <div v-if="book && bookNotes.length > 1" class="flex justify-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 mt-auto">
+            <div v-if="book && bookNotes.length > 1 && noteType === 'markdown'" class="flex justify-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0 mt-auto">
               <div class="w-full px-4 py-1" style="max-width: 900px">
                 <div class="flex justify-between items-center text-sm">
                   <a v-if="prevNote" :href="getNoteShareLink(prevNote)" class="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition py-2">
@@ -1316,16 +1316,16 @@ details[open] summary {
     flex-direction: column !important;
 }
 
-/* Fix Veaury React wrapper height issue using flexbox */
-.excalidraw-wrapper > div {
+/* Fix Veaury React wrapper height issue using flexbox, but exclude our loading/error states */
+.excalidraw-wrapper > div:not(.excalidraw-loading):not(.excalidraw-error) {
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     height: auto !important;
 }
 
-/* Ensure grandchildren also expand */
-.excalidraw-wrapper > div > div {
+/* Ensure grandchildren also expand (for Veaury internal div), but protect spinner */
+.excalidraw-wrapper > div:not(.excalidraw-loading):not(.excalidraw-error) > div {
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
