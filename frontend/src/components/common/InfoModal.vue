@@ -388,7 +388,7 @@ const copyAliasUrl = async () => {
                 </button>
               </div>
               <!-- Info message only for markdown notes -->
-              <div v-if="type === 'note' && item?.noteType !== 'excalidraw'" class="flex flex-wrap gap-2 mt-2 mb-2">
+              <div v-if="type === 'note' && item?.noteType == 'markdown'" class="flex flex-wrap gap-2 mt-2 mb-2">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     <i class="fa-solid fa-info-circle mr-1"></i>
                     筆記標籤需在筆記內容中使用 <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">###### tags: `標籤名稱`</code> 語法進行編輯。
@@ -396,8 +396,8 @@ const copyAliasUrl = async () => {
               </div>
             </div>
 
-            <!-- Comments Toggle (for notes, Owner only) -->
-            <div v-if="type === 'note' && item?.isOwner" class="border-t border-gray-300 dark:border-gray-700 pt-4">
+            <!-- Comments Toggle (for markdown notes only, Owner only - whiteboards don't have comments) -->
+            <div v-if="type === 'note' && item?.noteType == 'markdown' && item?.isOwner" class="border-t border-gray-300 dark:border-gray-700 pt-4">
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
                   <i class="fa-solid fa-comments text-gray-500 mr-2"></i>

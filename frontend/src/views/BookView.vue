@@ -250,6 +250,8 @@ const openInfoModal = (item, tab = 'info', type = 'book') => {
     // For notes, use the note's data
     editablePermission.value = item.permission || 'inherit'
     infoCommentsEnabled.value = item.commentsEnabled !== false
+    // Set editable tags for the note
+    editableTags.value = item.tags ? [...item.tags] : []
   } else {
     // For books, use the book's data
     editableDescription.value = book.value.description || ''
@@ -270,31 +272,62 @@ const autoSaveBookDescription = async (desc) => {
   }
 }
 
-// Add tag to book
+// Add tag to book or note
 const addEditableTag = async (tagArg) => {
   const tag = tagArg || newTag.value?.trim()
   if (!tag || editableTags.value.includes(tag)) return
   editableTags.value.push(tag)
   newTag.value = ''
   try {
-    await api.updateBook(book.value.id, { tags: editableTags.value })
-    book.value.tags = [...editableTags.value]
+    if (infoModalType.value === 'note' && infoModalItem.value) {
+      // Update note tags
+      await api.updateNote(infoModalItem.value.id, { tags: editableTags.value })
+      const noteInList = book.value.notes.find(n => n.id === infoModalItem.value.id)
+      if (noteInList) noteInList.tags = [...editableTags.value]
+    } else {
+      // Update book tags
+      await api.updateBook(book.value.id, { tags: editableTags.value })
+      book.value.tags = [...editableTags.value]
+    }
   } catch (e) {
     showAlert?.('新增標籤失敗', 'error')
     editableTags.value = editableTags.value.filter(t => t !== tag)
   }
 }
 
-// Remove tag from book
+// Remove tag from book or note
 const removeEditableTag = async (tag) => {
   const prevTags = [...editableTags.value]
   editableTags.value = editableTags.value.filter(t => t !== tag)
   try {
-    await api.updateBook(book.value.id, { tags: editableTags.value })
-    book.value.tags = [...editableTags.value]
+    if (infoModalType.value === 'note' && infoModalItem.value) {
+      // Update note tags
+      await api.updateNote(infoModalItem.value.id, { tags: editableTags.value })
+      const noteInList = book.value.notes.find(n => n.id === infoModalItem.value.id)
+      if (noteInList) noteInList.tags = [...editableTags.value]
+    } else {
+      // Update book tags
+      await api.updateBook(book.value.id, { tags: editableTags.value })
+      book.value.tags = [...editableTags.value]
+    }
   } catch (e) {
     showAlert?.('移除標籤失敗', 'error')
     editableTags.value = prevTags
+  }
+}
+
+// Handle title update from InfoModal (for whiteboard notes)
+const handleTitleUpdate = async (newTitle) => {
+  if (!infoModalItem.value || infoModalType.value !== 'note') return
+  if (newTitle === infoModalItem.value.title) return
+  try {
+    await api.updateNote(infoModalItem.value.id, { title: newTitle })
+    infoModalItem.value.title = newTitle
+    // Update in notes list as well
+    const noteInList = book.value.notes.find(n => n.id === infoModalItem.value.id)
+    if (noteInList) noteInList.title = newTitle
+  } catch (e) {
+    showAlert?.('更新標題失敗', 'error')
   }
 }
 
@@ -608,6 +641,7 @@ watch(() => route.params.id, () => {
     @close="showInfoModal = false"
     @move-note="handleMoveNoteFromInfo"
     @update:tab="infoModalTab = $event"
+    @update:title="handleTitleUpdate"
     @update:description="autoSaveBookDescription"
     @update:newTag="newTag = $event"
     @add-tag="addEditableTag"
