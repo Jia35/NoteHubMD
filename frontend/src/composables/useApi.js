@@ -147,11 +147,18 @@ const api = {
         return res.json()
     },
 
-    async createNoteInBook(bookId) {
+    async createNoteInBook(bookId, type = 'markdown') {
+        const body = { noteType: type }
+        // Initialize empty diagram data for Excalidraw
+        if (type === 'excalidraw') {
+            body.diagramData = { elements: [], appState: {}, files: {} }
+            body.title = 'Untitled Whiteboard'
+        }
+
         const res = await fetch(`/api/books/${bookId}/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
+            body: JSON.stringify(body)
         })
         return res.json()
     },

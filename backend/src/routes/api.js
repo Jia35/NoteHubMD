@@ -1784,6 +1784,8 @@ router.post('/books/:id/notes', async (req, res) => {
                     id: id,
                     title: (req.body && req.body.title) || 'Untitled Note',
                     content: (req.body && req.body.content) || '',
+                    noteType: (req.body && req.body.noteType) || 'markdown',
+                    diagramData: (req.body && req.body.diagramData) || null,
                     bookId: book.id,
                     ownerId: userId,
                     permission: 'inherit', // Default to inherit from book

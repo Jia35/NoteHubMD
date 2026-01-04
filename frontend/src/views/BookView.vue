@@ -37,6 +37,8 @@ const displayMode = ref(localStorage.getItem('NoteHubMD-bookDisplayMode') || 'li
 
 // Menu state
 const openMenuId = ref(null)
+const showCreateMenu = ref(false)
+const showBottomCreateMenu = ref(false)
 
 // Info Modal state
 const showInfoModal = ref(false)
@@ -177,10 +179,10 @@ const initSortable = () => {
 }
 
 // Create note in book
-const createNote = async () => {
+const createNote = async (type = 'markdown') => {
   if (!book.value) return
   try {
-    const note = await api.createNoteInBook(book.value.id)
+    const note = await api.createNoteInBook(book.value.id, type)
     window.location.href = '/n/' + note.id
   } catch (e) {
     if (e.message?.includes('Cannot add notes')) {
@@ -201,9 +203,19 @@ const toggleMenu = (id) => {
   openMenuId.value = openMenuId.value === id ? null : id
 }
 
+const toggleCreateMenu = () => {
+    showCreateMenu.value = !showCreateMenu.value
+}
+
+const toggleBottomCreateMenu = () => {
+    showBottomCreateMenu.value = !showBottomCreateMenu.value
+}
+
 // Close menu
 const closeMenu = () => {
   openMenuId.value = null
+  showCreateMenu.value = false
+  showBottomCreateMenu.value = false
 }
 
 // Toggle pin
@@ -422,9 +434,27 @@ watch(() => route.params.id, () => {
               {{ book.title }}
             </h1>
           <div class="flex items-center gap-3">
-              <button v-if="canAddNote" @click="createNote" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition cursor-pointer">
-                  <i class="fa-solid fa-plus mr-1"></i>新增筆記
-              </button>
+              <div v-if="canAddNote" class="relative inline-block text-left mr-2" ref="topCreateMenuCtn">
+                  <div class="flex shadow-sm rounded-md">
+                      <button @click="createNote('markdown')" class="bg-blue-600 text-white px-3 py-1 rounded-l text-sm hover:bg-blue-700 transition cursor-pointer flex items-center border-r border-blue-700">
+                          <i class="fa-solid fa-plus mr-1"></i>新增筆記
+                      </button>
+                      <button @click.stop="toggleCreateMenu" class="bg-blue-600 text-white px-2 py-1 rounded-r text-sm hover:bg-blue-700 transition cursor-pointer">
+                          <i class="fa-solid fa-chevron-down text-xs"></i>
+                      </button>
+                  </div>
+                  <!-- Dropdown Content -->
+                  <div v-if="showCreateMenu" class="absolute right-0 mt-2 w-full min-w-[6rem] bg-white dark:bg-gray-800 border-2 border-blue-600 rounded-md shadow-lg z-50 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden">
+                      <div class="py-1">
+                          <button @click="createNote('markdown')" class="group flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                              <i class="fa-solid fa-file-lines w-5 text-blue-500 mr-1"></i>新增筆記
+                          </button>
+                          <button @click="createNote('excalidraw')" class="group flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                              <i class="fa-solid fa-chalkboard w-5 text-purple-500 mr-1"></i>新增白板
+                          </button>
+                      </div>
+                  </div>
+              </div>
               <!-- Permission Button (Owner only) / Display (Non-owner) -->
               <button v-if="isOwner" @click="openInfoModal(book, 'permission', 'book')" 
                       class="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer"
@@ -475,7 +505,9 @@ watch(() => route.params.id, () => {
       </div>
 
       <!-- Notes List -->
-      <div ref="notesList" class="bg-white dark:bg-dark-surface rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+      <!-- Notes List -->
+      <div ref="notesList" class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700">
+          <div class="overflow-hidden rounded-t-lg">
           <div v-for="note in sortedNotes" :key="note.id" :data-id="note.id" 
                class="note-item p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center" 
                @click="openNote(note)"
@@ -511,11 +543,30 @@ watch(() => route.params.id, () => {
           <div v-if="!sortedNotes || sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
               這本書裡還沒有筆記。
           </div>
+          </div>
           <!-- Add Note Button at bottom -->
-          <div v-if="canAddNote" class="p-4">
-            <button @click="createNote" class="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition flex items-center justify-center cursor-pointer">
-              <i class="fa-solid fa-plus mr-2"></i>新增筆記
-            </button>
+          <div v-if="canAddNote" class="p-4 rounded-b-lg">
+            <div class="relative">
+                <div class="flex shadow-sm rounded-md w-full">
+                    <button @click="createNote('markdown')" class="flex-1 py-2 text-sm bg-gray-50 dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-l transition flex items-center justify-center cursor-pointer border-r border-gray-200 dark:border-gray-600">
+                        <i class="fa-solid fa-plus mr-2"></i>新增筆記
+                    </button>
+                     <button @click.stop="toggleBottomCreateMenu" class="px-4 py-2 bg-gray-50 dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-r transition cursor-pointer flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                </div>
+                 <!-- Dropdown Content -->
+                  <div v-if="showBottomCreateMenu" class="absolute top-full left-0 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden border border-gray-100 dark:border-gray-700">
+                      <div class="py-1">
+                          <button @click="createNote('markdown')" class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                              <i class="fa-solid fa-file-lines w-5 text-blue-500 mr-2"></i>新增筆記
+                          </button>
+                          <button @click="createNote('excalidraw')" class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-left">
+                              <i class="fa-solid fa-chalkboard w-5 text-purple-500 mr-2"></i>新增白板
+                          </button>
+                      </div>
+                  </div>
+            </div>
           </div>
       </div>
     </div>
