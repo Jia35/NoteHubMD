@@ -157,8 +157,8 @@ const loadWhiteboard = async () => {
     onUsersInNote((users) => {
       onlineUsers.value = users
     })
-    onPermissionChanged((newPerm) => {
-      permission.value = newPerm
+    onPermissionChanged((data) => {
+      permission.value = data.permission
       // Reload to get updated canEdit status
       loadWhiteboard()
     })

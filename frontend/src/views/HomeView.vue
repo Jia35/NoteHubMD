@@ -240,7 +240,7 @@ const autoSavePermission = async (newPermission) => {
       const bookIndex = books.value.findIndex(b => b.id === infoModalItem.value.id)
       if (bookIndex !== -1) books.value[bookIndex].permission = newPermission
     } else {
-      await api.updateNote(infoModalItem.value.id, { newPermission })
+      await api.updateNote(infoModalItem.value.id, { permission: newPermission })
       const noteIndex = notes.value.findIndex(n => n.id === infoModalItem.value.id)
       if (noteIndex !== -1) notes.value[noteIndex].permission = newPermission
     }

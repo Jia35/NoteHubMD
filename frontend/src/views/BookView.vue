@@ -346,7 +346,7 @@ const autoSavePermission = async (newPermission) => {
       if (book.value) book.value.permission = newPermission
       permission.value = newPermission
     } else {
-      await api.updateNote(infoModalItem.value.id, { newPermission })
+      await api.updateNote(infoModalItem.value.id, { permission: newPermission })
       const note = book.value.notes.find(n => n.id === infoModalItem.value.id)
       if (note) note.permission = newPermission
     }
