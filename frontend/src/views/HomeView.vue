@@ -411,7 +411,7 @@ const handleCreateBook = () => {
 
 // Delete book
 const deleteBook = async (book) => {
-  const confirmed = await showConfirm?.(`確定要刪除「${book.title}」嗎？`, '刪除確認')
+  const confirmed = await showConfirm?.(`確定要將「${book.title}」移至垃圾桶嗎？`, '刪除')
   if (!confirmed) return
   try {
     await api.deleteBook(book.id)
@@ -424,7 +424,7 @@ const deleteBook = async (book) => {
 
 // Delete note
 const deleteNote = async (note) => {
-  const confirmed = await showConfirm?.(`確定要刪除「${note.title || 'Untitled'}」嗎？`, '刪除確認')
+  const confirmed = await showConfirm?.(`確定要將「${note.title || 'Untitled'}」移至垃圾桶嗎？`, '刪除')
   if (!confirmed) return
   try {
     await api.deleteNote(note.id)

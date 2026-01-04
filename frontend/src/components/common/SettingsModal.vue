@@ -85,7 +85,7 @@ const handleImportFolder = (event) => {
               </div>
             </button>
             <!-- Import Notes -->
-            <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip" class="hidden">
+            <input type="file" ref="importFileInput" @change="handleImportFile" accept=".md,.zip,.excalidraw" class="hidden">
             <input type="file" ref="importFolderInput" @change="handleImportFolder" webkitdirectory class="hidden">
             <div class="relative mt-2">
               <button @click="showImportMenu = !showImportMenu"
@@ -95,7 +95,7 @@ const handleImportFolder = (event) => {
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm text-gray-800 dark:text-white">匯入筆記</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.zip 或資料夾</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">上傳 .md、.excalidraw 或 .zip</div>
                 </div>
                 <i class="fa-solid fa-chevron-down text-gray-400 ml-2 text-sm"></i>
               </button>
@@ -105,7 +105,7 @@ const handleImportFolder = (event) => {
                 <button @click="importFileInput?.click(); showImportMenu = false"
                         class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left cursor-pointer">
                   <i class="fa-solid fa-file text-blue-500 mr-3"></i>
-                  <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md 或 .zip)</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-200">上傳檔案 (.md, .excalidraw, .zip)</span>
                 </button>
                 <button @click="importFolderInput?.click(); showImportMenu = false"
                         class="flex items-center w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-t border-gray-100 dark:border-gray-700 cursor-pointer">

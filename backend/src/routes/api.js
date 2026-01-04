@@ -2641,10 +2641,10 @@ const importUpload = multer({
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
     fileFilter: (req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
-        if (ext === '.md' || ext === '.zip') {
+        if (ext === '.md' || ext === '.zip' || ext === '.excalidraw') {
             cb(null, true);
         } else {
-            cb(new Error('Invalid file type. Only .md and .zip are allowed.'));
+            cb(new Error('Invalid file type. Only .md, .excalidraw and .zip are allowed.'));
         }
     }
 });
@@ -2652,8 +2652,8 @@ const importUpload = multer({
 // Parse filename to determine if it's a book note or standalone
 // Book note format: {{bookTitle}}__{{order}}__{{noteTitle}}.md
 function parseImportFilename(filename) {
-    // Remove .md extension
-    const nameWithoutExt = filename.replace(/\.md$/i, '');
+    // Remove extension
+    const nameWithoutExt = filename.replace(/\.(md|excalidraw)$/i, '');
 
     // Check for book format: bookTitle__order__noteTitle
     const bookMatch = nameWithoutExt.match(/^(.+?)__(\d+)__(.+)$/);
@@ -2689,39 +2689,57 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
         const filePath = req.file.path;
         const ext = path.extname(req.file.originalname).toLowerCase();
 
-        let mdFiles = []; // Array of { filename, content }
+        let importFiles = []; // Array of { filename, content, type }
+        const isZip = ext === '.zip';
 
-        if (ext === '.zip') {
-            // Extract .md files from zip
+        if (isZip) {
+            // Extract files from zip
             const zip = new AdmZip(filePath);
             const entries = zip.getEntries();
 
             for (const entry of entries) {
-                if (!entry.isDirectory && entry.entryName.toLowerCase().endsWith('.md')) {
+                if (entry.isDirectory) continue;
+
+                const entryName = entry.entryName.toLowerCase();
+                const isMd = entryName.endsWith('.md');
+                const isExcalidraw = entryName.endsWith('.excalidraw');
+
+                if (isMd || isExcalidraw) {
                     // Get just the filename (without directory path)
                     const filename = path.basename(entry.entryName);
                     const content = entry.getData().toString('utf8');
-                    mdFiles.push({ filename, content });
+                    importFiles.push({
+                        filename,
+                        content,
+                        type: isExcalidraw ? 'excalidraw' : 'markdown'
+                    });
                 }
             }
         } else {
-            // Single .md file
-            const content = fs.readFileSync(filePath, 'utf8');
-            mdFiles.push({ filename: req.file.originalname, content });
+            // Single file
+            const isExcalidraw = ext === '.excalidraw';
+            if (ext === '.md' || isExcalidraw) {
+                const content = fs.readFileSync(filePath, 'utf8');
+                importFiles.push({
+                    filename: req.file.originalname,
+                    content,
+                    type: isExcalidraw ? 'excalidraw' : 'markdown'
+                });
+            }
         }
 
         // Clean up temp file
         fs.unlinkSync(filePath);
 
-        if (mdFiles.length === 0) {
-            return res.status(400).json({ error: 'No .md files found' });
+        if (importFiles.length === 0) {
+            return res.status(400).json({ error: 'No valid files (.md or .excalidraw) found' });
         }
 
         // Group notes by book
         const bookNotes = {}; // { bookTitle: [{ order, noteTitle, content }] }
         const standaloneNotes = []; // [{ noteTitle, content }]
 
-        for (const { filename, content } of mdFiles) {
+        for (const { filename, content, type } of importFiles) {
             const parsed = parseImportFilename(filename);
 
             if (parsed.isBookNote) {
@@ -2731,12 +2749,14 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
                 bookNotes[parsed.bookTitle].push({
                     order: parsed.order,
                     noteTitle: parsed.noteTitle,
-                    content
+                    content,
+                    type
                 });
             } else {
                 standaloneNotes.push({
                     noteTitle: parsed.noteTitle,
-                    content
+                    content,
+                    type
                 });
             }
         }
@@ -2787,11 +2807,31 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
 
                 while (retry < 5) {
                     try {
+                        const isWhiteboard = noteData.type === 'excalidraw';
+                        let diagramData = null;
+                        let noteContent = noteData.content;
+                        let tags = [];
+
+                        if (isWhiteboard) {
+                            try {
+                                diagramData = JSON.parse(noteData.content);
+                                noteContent = ''; // Clear content for whiteboard, or maybe keep description if any?
+                            } catch (e) {
+                                console.error('Failed to parse excalidraw content', e);
+                                // Fallback or skip? Let's treat as text if fail? No, just empty diagram
+                                diagramData = { elements: [], appState: {}, files: {} };
+                            }
+                        } else {
+                            tags = parseTags(noteData.content);
+                        }
+
                         const note = await db.Note.create({
                             id: noteId,
                             title: noteData.noteTitle,
-                            content: noteData.content,
-                            tags: parseTags(noteData.content),
+                            content: noteContent,
+                            noteType: isWhiteboard ? 'excalidraw' : 'markdown',
+                            diagramData: diagramData,
+                            tags: tags,
                             bookId: book.id,
                             order: i,
                             ownerId: userId
@@ -2817,11 +2857,30 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
 
             while (retry < 5) {
                 try {
+                    const isWhiteboard = noteData.type === 'excalidraw';
+                    let diagramData = null;
+                    let noteContent = noteData.content;
+                    let tags = [];
+
+                    if (isWhiteboard) {
+                        try {
+                            diagramData = JSON.parse(noteData.content);
+                            noteContent = '';
+                        } catch (e) {
+                            console.error('Failed to parse excalidraw content', e);
+                            diagramData = { elements: [], appState: {}, files: {} };
+                        }
+                    } else {
+                        tags = parseTags(noteData.content);
+                    }
+
                     const note = await db.Note.create({
                         id: noteId,
                         title: noteData.noteTitle,
-                        content: noteData.content,
-                        tags: parseTags(noteData.content),
+                        content: noteContent,
+                        noteType: isWhiteboard ? 'excalidraw' : 'markdown',
+                        diagramData: diagramData,
+                        tags: tags,
                         ownerId: userId
                     });
                     createdNotes.push({ id: note.id, title: note.title });
@@ -2860,10 +2919,11 @@ const importFolderUpload = multer({
     storage: multer.memoryStorage(), // Use memory storage for folder uploads
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max total
     fileFilter: (req, file, cb) => {
-        if (file.originalname.toLowerCase().endsWith('.md')) {
+        const lowerName = file.originalname.toLowerCase();
+        if (lowerName.endsWith('.md') || lowerName.endsWith('.excalidraw')) {
             cb(null, true);
         } else {
-            cb(null, false); // Silently skip non-.md files
+            cb(null, false); // Silently skip
         }
     }
 });
@@ -2881,18 +2941,22 @@ router.post('/import/notes-folder', importFolderUpload.array('files', 500), asyn
 
         const userId = req.session.userId;
 
-        // Convert files to mdFiles array
+        // Convert files to importFiles array
         // Fix encoding: browser sends filename as Latin-1, need to decode as UTF-8
-        const mdFiles = req.files.map(file => ({
-            filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-            content: file.buffer.toString('utf8')
-        }));
+        const importFiles = req.files.map(file => {
+            const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+            return {
+                filename: originalName,
+                content: file.buffer.toString('utf8'),
+                type: originalName.toLowerCase().endsWith('.excalidraw') ? 'excalidraw' : 'markdown'
+            };
+        });
 
         // Group notes by book (same logic as single file import)
         const bookNotes = {};
         const standaloneNotes = [];
 
-        for (const { filename, content } of mdFiles) {
+        for (const { filename, content, type } of importFiles) {
             const parsed = parseImportFilename(filename);
 
             if (parsed.isBookNote) {
@@ -2902,12 +2966,14 @@ router.post('/import/notes-folder', importFolderUpload.array('files', 500), asyn
                 bookNotes[parsed.bookTitle].push({
                     order: parsed.order,
                     noteTitle: parsed.noteTitle,
-                    content
+                    content,
+                    type
                 });
             } else {
                 standaloneNotes.push({
                     noteTitle: parsed.noteTitle,
-                    content
+                    content,
+                    type
                 });
             }
         }
@@ -2956,11 +3022,30 @@ router.post('/import/notes-folder', importFolderUpload.array('files', 500), asyn
 
                 while (retry < 5) {
                     try {
+                        const isWhiteboard = noteData.type === 'excalidraw';
+                        let diagramData = null;
+                        let noteContent = noteData.content;
+                        let tags = [];
+
+                        if (isWhiteboard) {
+                            try {
+                                diagramData = JSON.parse(noteData.content);
+                                noteContent = '';
+                            } catch (e) {
+                                console.error('Failed to parse excalidraw content', e);
+                                diagramData = { elements: [], appState: {}, files: {} };
+                            }
+                        } else {
+                            tags = parseTags(noteData.content);
+                        }
+
                         const note = await db.Note.create({
                             id: noteId,
                             title: noteData.noteTitle,
-                            content: noteData.content,
-                            tags: parseTags(noteData.content),
+                            content: noteContent,
+                            noteType: isWhiteboard ? 'excalidraw' : 'markdown',
+                            diagramData: diagramData,
+                            tags: tags,
                             bookId: book.id,
                             order: i,
                             ownerId: userId
@@ -2986,11 +3071,30 @@ router.post('/import/notes-folder', importFolderUpload.array('files', 500), asyn
 
             while (retry < 5) {
                 try {
+                    const isWhiteboard = noteData.type === 'excalidraw';
+                    let diagramData = null;
+                    let noteContent = noteData.content;
+                    let tags = [];
+
+                    if (isWhiteboard) {
+                        try {
+                            diagramData = JSON.parse(noteData.content);
+                            noteContent = '';
+                        } catch (e) {
+                            console.error('Failed to parse excalidraw content', e);
+                            diagramData = { elements: [], appState: {}, files: {} };
+                        }
+                    } else {
+                        tags = parseTags(noteData.content);
+                    }
+
                     const note = await db.Note.create({
                         id: noteId,
                         title: noteData.noteTitle,
-                        content: noteData.content,
-                        tags: parseTags(noteData.content),
+                        content: noteContent,
+                        noteType: isWhiteboard ? 'excalidraw' : 'markdown',
+                        diagramData: diagramData,
+                        tags: tags,
                         ownerId: userId
                     });
                     createdNotes.push({ id: note.id, title: note.title });

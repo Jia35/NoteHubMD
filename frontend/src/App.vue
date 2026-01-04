@@ -18,6 +18,9 @@ const modal = ref({
   resolve: null
 })
 
+// View Key for force refresh
+const routerViewKey = ref(0)
+
 const showAlert = (message, type = 'info', title = '') => {
   return new Promise((resolve) => {
     modal.value = {
@@ -218,10 +221,9 @@ const handleImportFile = async (event) => {
     }
 
     showAlert(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
-    // Reload sidebar to reflect changes
     await loadSidebarData(true)
-    // If on home page or similar, reload might be needed, but sidebar update handles the menu
-    // If current view depends on sidebar data (like HomeView), it reactively updates
+    // Force refresh current view to update lists (e.g. HomeView notes)
+    routerViewKey.value++
   } catch (e) {
     showAlert('匯入失敗：' + e.message, 'error')
   } finally {
@@ -234,9 +236,12 @@ const handleImportFolder = async (event) => {
   const files = event.target.files
   if (!files || files.length === 0) return
 
-  const mdFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.md'))
-  if (mdFiles.length === 0) {
-    showAlert('資料夾中沒有找到 .md 檔案', 'warning')
+  const validFiles = Array.from(files).filter(f => {
+    const name = f.name.toLowerCase()
+    return name.endsWith('.md') || name.endsWith('.excalidraw')
+  })
+  if (validFiles.length === 0) {
+    showAlert('資料夾中沒有找到 .md 或 .excalidraw 檔案', 'warning')
     event.target.value = ''
     return
   }
@@ -244,7 +249,7 @@ const handleImportFolder = async (event) => {
   importingNotes.value = true
   try {
     const formData = new FormData()
-    mdFiles.forEach(file => {
+    validFiles.forEach(file => {
       formData.append('files', file)
     })
 
@@ -259,7 +264,9 @@ const handleImportFolder = async (event) => {
     }
 
     showAlert(`匯入成功！建立了 ${result.stats.books} 本書本、${result.stats.notes} 篇筆記`, 'success')
+
     await loadSidebarData(true)
+    routerViewKey.value++
   } catch (e) {
     showAlert('匯入失敗：' + e.message, 'error')
   } finally {
@@ -379,12 +386,12 @@ onMounted(async () => {
 
       <!-- Main Content Area -->
       <div class="flex-1 overflow-y-auto w-full relative">
-        <RouterView />
+        <RouterView :key="routerViewKey" />
       </div>
     </div>
 
     <!-- Layout without Sidebar (Login, NoteView, etc.) -->
-    <RouterView v-else />
+    <RouterView v-else :key="routerViewKey" />
 
     <!-- Global Modals -->
     <CreateBookModal 
