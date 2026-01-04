@@ -36,6 +36,8 @@ const canEdit = ref(false)
 const isOwner = ref(false)
 const excalidrawRef = ref(null)
 const permission = ref('private')
+const currentUser = ref(null)
+const books = ref([])
 
 // Title editing
 const editingTitle = ref(false)
@@ -94,8 +96,23 @@ const loadWhiteboard = async () => {
     permission.value = data.permission || 'private'
     lastSaved.value = data.lastEditedAt || data.updatedAt
     
-    // Join socket room for online users
-    joinNote(data.id)
+    // Fetch current user for socket
+    try {
+      currentUser.value = await api.getMe()
+    } catch (e) {
+      currentUser.value = null
+    }
+    
+    // Fetch books for InfoModal
+    try {
+      books.value = await api.getBooks()
+    } catch (e) {
+      books.value = []
+    }
+    
+    // Join socket room for online users with actual username
+    const username = currentUser.value?.username || 'Guest'
+    joinNote(data.id, username)
     onUsersInNote((users) => {
       onlineUsers.value = users
     })
@@ -212,26 +229,10 @@ const toggleOnlineUsersPopup = () => {
   showOnlineUsersPopup.value = !showOnlineUsersPopup.value
 }
 
-const shareNote = async () => {
-  if (!note.value) return
-  
-  // Generate share link
-  const shareId = note.value.shareId || note.value.id
-  const shareUrl = `${window.location.origin}/s/${shareId}`
-  
-  try {
-    await navigator.clipboard.writeText(shareUrl)
-    showAlert?.('已複製分享連結', 'success')
-  } catch (e) {
-    // Fallback for older browsers
-    const textarea = document.createElement('textarea')
-    textarea.value = shareUrl
-    document.body.appendChild(textarea)
-    textarea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textarea)
-    showAlert?.('已複製分享連結', 'success')
-  }
+// Share note - opens modal with share tab
+const shareNote = () => {
+  noteInfoModalTab.value = 'share'
+  showNoteInfoModal.value = true
 }
 
 // Click outside handlers
@@ -246,14 +247,16 @@ const handleDocumentClick = (e) => {
   }
 }
 
-// Handle InfoModal update
-const handleNoteInfoUpdate = (updatedNote) => {
-  if (updatedNote) {
-    note.value = { ...note.value, ...updatedNote }
-    permission.value = updatedNote.permission || permission.value
-    localTitle.value = updatedNote.title || localTitle.value
+// Handle permission change from InfoModal
+const handlePermissionChange = async (newPerm) => {
+  try {
+    await api.updateNote(note.value.id, { permission: newPerm })
+    permission.value = newPerm
+    showAlert?.('權限已更新', 'success')
+  } catch (e) {
+    console.error('Failed to update permission:', e)
+    showAlert?.('更新權限失敗', 'error')
   }
-  showNoteInfoModal.value = false
 }
 
 // Lifecycle
@@ -420,12 +423,15 @@ watch(noteId, (newId, oldId) => {
     
     <!-- Info Modal -->
     <InfoModal
-      v-if="showNoteInfoModal"
-      :item="noteInfoItem"
+      :show="showNoteInfoModal"
       type="note"
-      :initial-tab="noteInfoModalTab"
+      :item="noteInfoItem"
+      :tab="noteInfoModalTab"
+      :editable-permission="permission"
+      :books="books"
       @close="showNoteInfoModal = false"
-      @update="handleNoteInfoUpdate"
+      @update:tab="noteInfoModalTab = $event"
+      @update:permission="handlePermissionChange"
     />
   </div>
 </template>
