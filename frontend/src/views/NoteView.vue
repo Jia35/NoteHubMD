@@ -1038,7 +1038,13 @@ const scrollToBottom = () => {
 const scrollToHeading = (id) => {
   const el = document.getElementById(id)
   if (el) {
+    // Set flag to prevent scroll sync from interfering with smooth scroll
+    isProgrammaticScrolling.value = true
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Reset flag after scroll animation completes
+    setTimeout(() => {
+      isProgrammaticScrolling.value = false
+    }, 1000)
   }
 }
 
