@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
 import { NoteCard, InfoModal } from '@/components'
 import dayjs from 'dayjs'
+import Sortable from 'sortablejs'
 
 const route = useRoute()
 const router = useRouter()
@@ -145,13 +146,16 @@ const loadBook = async () => {
 }
 
 // Initialize SortableJS
-const initSortable = () => {
+const initSortable = async () => {
+  // Wait for DOM to update before accessing refs
+  await nextTick()
+  
   if (sortableInstance) {
     sortableInstance.destroy()
     sortableInstance = null
   }
-  // Check if Sortable is available globally and notesList exists
-  if (typeof Sortable === 'undefined' || !notesList.value || !canEdit.value) return
+  // Check if Sortable is available and notesList exists
+  if (!Sortable || !notesList.value || !canEdit.value) return
 
   sortableInstance = new Sortable(notesList.value, {
     animation: 150,
@@ -583,8 +587,8 @@ watch(() => route.params.id, () => {
 
       <!-- Notes List -->
       <!-- Notes List -->
-      <div ref="notesList" class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700">
-          <div class="overflow-hidden rounded-t-lg">
+      <div class="bg-white dark:bg-dark-surface rounded-lg shadow border border-gray-200 dark:border-gray-700">
+          <div ref="notesList" class="overflow-hidden rounded-t-lg">
           <div v-for="note in sortedNotes" :key="note.id" :data-id="note.id" 
                class="note-item p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center" 
                @click="openNote(note)"
