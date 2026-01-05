@@ -243,6 +243,7 @@ const editingCommentId = ref(null)
 const editCommentContent = ref('')
 const openMenuId = ref(null)
 const commentTextareaFocused = ref(false)
+const commentTextarea = ref(null)
 
 // Note owner/editor info
 const noteOwner = ref(null)
@@ -1936,6 +1937,167 @@ const handleCommentBlur = () => {
   commentTextareaFocused.value = false
 }
 
+// --- Comment Markdown Toolbar Functions ---
+const insertCommentMarkdown = (prefix, suffix = prefix) => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = newComment.value
+  const selectedText = text.substring(start, end)
+  
+  const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end)
+  newComment.value = newText
+  
+  // Restore focus and selection
+  nextTick(() => {
+    textarea.focus()
+    if (selectedText) {
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length)
+    } else {
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+    }
+  })
+}
+
+const insertCommentPrefix = (prefix) => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const text = newComment.value
+  
+  // Find the start of the current line
+  let lineStart = text.lastIndexOf('\n', start - 1) + 1
+  
+  // Check if line already has this prefix
+  if (text.substring(lineStart).startsWith(prefix)) {
+    // Remove prefix
+    const newText = text.substring(0, lineStart) + text.substring(lineStart + prefix.length)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start - prefix.length, start - prefix.length)
+    })
+  } else {
+    // Add prefix
+    const newText = text.substring(0, lineStart) + prefix + text.substring(lineStart)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+    })
+  }
+}
+
+const insertCommentLink = () => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = newComment.value
+  const selectedText = text.substring(start, end)
+  
+  if (selectedText) {
+    const newText = text.substring(0, start) + '[' + selectedText + '](url)' + text.substring(end)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(end + 3, end + 6) // Select 'url'
+    })
+  } else {
+    const newText = text.substring(0, start) + '[連結文字](url)' + text.substring(end)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + 1, start + 5) // Select '連結文字'
+    })
+  }
+}
+
+const insertCommentCodeBlock = () => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = newComment.value
+  const selectedText = text.substring(start, end)
+  
+  const codeBlock = '```\n' + selectedText + '\n```'
+  const newText = text.substring(0, start) + codeBlock + text.substring(end)
+  newComment.value = newText
+  
+  nextTick(() => {
+    textarea.focus()
+    // Position cursor after the opening ``` and newline
+    textarea.setSelectionRange(start + 4, start + 4 + selectedText.length)
+  })
+}
+
+const insertCommentImage = () => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = newComment.value
+  const selectedText = text.substring(start, end)
+  
+  if (selectedText) {
+    // Use selected text as alt text
+    const newText = text.substring(0, start) + '![' + selectedText + '](圖片網址)' + text.substring(end)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(end + 4, end + 8) // Select '圖片網址'
+    })
+  } else {
+    const newText = text.substring(0, start) + '![圖片說明](圖片網址)' + text.substring(end)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + 2, start + 6) // Select '圖片說明'
+    })
+  }
+}
+
+const insertCommentOrderedList = () => {
+  const textarea = commentTextarea.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const text = newComment.value
+  
+  // Find the start of the current line
+  let lineStart = text.lastIndexOf('\n', start - 1) + 1
+  const lineText = text.substring(lineStart)
+  
+  // Check if line already has ordered list pattern
+  const match = lineText.match(/^(\d+)\.\s/)
+  if (match) {
+    // Remove prefix
+    const prefixLength = match[0].length
+    const newText = text.substring(0, lineStart) + text.substring(lineStart + prefixLength)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start - prefixLength, start - prefixLength)
+    })
+  } else {
+    // Add prefix "1. "
+    const prefix = '1. '
+    const newText = text.substring(0, lineStart) + prefix + text.substring(lineStart)
+    newComment.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+    })
+  }
+}
+
 const setupIntersectionObserver = () => {
   if (tocObserver) tocObserver.disconnect()
   
@@ -2426,6 +2588,48 @@ watch(() => route.params.id, (newId, oldId) => {
                         <span v-else>{{ currentUser.username?.charAt(0).toUpperCase() || '?' }}</span>
                       </div>
                       <div class="flex-1">
+                        <!-- Markdown Toolbar (shown when focused or has content) -->
+                        <div v-show="(commentTextareaFocused || newComment.trim()) && !commentPreviewMode" 
+                             class="flex items-center gap-0.5 p-1 bg-gray-100 dark:bg-gray-700 rounded-t-lg border border-gray-300 dark:border-gray-600">
+                          <button @click="insertCommentMarkdown('**')" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="粗體">
+                              <i class="fa-solid fa-bold"></i>
+                          </button>
+                          <button @click="insertCommentMarkdown('*')" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="斜體">
+                              <i class="fa-solid fa-italic"></i>
+                          </button>
+                          <button @click="insertCommentMarkdown('~~')" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="刪除線">
+                              <i class="fa-solid fa-strikethrough"></i>
+                          </button>
+                          <button @click="insertCommentCodeBlock" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="程式碼區塊">
+                              <i class="fa-solid fa-code"></i>
+                          </button>
+                          <div class="w-px h-4 bg-gray-300 dark:bg-gray-500 mx-0.5"></div>
+                          <button @click="insertCommentPrefix('- ')" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="無序清單">
+                              <i class="fa-solid fa-list-ul"></i>
+                          </button>
+                          <button @click="insertCommentOrderedList" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="有序清單">
+                              <i class="fa-solid fa-list-ol"></i>
+                          </button>
+                          <button @click="insertCommentPrefix('- [ ] ')" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="勾選清單">
+                              <i class="fa-regular fa-square-check"></i>
+                          </button>
+                          <div class="w-px h-4 bg-gray-300 dark:bg-gray-500 mx-0.5"></div>
+                          <button @click="insertCommentLink" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="連結">
+                              <i class="fa-solid fa-link"></i>
+                          </button>
+                          <button @click="insertCommentImage" type="button"
+                              class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs" title="圖片">
+                              <i class="fa-solid fa-image"></i>
+                          </button>
+                        </div>
                         <!-- Textarea for editing -->
                         <textarea v-show="!commentPreviewMode" v-model="newComment" 
                             placeholder="寫下你的留言..."
@@ -2433,7 +2637,8 @@ watch(() => route.params.id, (newId, oldId) => {
                             @focus="commentTextareaFocused = true"
                             @blur="handleCommentBlur"
                             @input="autoGrowCommentTextarea"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
+                            :class="commentTextareaFocused ? 'rounded-b-lg' : 'rounded-lg'"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
                             :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
                             :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
                         <!-- Preview area -->
