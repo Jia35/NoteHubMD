@@ -1041,10 +1041,24 @@ const scrollToHeading = (id) => {
     // Set flag to prevent scroll sync from interfering with smooth scroll
     isProgrammaticScrolling.value = true
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    // Reset flag after scroll animation completes
+    
+    // After scroll animation completes, sync editor position
     setTimeout(() => {
-      isProgrammaticScrolling.value = false
-    }, 1000)
+      // Sync editor to match preview scroll position
+      if (mode.value === 'both' && previewContainer.value && editorView.value?.scrollDOM) {
+        const preview = previewContainer.value
+        const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
+        const scroller = editorView.value.scrollDOM
+        scroller.scrollTo({
+          top: percentage * (scroller.scrollHeight - scroller.clientHeight),
+          behavior: 'smooth'
+        })
+      }
+      // Reset programmatic scrolling flag after editor also finishes scrolling
+      setTimeout(() => {
+        isProgrammaticScrolling.value = false
+      }, 500)
+    }, 600)
   }
 }
 
