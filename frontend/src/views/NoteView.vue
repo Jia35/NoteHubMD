@@ -1328,7 +1328,52 @@ const toggleStrikethrough = () => toggleWrap('~~')
 const toggleUnderline = () => toggleWrap('++')
 const toggleSuperscript = () => toggleWrap('^')
 const toggleSubscript = () => toggleWrap('~')
-const toggleInlineCode = () => toggleWrap('`')
+
+
+// Toggle task list item (- [ ])
+const toggleTaskList = () => {
+  if (!editorView.value) return
+  const view = editorView.value
+  const { state } = view
+  const { from } = state.selection.main
+  const line = state.doc.lineAt(from)
+  
+  // Check if line already has task list pattern
+  const taskMatch = line.text.match(/^(\s*)(- \[[x ]\] )/i)
+  if (taskMatch) {
+    // Remove task list prefix
+    view.dispatch({
+      changes: {
+        from: line.from + taskMatch[1].length,
+        to: line.from + taskMatch[0].length,
+        insert: ''
+      }
+    })
+  } else {
+    // Check if it's a regular list item
+    const listMatch = line.text.match(/^(\s*)(- )/)
+    if (listMatch) {
+      // Convert to task list
+      view.dispatch({
+        changes: {
+          from: line.from + listMatch[1].length,
+          to: line.from + listMatch[0].length,
+          insert: '- [ ] '
+        }
+      })
+    } else {
+      // Add task list at beginning
+      view.dispatch({
+        changes: {
+          from: line.from,
+          to: line.from,
+          insert: '- [ ] '
+        }
+      })
+    }
+  }
+  view.focus()
+}
 
 const cycleHeading = () => {
   if (!editorView.value) return
@@ -2236,12 +2281,12 @@ watch(() => route.params.id, (newId, oldId) => {
                 <button @click="toggleOrderedList" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Ordered List">
                     <i class="fa-solid fa-list-ol"></i>
                 </button>
-                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
-                <button @click="toggleInlineCode" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Inline Code">
-                    <i class="fa-solid fa-code"></i>
+                <button @click="toggleTaskList" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="勾選清單">
+                    <i class="fa-regular fa-square-check"></i>
                 </button>
+                <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
                 <button @click="insertCodeBlock" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Code Block">
-                    <i class="fa-solid fa-file-code"></i>
+                    <i class="fa-solid fa-code"></i>
                 </button>
                 <button @click="insertTable" class="p-0.5 px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors text-sm" title="Table">
                     <i class="fa-solid fa-table"></i>
