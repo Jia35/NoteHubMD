@@ -2788,7 +2788,7 @@ watch(() => route.params.id, (newId, oldId) => {
                               </div>
                             </div>
                             <!-- Valid Content -->
-                            <div v-else class="text-gray-700 dark:text-gray-300 text-sm markdown-body comment-body" v-html="renderCommentMarkdown(comment.content)"></div>
+                            <div v-else class="text-gray-700 dark:text-gray-300 text-sm markdown-body comment-body" style="background-color: transparent;" v-html="renderCommentMarkdown(comment.content)"></div>
                           </div>
                         </div>
                       </div>
@@ -3368,4 +3368,5 @@ watch(() => route.params.id, (newId, oldId) => {
 .tab-content.active {
     display: block;
 }
+
 </style>
