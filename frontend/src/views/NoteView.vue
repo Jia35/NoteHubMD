@@ -2479,17 +2479,79 @@ watch(() => route.params.id, (newId, oldId) => {
                       <!-- Main Comment -->
                       <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                         <div class="flex items-start space-x-3">
-                          <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden text-white text-sm"
-                               :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
-                            <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
-                            <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                          <!-- Avatar with User Info Tooltip -->
+                          <div class="relative group shrink-0">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden text-white text-sm cursor-pointer"
+                                 :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
+                              <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                              <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                            </div>
+                            <!-- User Info Tooltip -->
+                            <div v-if="comment.user" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                              <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
+                                <!-- Arrow -->
+                                <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                                <div class="relative z-10 p-3">
+                                  <div class="flex items-center space-x-3 mb-2">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
+                                         :class="comment.user.avatar ? '' : 'bg-blue-600'">
+                                      <img v-if="comment.user.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                                      <span v-else>{{ comment.user.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                      <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
+                                        {{ comment.user.name || comment.user.username }}
+                                      </div>
+                                      <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        @{{ comment.user.username }}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div v-if="comment.user.email" class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                                    <i class="fa-solid fa-envelope mr-1.5 text-gray-400"></i>
+                                    <span class="truncate">{{ comment.user.email }}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between mb-1">
                               <div class="flex items-center space-x-2">
-                                <span class="font-medium text-gray-800 dark:text-white text-sm">
-                                  {{ comment.user?.name || comment.user?.username || '匿名' }}
-                                </span>
+                                <!-- Username with User Info Tooltip -->
+                                <div class="relative group/name inline-block">
+                                  <span class="font-medium text-gray-800 dark:text-white text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                    {{ comment.user?.name || comment.user?.username || '匿名' }}
+                                  </span>
+                                  <!-- User Info Tooltip for Name -->
+                                  <div v-if="comment.user" class="absolute left-0 top-full pt-2 hidden group-hover/name:block z-50">
+                                    <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
+                                      <!-- Arrow -->
+                                      <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                                      <div class="relative z-10 p-3">
+                                        <div class="flex items-center space-x-3 mb-2">
+                                          <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
+                                               :class="comment.user.avatar ? '' : 'bg-blue-600'">
+                                            <img v-if="comment.user.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                                            <span v-else>{{ comment.user.username?.charAt(0).toUpperCase() || '?' }}</span>
+                                          </div>
+                                          <div class="flex-1 min-w-0">
+                                            <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
+                                              {{ comment.user.name || comment.user.username }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                              @{{ comment.user.username }}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div v-if="comment.user.email" class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                                          <i class="fa-solid fa-envelope mr-1.5 text-gray-400"></i>
+                                          <span class="truncate">{{ comment.user.email }}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
                                 <span class="text-xs text-gray-400">{{ formatCommentTime(comment.createdAt) }}</span>
                               </div>
                               <!-- Dropdown Menu -->
