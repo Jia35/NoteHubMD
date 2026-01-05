@@ -255,12 +255,7 @@ md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   let output = '<div class="code-block-wrapper">'
   
   // Add header with language and copy button
-  if (actualLang) {
-    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span>${copyBtnHtml}</div>`
-  } else {
-    // Still add header for copy button even if no language
-    output += `<div class="code-block-header"><span class="code-lang"></span>${copyBtnHtml}</div>`
-  }
+  output += `<div class="code-block-header"><span class="code-lang">${actualLang ? actualLang : 'code'}</span>${copyBtnHtml}</div>`
 
   output += `<pre class="${classes.join(' ')}"><code>${finalCodeHtml}</code></pre>`
   output += '</div>'
@@ -802,7 +797,7 @@ watch(() => route.params.shareId, () => {
           <div class="flex flex-col" :class="noteType === 'excalidraw' ? 'h-full' : 'min-h-full'">
             <!-- Top Navigation -->
             <div v-if="book && bookNotes.length > 1" class="flex justify-center border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shrink-0">
-              <div class="w-full px-2 py-0" style="max-width: 900px">
+              <div class="w-full px-2 py-0" style="max-width: 800px;">
                 <div class="flex justify-between items-center text-sm">
                   <a v-if="prevNote" :href="getNoteShareLink(prevNote)" class="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition py-2">
                     <i class="fa-solid fa-chevron-left mr-2"></i>
@@ -1126,7 +1121,7 @@ details[open] summary {
 
 .hljs.has-line-numbers .code-line-numbers {
     flex-shrink: 0;
-    padding: 16px 12px;
+    padding: 8px 12px;
     text-align: right;
     user-select: none;
     color: #6e7681;
@@ -1134,7 +1129,7 @@ details[open] summary {
     border-right: 1px solid rgba(0, 0, 0, 0.1);
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .hljs.has-line-numbers .code-line-number {
@@ -1144,11 +1139,11 @@ details[open] summary {
 
 .hljs.has-line-numbers .code-content {
     flex: 1;
-    padding: 12px;
+    padding: 8px 12px;
     overflow-x: auto;
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .hljs.has-line-numbers .code-line {

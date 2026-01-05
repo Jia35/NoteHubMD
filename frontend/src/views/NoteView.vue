@@ -427,12 +427,7 @@ md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   let output = '<div class="code-block-wrapper">'
   
   // Add header with language and copy button
-  if (actualLang) {
-    output += `<div class="code-block-header"><span class="code-lang">${actualLang}</span>${copyBtnHtml}</div>`
-  } else {
-    // Still add header for copy button even if no language
-    output += `<div class="code-block-header"><span class="code-lang"></span>${copyBtnHtml}</div>`
-  }
+  output += `<div class="code-block-header"><span class="code-lang">${actualLang ? actualLang : 'code'}</span>${copyBtnHtml}</div>`
 
   output += `<pre class="${classes.join(' ')}"><code>${finalCodeHtml}</code></pre>`
   output += '</div>'
@@ -2815,7 +2810,7 @@ watch(() => route.params.id, (newId, oldId) => {
 
 .hljs.has-line-numbers .code-line-numbers {
     flex-shrink: 0;
-    padding: 16px 12px;
+    padding: 8px 12px;
     text-align: right;
     user-select: none;
     color: #6e7681;
@@ -2823,7 +2818,7 @@ watch(() => route.params.id, (newId, oldId) => {
     border-right: 1px solid rgba(0, 0, 0, 0.1);
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .hljs.has-line-numbers .code-line-number {
@@ -2833,11 +2828,11 @@ watch(() => route.params.id, (newId, oldId) => {
 
 .hljs.has-line-numbers .code-content {
     flex: 1;
-    padding: 12px;
+    padding: 8px 12px;
     overflow-x: auto;
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .hljs.has-line-numbers .code-line {
