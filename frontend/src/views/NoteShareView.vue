@@ -1134,7 +1134,7 @@ details[open] summary {
 
 .hljs.has-line-numbers .code-line-number {
     display: block;
-    min-width: 1.5em;
+    min-width: 1.2em;
 }
 
 .hljs.has-line-numbers .code-content {

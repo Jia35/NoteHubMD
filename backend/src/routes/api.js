@@ -2354,15 +2354,45 @@ router.get('/config/features', (req, res) => {
 // Get comments for a note
 router.get('/notes/:id/comments', async (req, res) => {
     try {
+        const userId = req.session.userId || null;
+
         const comments = await db.Comment.findAll({
             where: { noteId: req.params.id },
             include: [
-                { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] }
+                { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] },
+                { model: db.CommentReaction, as: 'reactions' }
             ],
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'ASC']]
         });
-        res.json(comments);
+
+        // Process comments to add reaction counts and user's reactions
+        const processedComments = comments.map(comment => {
+            const c = comment.toJSON();
+
+            // Count reactions by type
+            const reactionCounts = {};
+            const userReactions = [];
+
+            if (c.reactions && Array.isArray(c.reactions)) {
+                for (const r of c.reactions) {
+                    reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
+                    if (userId && r.userId === userId) {
+                        userReactions.push(r.type);
+                    }
+                }
+            }
+
+            // Remove raw reactions array, return summary
+            delete c.reactions;
+            c.reactionCounts = reactionCounts;
+            c.userReactions = userReactions;
+
+            return c;
+        });
+
+        res.json(processedComments);
     } catch (e) {
+        console.error('Get comments error:', e.message);
         res.status(500).json({ error: e.message });
     }
 });
@@ -2492,7 +2522,100 @@ router.delete('/comments/:id', async (req, res) => {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
+        // Delete all replies (child comments) first
+        await db.Comment.destroy({
+            where: { parentId: comment.id }
+        });
+
+        // Delete the comment itself
         await comment.destroy();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Comment Reactions ---
+
+// Add reaction to a comment (toggle: if exists, remove it)
+router.post('/comments/:id/reactions', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const { type } = req.body;
+        const validTypes = ['like', 'ok', 'laugh', 'surprise', 'sad'];
+        if (!type || !validTypes.includes(type)) {
+            return res.status(400).json({ error: 'Invalid reaction type' });
+        }
+
+        const comment = await db.Comment.findByPk(req.params.id);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Check if user has same reaction already (toggle off)
+        const existingSame = await db.CommentReaction.findOne({
+            where: {
+                commentId: req.params.id,
+                userId: req.session.userId,
+                type
+            }
+        });
+
+        if (existingSame) {
+            // Toggle off - remove the reaction
+            await existingSame.destroy();
+            res.json({ action: 'removed', type });
+        } else {
+            // Remove any existing reaction from this user on this comment (only one reaction allowed)
+            await db.CommentReaction.destroy({
+                where: {
+                    commentId: req.params.id,
+                    userId: req.session.userId
+                }
+            });
+
+            // Add new reaction
+            await db.CommentReaction.create({
+                commentId: req.params.id,
+                userId: req.session.userId,
+                type
+            });
+            res.json({ action: 'added', type });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Remove specific reaction from a comment
+router.delete('/comments/:id/reactions/:type', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        const { type } = req.params;
+        const validTypes = ['like', 'ok', 'laugh', 'surprise', 'sad'];
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({ error: 'Invalid reaction type' });
+        }
+
+        const reaction = await db.CommentReaction.findOne({
+            where: {
+                commentId: req.params.id,
+                userId: req.session.userId,
+                type
+            }
+        });
+
+        if (!reaction) {
+            return res.status(404).json({ error: 'Reaction not found' });
+        }
+
+        await reaction.destroy();
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

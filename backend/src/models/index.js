@@ -76,6 +76,17 @@ db.Comment.belongsTo(db.Note, { foreignKey: 'noteId' });
 db.User.hasMany(db.Comment, { foreignKey: 'userId' });
 db.Comment.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 
+// Comment reply self-reference
+db.Comment.belongsTo(db.Comment, { foreignKey: 'parentId', as: 'parent' });
+db.Comment.hasMany(db.Comment, { foreignKey: 'parentId', as: 'replies' });
+
+// CommentReaction model and associations
+db.CommentReaction = require('./CommentReaction')(sequelize, Sequelize);
+db.Comment.hasMany(db.CommentReaction, { foreignKey: 'commentId', as: 'reactions' });
+db.CommentReaction.belongsTo(db.Comment, { foreignKey: 'commentId' });
+db.User.hasMany(db.CommentReaction, { foreignKey: 'userId' });
+db.CommentReaction.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+
 // NoteRevision associations
 db.Note.hasMany(db.NoteRevision, { foreignKey: 'noteId', as: 'revisions' });
 db.NoteRevision.belongsTo(db.Note, { foreignKey: 'noteId' });

@@ -478,7 +478,7 @@ const api = {
     },
 
     async deleteComment(noteId, commentId) {
-        const res = await fetch('/api/notes/' + noteId + '/comments/' + commentId, {
+        const res = await fetch('/api/comments/' + commentId, {
             method: 'DELETE'
         })
         if (!res.ok) throw new Error('Failed to delete comment')
@@ -492,6 +492,17 @@ const api = {
             body: JSON.stringify(data)
         })
         if (!res.ok) throw new Error('Failed to update comment')
+        return res.json()
+    },
+
+    // Comment reactions
+    async toggleCommentReaction(commentId, type) {
+        const res = await fetch('/api/comments/' + commentId + '/reactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        })
+        if (!res.ok) throw new Error('Failed to toggle reaction')
         return res.json()
     },
 

@@ -1839,10 +1839,17 @@ const formatDate = (date) => dayjs(date).format('YYYY/MM/DD HH:mm')
 
 // Comment methods
 const topLevelComments = computed(() => {
-  // Assuming API returns flat list, we might need to process it if we want threading
-  // For now, let's assume flat list logic similar to note.html
-  return comments.value.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  // Filter to only show top-level comments (no parentId)
+  return comments.value
+    .filter(c => !c.parentId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
 })
+
+const getReplies = (parentId) => {
+  return comments.value
+    .filter(c => c.parentId === parentId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+}
 
 const renderCommentMarkdown = (text) => {
   if (!text) return ''
@@ -1895,7 +1902,8 @@ const deleteComment = async (id) => {
   if (!await showConfirm?.('確定要刪除這則留言嗎？')) return
   try {
     await api.deleteComment(note.value.id, id)
-    comments.value = comments.value.filter(c => c.id !== id)
+    // Remove the comment and all its replies from local state
+    comments.value = comments.value.filter(c => c.id !== id && c.parentId !== id)
   } catch (e) {
     showAlert?.('刪除失敗', 'error')
   }
@@ -1924,6 +1932,101 @@ const updateComment = async (id) => {
     editCommentContent.value = ''
   } catch (e) {
     showAlert?.('更新留言失敗', 'error')
+  }
+}
+
+// Reply state
+const replyingToId = ref(null)       // The comment ID where reply input is shown
+const replyingToParentId = ref(null) // The actual parentId to use when submitting
+const replyingToUser = ref(null)     // The user being replied to (for @mention)
+const replyContent = ref('')
+
+// --- Comment Reactions ---
+const getReactionIcon = (type) => {
+  const icons = {
+    like: 'fa-solid fa-thumbs-up text-blue-500',
+    ok: 'fa-solid fa-circle-check text-green-500',
+    laugh: 'fa-solid fa-face-laugh-squint text-yellow-500',
+    surprise: 'fa-solid fa-face-surprise text-amber-500',
+    sad: 'fa-solid fa-face-sad-tear text-sky-500'
+  }
+  return icons[type] || 'fa-solid fa-heart text-gray-400'
+}
+
+const toggleReaction = async (commentId, type) => {
+  if (!currentUser.value) {
+    showAlert?.('請先登入才能使用反應功能', 'error')
+    return
+  }
+  try {
+    const result = await api.toggleCommentReaction(commentId, type)
+    // Update local state
+    const comment = comments.value.find(c => c.id === commentId)
+    if (comment) {
+      if (!comment.reactionCounts) comment.reactionCounts = {}
+      if (!comment.userReactions) comment.userReactions = []
+      
+      if (result.action === 'added') {
+        // Remove old reaction count if user had a previous reaction (only one allowed)
+        for (const oldType of comment.userReactions) {
+          if (oldType !== type && comment.reactionCounts[oldType]) {
+            comment.reactionCounts[oldType]--
+            if (comment.reactionCounts[oldType] <= 0) {
+              delete comment.reactionCounts[oldType]
+            }
+          }
+        }
+        // Set new reaction
+        comment.reactionCounts[type] = (comment.reactionCounts[type] || 0) + 1
+        comment.userReactions = [type] // Only one reaction allowed
+      } else if (result.action === 'removed') {
+        comment.reactionCounts[type] = (comment.reactionCounts[type] || 1) - 1
+        if (comment.reactionCounts[type] <= 0) {
+          delete comment.reactionCounts[type]
+        }
+        comment.userReactions = []
+      }
+    }
+  } catch (e) {
+    showAlert?.('操作失敗', 'error')
+  }
+}
+
+// --- Comment Replies ---
+const startReply = (comment, isReplyToReply = false, topLevelCommentId = null) => {
+  if (isReplyToReply && topLevelCommentId) {
+    // Replying to a reply: show input under the reply, but parentId is top-level comment
+    replyingToId.value = comment.id  // Show input under this reply
+    replyingToParentId.value = topLevelCommentId  // Actual parentId for flat structure
+    replyingToUser.value = comment.user
+    replyContent.value = `@${comment.user?.name || comment.user?.username || '用戶'} `
+  } else {
+    // Replying to a top-level comment
+    replyingToId.value = comment.id
+    replyingToParentId.value = comment.id
+    replyingToUser.value = null
+    replyContent.value = ''
+  }
+}
+
+const cancelReply = () => {
+  replyingToId.value = null
+  replyingToParentId.value = null
+  replyingToUser.value = null
+  replyContent.value = ''
+}
+
+const submitReply = async () => {
+  if (!replyContent.value.trim() || !replyingToParentId.value) return
+  try {
+    const reply = await api.addComment(note.value.id, replyContent.value.trim(), replyingToParentId.value)
+    comments.value.push(reply)
+    replyingToId.value = null
+    replyingToParentId.value = null
+    replyingToUser.value = null
+    replyContent.value = ''
+  } catch (e) {
+    showAlert?.('回覆失敗', 'error')
   }
 }
 
@@ -2637,7 +2740,7 @@ watch(() => route.params.id, (newId, oldId) => {
                             @focus="commentTextareaFocused = true"
                             @blur="handleCommentBlur"
                             @input="autoGrowCommentTextarea"
-                            :class="commentTextareaFocused ? 'rounded-b-lg' : 'rounded-lg'"
+                            :class="(commentTextareaFocused || newComment.trim()) && !commentPreviewMode ? 'rounded-b-lg' : 'rounded-lg'"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
                             :rows="commentTextareaFocused || newComment.trim() ? 3 : 1"
                             :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
@@ -2651,8 +2754,8 @@ watch(() => route.params.id, (newId, oldId) => {
                             style="min-height: 76px;">
                             沒有內容可預覽
                         </div>
-                        <div class="flex justify-between items-center mt-1">
-                          <div class="text-xs text-gray-400"><span v-show="commentTextareaFocused">支援 Markdown 語法</span></div>
+                        <div v-show="commentTextareaFocused || newComment.trim()" class="flex justify-between items-center mt-1">
+                          <div class="text-xs text-gray-400"><span>支援 Markdown 語法</span></div>
                           <div class="flex gap-2">
                             <button @click="commentPreviewMode = !commentPreviewMode"
                                 :class="commentPreviewMode ? 'bg-gray-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
@@ -2712,10 +2815,6 @@ watch(() => route.params.id, (newId, oldId) => {
                                       </div>
                                     </div>
                                   </div>
-                                  <div v-if="comment.user.email" class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                                    <i class="fa-solid fa-envelope mr-1.5 text-gray-400"></i>
-                                    <span class="truncate">{{ comment.user.email }}</span>
-                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -2749,10 +2848,6 @@ watch(() => route.params.id, (newId, oldId) => {
                                             </div>
                                           </div>
                                         </div>
-                                        <div v-if="comment.user.email" class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                                          <i class="fa-solid fa-envelope mr-1.5 text-gray-400"></i>
-                                          <span class="truncate">{{ comment.user.email }}</span>
-                                        </div>
                                       </div>
                                     </div>
                                   </div>
@@ -2761,7 +2856,7 @@ watch(() => route.params.id, (newId, oldId) => {
                               </div>
                               <!-- Dropdown Menu -->
                               <div v-if="canEditComment(comment) || canDeleteComment(comment)" class="relative">
-                                <button @click.stop="toggleCommentMenu(comment.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <button @click.stop="toggleCommentMenu(comment.id)" data-comment-menu class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                   <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
                                 <div v-if="openMenuId === comment.id" 
@@ -2789,6 +2884,204 @@ watch(() => route.params.id, (newId, oldId) => {
                             </div>
                             <!-- Valid Content -->
                             <div v-else class="text-gray-700 dark:text-gray-300 text-sm markdown-body comment-body" style="background-color: transparent;" v-html="renderCommentMarkdown(comment.content)"></div>
+                            
+                            <!-- Reactions Display -->
+                            <div v-if="Object.keys(comment.reactionCounts || {}).length > 0" class="flex items-center gap-2 mt-2 flex-wrap">
+                              <span v-for="(count, type) in comment.reactionCounts" :key="type"
+                                    @click="toggleReaction(comment.id, type)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition"
+                                    :class="comment.userReactions?.includes(type) 
+                                      ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700' 
+                                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'">
+                                <i :class="getReactionIcon(type)"></i>
+                                <span>{{ count }}</span>
+                              </span>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex items-center gap-3 mt-2">
+                              <!-- Like Button with Reaction Picker -->
+                              <div class="relative group/reaction">
+                                <button @click="toggleReaction(comment.id, 'like')" class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1 pb-2 -mb-2"
+                                        :class="comment.userReactions?.includes('like') ? 'text-blue-500' : ''">
+                                  <i :class="comment.userReactions?.includes('like') ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
+                                  <span>讚</span>
+                                </button>
+                                <!-- Reaction Picker Tooltip -->
+                                <div class="absolute -left-4 bottom-full hidden group-hover/reaction:block z-50 pb-1">
+                                  <div class="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 flex items-center gap-1">
+                                    <button @click.stop="toggleReaction(comment.id, 'like')" 
+                                            class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
+                                            :class="comment.userReactions?.includes('like') ? 'bg-blue-100 dark:bg-blue-900' : ''"
+                                            title="讚">
+                                      <i class="fa-solid fa-thumbs-up text-blue-500"></i>
+                                    </button>
+                                    <button @click.stop="toggleReaction(comment.id, 'ok')" 
+                                            class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
+                                            :class="comment.userReactions?.includes('ok') ? 'bg-green-100 dark:bg-green-900' : ''"
+                                            title="OK">
+                                      <i class="fa-solid fa-circle-check text-green-500"></i>
+                                    </button>
+                                    <button @click.stop="toggleReaction(comment.id, 'laugh')" 
+                                            class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
+                                            :class="comment.userReactions?.includes('laugh') ? 'bg-yellow-100 dark:bg-yellow-900' : ''"
+                                            title="哈哈">
+                                      <i class="fa-solid fa-face-laugh-squint text-yellow-500"></i>
+                                    </button>
+                                    <button @click.stop="toggleReaction(comment.id, 'surprise')" 
+                                            class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
+                                            :class="comment.userReactions?.includes('surprise') ? 'bg-amber-100 dark:bg-amber-900' : ''"
+                                            title="驚訝">
+                                      <i class="fa-solid fa-face-surprise text-amber-500"></i>
+                                    </button>
+                                    <button @click.stop="toggleReaction(comment.id, 'sad')" 
+                                            class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
+                                            :class="comment.userReactions?.includes('sad') ? 'bg-sky-100 dark:bg-sky-900' : ''"
+                                            title="難過">
+                                      <i class="fa-solid fa-face-sad-tear text-sky-500"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <!-- Reply Button -->
+                              <button v-if="currentUser" @click="startReply(comment)" 
+                                      class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1">
+                                <i class="fa-regular fa-comment"></i>
+                                <span>回覆</span>
+                              </button>
+                            </div>
+                            
+                            <!-- Reply Input -->
+                            <div v-if="replyingToId === comment.id" class="mt-3 pl-4 border-l-2 border-blue-400">
+                              <textarea v-model="replyContent" 
+                                        placeholder="輸入回覆..."
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                        rows="2"></textarea>
+                              <div class="flex justify-end gap-2 mt-2">
+                                <button @click="cancelReply" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:opacity-80">取消</button>
+                                <button @click="submitReply()" :disabled="!replyContent.trim()" 
+                                        class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">回覆</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Replies -->
+                        <div v-if="getReplies(comment.id).length > 0" class="mt-4 pl-6 border-l-2 border-gray-200 dark:border-gray-700 space-y-4">
+                          <div v-for="reply in getReplies(comment.id)" :key="reply.id" 
+                               class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="flex items-start space-x-3">
+                              <!-- Reply Avatar (same size as main comment) -->
+                              <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden text-white text-sm shrink-0"
+                                   :class="reply.user ? 'bg-blue-600' : 'bg-gray-500'">
+                                <img v-if="reply.user?.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" alt="">
+                                <span v-else>{{ reply.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                              </div>
+                              <div class="flex-1 min-w-0">
+                                <!-- Reply Header with Menu -->
+                                <div class="flex items-center justify-between mb-1">
+                                  <div class="flex items-center gap-2">
+                                    <span class="font-medium text-gray-800 dark:text-white text-sm">
+                                      {{ reply.user?.name || reply.user?.username || '匿名' }}
+                                    </span>
+                                    <span class="text-xs text-gray-400">{{ formatCommentTime(reply.createdAt) }}</span>
+                                  </div>
+                                  <!-- Reply Menu -->
+                                  <div v-if="canEditComment(reply) || canDeleteComment(reply)" class="relative">
+                                    <button @click="toggleCommentMenu(reply.id)" data-comment-menu
+                                        class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <div v-if="openMenuId === reply.id" class="comment-menu-dropdown absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                                      <button v-if="canEditComment(reply)" @click="startEditComment(reply)" 
+                                          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                        <i class="fa-solid fa-pen mr-2"></i>編輯
+                                      </button>
+                                      <button v-if="canDeleteComment(reply)" @click="deleteComment(reply.id)" 
+                                          class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center">
+                                        <i class="fa-solid fa-trash mr-2"></i>刪除
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <!-- Edit Mode for Reply -->
+                                <div v-if="editingCommentId === reply.id">
+                                  <textarea v-model="editCommentContent" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all mb-2"
+                                    rows="3"></textarea>
+                                  <div class="flex justify-end gap-2">
+                                    <button @click="cancelEditComment" class="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:opacity-80">取消</button>
+                                    <button @click="updateComment(reply.id)" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">儲存</button>
+                                  </div>
+                                </div>
+                                <!-- Reply Content -->
+                                <div v-else class="text-gray-700 dark:text-gray-300 text-sm markdown-body comment-body" style="background-color: transparent;" v-html="renderCommentMarkdown(reply.content)"></div>
+                                
+                                <!-- Reply Reactions Display -->
+                                <div v-if="Object.keys(reply.reactionCounts || {}).length > 0" class="flex items-center gap-2 mt-2 flex-wrap">
+                                  <span v-for="(count, type) in reply.reactionCounts" :key="type"
+                                        @click="toggleReaction(reply.id, type)"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition"
+                                        :class="reply.userReactions?.includes(type) 
+                                          ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700' 
+                                          : 'bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'">
+                                    <i :class="getReactionIcon(type)"></i>
+                                    <span>{{ count }}</span>
+                                  </span>
+                                </div>
+                                
+                                <!-- Reply Action Buttons -->
+                                <div class="flex items-center gap-3 mt-2">
+                                  <div class="relative group/reaction-reply">
+                                    <button @click="toggleReaction(reply.id, 'like')" class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1 pb-2 -mb-2"
+                                            :class="reply.userReactions?.includes('like') ? 'text-blue-500' : ''">
+                                      <i :class="reply.userReactions?.includes('like') ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
+                                      <span>讚</span>
+                                    </button>
+                                    <div class="absolute -left-3 bottom-full hidden group-hover/reaction-reply:block z-50 pb-1">
+                                      <div class="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 flex items-center gap-1">
+                                        <button @click.stop="toggleReaction(reply.id, 'like')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('like') ? 'bg-blue-100 dark:bg-blue-900' : ''" title="讚">
+                                          <i class="fa-solid fa-thumbs-up text-blue-500"></i>
+                                        </button>
+                                        <button @click.stop="toggleReaction(reply.id, 'ok')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('ok') ? 'bg-green-100 dark:bg-green-900' : ''" title="OK">
+                                          <i class="fa-solid fa-circle-check text-green-500"></i>
+                                        </button>
+                                        <button @click.stop="toggleReaction(reply.id, 'laugh')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('laugh') ? 'bg-yellow-100 dark:bg-yellow-900' : ''" title="哈哈">
+                                          <i class="fa-solid fa-face-laugh-squint text-yellow-500"></i>
+                                        </button>
+                                        <button @click.stop="toggleReaction(reply.id, 'surprise')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('surprise') ? 'bg-amber-100 dark:bg-amber-900' : ''" title="驚訝">
+                                          <i class="fa-solid fa-face-surprise text-amber-500"></i>
+                                        </button>
+                                        <button @click.stop="toggleReaction(reply.id, 'sad')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('sad') ? 'bg-sky-100 dark:bg-sky-900' : ''" title="難過">
+                                          <i class="fa-solid fa-face-sad-tear text-sky-500"></i>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <!-- Reply to Reply Button -->
+                                  <button v-if="currentUser" @click="startReply(reply, true, comment.id)" 
+                                          class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>回覆</span>
+                                  </button>
+                                </div>
+                                
+                                <!-- Reply Input (for replying to this reply) -->
+                                <div v-if="replyingToId === reply.id" class="mt-3 pl-4 border-l-2 border-blue-400">
+                                  <textarea v-model="replyContent" 
+                                            placeholder="輸入回覆..."
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                            rows="2"></textarea>
+                                  <div class="flex justify-end gap-2 mt-2">
+                                    <button @click="cancelReply" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:opacity-80">取消</button>
+                                    <button @click="submitReply()" :disabled="!replyContent.trim()" 
+                                            class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">回覆</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3155,7 +3448,7 @@ watch(() => route.params.id, (newId, oldId) => {
 
 .hljs.has-line-numbers .code-line-number {
     display: block;
-    min-width: 1.5em;
+    min-width: 1.2em;
 }
 
 .hljs.has-line-numbers .code-content {
@@ -3369,4 +3662,7 @@ watch(() => route.params.id, (newId, oldId) => {
     display: block;
 }
 
+.comment-body p {
+  margin: 0;
+}
 </style>
