@@ -2365,19 +2365,19 @@ router.get('/notes/:id/comments', async (req, res) => {
             order: [['createdAt', 'ASC']]
         });
 
-        // Process comments to add reaction counts and user's reactions
+        // Process comments to add reaction counts and user's reaction
         const processedComments = comments.map(comment => {
             const c = comment.toJSON();
 
             // Count reactions by type
             const reactionCounts = {};
-            const userReactions = [];
+            let userReaction = null;  // Single value instead of array
 
             if (c.reactions && Array.isArray(c.reactions)) {
                 for (const r of c.reactions) {
                     reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
                     if (userId && r.userId === userId) {
-                        userReactions.push(r.type);
+                        userReaction = r.type;  // Only one reaction per user
                     }
                 }
             }
@@ -2385,7 +2385,7 @@ router.get('/notes/:id/comments', async (req, res) => {
             // Remove raw reactions array, return summary
             delete c.reactions;
             c.reactionCounts = reactionCounts;
-            c.userReactions = userReactions;
+            c.userReaction = userReaction;  // Single value
 
             return c;
         });

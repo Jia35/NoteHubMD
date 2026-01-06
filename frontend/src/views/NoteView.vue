@@ -1964,27 +1964,24 @@ const toggleReaction = async (commentId, type) => {
     const comment = comments.value.find(c => c.id === commentId)
     if (comment) {
       if (!comment.reactionCounts) comment.reactionCounts = {}
-      if (!comment.userReactions) comment.userReactions = []
       
       if (result.action === 'added') {
-        // Remove old reaction count if user had a previous reaction (only one allowed)
-        for (const oldType of comment.userReactions) {
-          if (oldType !== type && comment.reactionCounts[oldType]) {
-            comment.reactionCounts[oldType]--
-            if (comment.reactionCounts[oldType] <= 0) {
-              delete comment.reactionCounts[oldType]
-            }
+        // Remove old reaction count if user had a previous reaction
+        if (comment.userReaction && comment.userReaction !== type && comment.reactionCounts[comment.userReaction]) {
+          comment.reactionCounts[comment.userReaction]--
+          if (comment.reactionCounts[comment.userReaction] <= 0) {
+            delete comment.reactionCounts[comment.userReaction]
           }
         }
         // Set new reaction
         comment.reactionCounts[type] = (comment.reactionCounts[type] || 0) + 1
-        comment.userReactions = [type] // Only one reaction allowed
+        comment.userReaction = type
       } else if (result.action === 'removed') {
         comment.reactionCounts[type] = (comment.reactionCounts[type] || 1) - 1
         if (comment.reactionCounts[type] <= 0) {
           delete comment.reactionCounts[type]
         }
-        comment.userReactions = []
+        comment.userReaction = null
       }
     }
   } catch (e) {
@@ -2890,7 +2887,7 @@ watch(() => route.params.id, (newId, oldId) => {
                               <span v-for="(count, type) in comment.reactionCounts" :key="type"
                                     @click="toggleReaction(comment.id, type)"
                                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition"
-                                    :class="comment.userReactions?.includes(type) 
+                                    :class="comment.userReaction === type 
                                       ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700' 
                                       : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'">
                                 <i :class="getReactionIcon(type)"></i>
@@ -2903,8 +2900,8 @@ watch(() => route.params.id, (newId, oldId) => {
                               <!-- Like Button with Reaction Picker -->
                               <div class="relative group/reaction">
                                 <button @click="toggleReaction(comment.id, 'like')" class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1 pb-2 -mb-2"
-                                        :class="comment.userReactions?.includes('like') ? 'text-blue-500' : ''">
-                                  <i :class="comment.userReactions?.includes('like') ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
+                                        :class="comment.userReaction != null ? 'text-blue-500' : ''">
+                                  <i :class="comment.userReaction != null ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
                                   <span>讚</span>
                                 </button>
                                 <!-- Reaction Picker Tooltip -->
@@ -2912,31 +2909,31 @@ watch(() => route.params.id, (newId, oldId) => {
                                   <div class="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 flex items-center gap-1">
                                     <button @click.stop="toggleReaction(comment.id, 'like')" 
                                             class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
-                                            :class="comment.userReactions?.includes('like') ? 'bg-blue-100 dark:bg-blue-900' : ''"
+                                            :class="comment.userReaction === 'like' ? 'bg-blue-100 dark:bg-blue-900' : ''"
                                             title="讚">
                                       <i class="fa-solid fa-thumbs-up text-blue-500"></i>
                                     </button>
                                     <button @click.stop="toggleReaction(comment.id, 'ok')" 
                                             class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
-                                            :class="comment.userReactions?.includes('ok') ? 'bg-green-100 dark:bg-green-900' : ''"
+                                            :class="comment.userReaction === 'ok' ? 'bg-green-100 dark:bg-green-900' : ''"
                                             title="OK">
                                       <i class="fa-solid fa-circle-check text-green-500"></i>
                                     </button>
                                     <button @click.stop="toggleReaction(comment.id, 'laugh')" 
                                             class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
-                                            :class="comment.userReactions?.includes('laugh') ? 'bg-yellow-100 dark:bg-yellow-900' : ''"
+                                            :class="comment.userReaction === 'laugh' ? 'bg-yellow-100 dark:bg-yellow-900' : ''"
                                             title="哈哈">
                                       <i class="fa-solid fa-face-laugh-squint text-yellow-500"></i>
                                     </button>
                                     <button @click.stop="toggleReaction(comment.id, 'surprise')" 
                                             class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
-                                            :class="comment.userReactions?.includes('surprise') ? 'bg-amber-100 dark:bg-amber-900' : ''"
+                                            :class="comment.userReaction === 'surprise' ? 'bg-amber-100 dark:bg-amber-900' : ''"
                                             title="驚訝">
                                       <i class="fa-solid fa-face-surprise text-amber-500"></i>
                                     </button>
                                     <button @click.stop="toggleReaction(comment.id, 'sad')" 
                                             class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg"
-                                            :class="comment.userReactions?.includes('sad') ? 'bg-sky-100 dark:bg-sky-900' : ''"
+                                            :class="comment.userReaction === 'sad' ? 'bg-sky-100 dark:bg-sky-900' : ''"
                                             title="難過">
                                       <i class="fa-solid fa-face-sad-tear text-sky-500"></i>
                                     </button>
@@ -3023,7 +3020,7 @@ watch(() => route.params.id, (newId, oldId) => {
                                   <span v-for="(count, type) in reply.reactionCounts" :key="type"
                                         @click="toggleReaction(reply.id, type)"
                                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition"
-                                        :class="reply.userReactions?.includes(type) 
+                                        :class="reply.userReaction === type 
                                           ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700' 
                                           : 'bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'">
                                     <i :class="getReactionIcon(type)"></i>
@@ -3035,25 +3032,25 @@ watch(() => route.params.id, (newId, oldId) => {
                                 <div class="flex items-center gap-3 mt-2">
                                   <div class="relative group/reaction-reply">
                                     <button @click="toggleReaction(reply.id, 'like')" class="text-xs text-gray-400 hover:text-blue-500 transition flex items-center gap-1 pb-2 -mb-2"
-                                            :class="reply.userReactions?.includes('like') ? 'text-blue-500' : ''">
-                                      <i :class="reply.userReactions?.includes('like') ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
+                                            :class="reply.userReaction != null ? 'text-blue-500' : ''">
+                                      <i :class="reply.userReaction != null ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up'"></i>
                                       <span>讚</span>
                                     </button>
                                     <div class="absolute -left-3 bottom-full hidden group-hover/reaction-reply:block z-50 pb-1">
                                       <div class="bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 flex items-center gap-1">
-                                        <button @click.stop="toggleReaction(reply.id, 'like')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('like') ? 'bg-blue-100 dark:bg-blue-900' : ''" title="讚">
+                                        <button @click.stop="toggleReaction(reply.id, 'like')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReaction === 'like' ? 'bg-blue-100 dark:bg-blue-900' : ''" title="讚">
                                           <i class="fa-solid fa-thumbs-up text-blue-500"></i>
                                         </button>
-                                        <button @click.stop="toggleReaction(reply.id, 'ok')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('ok') ? 'bg-green-100 dark:bg-green-900' : ''" title="OK">
+                                        <button @click.stop="toggleReaction(reply.id, 'ok')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReaction === 'ok' ? 'bg-green-100 dark:bg-green-900' : ''" title="OK">
                                           <i class="fa-solid fa-circle-check text-green-500"></i>
                                         </button>
-                                        <button @click.stop="toggleReaction(reply.id, 'laugh')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('laugh') ? 'bg-yellow-100 dark:bg-yellow-900' : ''" title="哈哈">
+                                        <button @click.stop="toggleReaction(reply.id, 'laugh')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReaction === 'laugh' ? 'bg-yellow-100 dark:bg-yellow-900' : ''" title="哈哈">
                                           <i class="fa-solid fa-face-laugh-squint text-yellow-500"></i>
                                         </button>
-                                        <button @click.stop="toggleReaction(reply.id, 'surprise')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('surprise') ? 'bg-amber-100 dark:bg-amber-900' : ''" title="驚訝">
+                                        <button @click.stop="toggleReaction(reply.id, 'surprise')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReaction === 'surprise' ? 'bg-amber-100 dark:bg-amber-900' : ''" title="驚訝">
                                           <i class="fa-solid fa-face-surprise text-amber-500"></i>
                                         </button>
-                                        <button @click.stop="toggleReaction(reply.id, 'sad')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReactions?.includes('sad') ? 'bg-sky-100 dark:bg-sky-900' : ''" title="難過">
+                                        <button @click.stop="toggleReaction(reply.id, 'sad')" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-lg" :class="reply.userReaction === 'sad' ? 'bg-sky-100 dark:bg-sky-900' : ''" title="難過">
                                           <i class="fa-solid fa-face-sad-tear text-sky-500"></i>
                                         </button>
                                       </div>
