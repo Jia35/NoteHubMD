@@ -167,16 +167,16 @@ NoteHubMD 是一個基於 Markdown 的協作筆記平台，讓您可以輕鬆地
 這是 info 訊息 :mega:
 :::
 
-::: warning
-這是 warning 訊息 :mega:
-:::
-
 ::: success
 這是 success 訊息 :mega:
 :::
 
+::: warning
+這是 warning 訊息 :mega:
+:::
+
 ::: danger
-這是訊息 :mega:
+這是 danger 訊息 :mega:
 :::
 
 ### 摺疊區塊
@@ -220,6 +220,15 @@ NoteHubMD 是一個基於 Markdown 的協作筆記平台，讓您可以輕鬆地
 
 *[HTML]: Hyper Text Markup Language
 
+### Mermaid 圖表
+
+```mermaid
+graph LR
+    A[開始] --> B{判斷}
+    B -->|是| C[結果 1]
+    B -->|否| D[結果 2]
+```
+
 ### 數學公式 (LaTeX 語法，透過 KaTeX 套件)
 
 方便的 [線上數學式編輯器](https://latexeditor.lagrida.com/)。
@@ -240,12 +249,3 @@ $$
   \end{array}
 \right.
 $$
-
-### Mermaid 流程圖
-
-```mermaid
-graph LR
-    A[開始] --> B{判斷}
-    B -->|是| C[結果 1]
-    B -->|否| D[結果 2]
-```
