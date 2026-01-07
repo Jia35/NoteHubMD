@@ -147,7 +147,7 @@ onMounted(loadData)
               <h3 class="text-gray-500 dark:text-gray-400 font-medium">線上使用者</h3>
               <i class="fa-solid fa-circle text-green-500 text-xl"></i>
             </div>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">1</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ stats?.onlineUsers ?? '—' }}</p>
           </div>
           <div class="bg-white dark:bg-dark-surface p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">

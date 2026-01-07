@@ -46,6 +46,10 @@ router.get('/users', requireAdmin, async (req, res) => {
 // GET /api/admin/stats - Get notes and books statistics
 router.get('/stats', requireAdmin, async (req, res) => {
     try {
+        // Get online users count from socket module
+        const { getActiveConnectionsCount } = require('../index');
+        const onlineUsers = getActiveConnectionsCount();
+
         // Active counts (not in trash, not system)
         const booksCount = await db.Book.count({ where: { isSystem: false } });
         const standaloneNotesCount = await db.Note.count({ where: { bookId: null, isSystem: false } });
@@ -69,6 +73,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
         });
 
         res.json({
+            onlineUsers,
             active: {
                 books: booksCount,
                 standaloneNotes: standaloneNotesCount,

@@ -110,6 +110,12 @@ db.sequelize.sync({ force: false }).then(async () => {
 // Map<noteId, Map<socketId, { username, joinedAt }>>
 const noteUsersMap = new Map();
 
+// Track all active socket connections (for admin stats)
+const activeConnections = new Set();
+
+// Export getter for active connections count
+module.exports.getActiveConnectionsCount = () => activeConnections.size;
+
 // Helper: Get users in a note room
 function getUsersInNote(noteId) {
     const users = noteUsersMap.get(noteId);
@@ -125,6 +131,9 @@ function broadcastUsersInNote(noteId) {
 
 // Socket.io
 io.on('connection', (socket) => {
+    // Add to active connections tracking
+    activeConnections.add(socket.id);
+
     // Track which notes this socket has joined
     socket.noteRooms = new Set();
 
@@ -175,6 +184,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        // Remove from active connections tracking
+        activeConnections.delete(socket.id);
+
         // Remove user from all note rooms they were in
         for (const noteId of socket.noteRooms) {
             const users = noteUsersMap.get(noteId);

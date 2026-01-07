@@ -2591,7 +2591,7 @@ watch(() => route.params.id, (newId, oldId) => {
 .markdown-body code { background: #e8e8e8; padding: 0.2em 0.4em; margin: 0 0.4em; border-radius: 3px; font-size: 0.9em; }
 .markdown-body pre { margin: 1em 0; border-radius: 6px; overflow: auto; }
 .markdown-body pre code { background: none; padding: 0; margin: 0; }
-.markdown-body pre.hljs { padding: 1em; }
+.markdown-body pre.hljs { padding: 8px 12px; line-height: 1.45; }
 .markdown-body blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 1em; color: #666; }
 .markdown-body blockquote p { margin: 0.5em 0; }
 .markdown-body table { border-collapse: collapse; margin: 1em 0; }
