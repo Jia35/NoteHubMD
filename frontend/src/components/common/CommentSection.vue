@@ -102,42 +102,42 @@
         <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <!-- Comment Header -->
           <div class="flex items-start justify-between mb-2">
-            <div class="flex items-center gap-2 relative group">
-              <!-- Avatar -->
-              <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden text-white cursor-pointer"
-                   :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
-                <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
-                <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
-              </div>
-              <!-- Name and Time -->
-              <div>
+            <div class="flex items-center gap-2">
+              <!-- Avatar and Name with Tooltip -->
+              <div class="flex items-center gap-2 relative group">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden text-white cursor-pointer"
+                     :class="comment.user ? 'bg-blue-600' : 'bg-gray-500'">
+                  <img v-if="comment.user?.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                  <span v-else>{{ comment.user?.username?.charAt(0).toUpperCase() || '?' }}</span>
+                </div>
                 <span class="font-medium text-gray-800 dark:text-white text-sm cursor-pointer">{{ comment.user?.name || comment.user?.username || '匿名' }}</span>
-                <span class="text-xs text-gray-400 ml-2">{{ formatCommentTime(comment.createdAt) }}</span>
-              </div>
-              <!-- User Info Tooltip -->
-              <div v-if="comment.user" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
-                <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
-                  <!-- Arrow -->
-                  <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
-                  <div class="relative z-10 p-3">
-                    <div class="flex items-center space-x-3 mb-2">
-                      <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
-                           :class="comment.user.avatar ? '' : 'bg-blue-600'">
-                        <img v-if="comment.user.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
-                        <span v-else>{{ comment.user.username?.charAt(0).toUpperCase() || '?' }}</span>
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
-                          {{ comment.user.name || comment.user.username }}
+                <!-- User Info Tooltip -->
+                <div v-if="comment.user" class="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                  <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
+                    <!-- Arrow -->
+                    <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                    <div class="relative z-10 p-3">
+                      <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
+                             :class="comment.user.avatar ? '' : 'bg-blue-600'">
+                          <img v-if="comment.user.avatar" :src="comment.user.avatar" class="w-full h-full object-cover" alt="">
+                          <span v-else>{{ comment.user.username?.charAt(0).toUpperCase() || '?' }}</span>
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          @{{ comment.user.username }}
+                        <div class="flex-1 min-w-0">
+                          <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
+                            {{ comment.user.name || comment.user.username }}
+                          </div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            @{{ comment.user.username }}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+              <!-- Time (outside group to avoid tooltip) -->
+              <span class="text-xs text-gray-400 cursor-help" :title="formatFullTime(comment.createdAt)">{{ formatCommentTime(comment.createdAt) }}</span>
             </div>
             <!-- Dropdown Menu -->
             <div v-if="canEditComment(comment) || canDeleteComment(comment)" class="relative">
@@ -288,34 +288,38 @@
                 <div class="flex-1 min-w-0">
                   <!-- Reply Header with Menu -->
                   <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center gap-2 relative group/reply-user">
-                      <span class="font-medium text-gray-800 dark:text-white text-sm cursor-pointer">
-                        {{ reply.user?.name || reply.user?.username || '匿名' }}
-                      </span>
-                      <span class="text-xs text-gray-400">{{ formatCommentTime(reply.createdAt) }}</span>
-                      <!-- User Info Tooltip on Name -->
-                      <div v-if="reply.user" class="absolute left-0 top-full pt-2 hidden group-hover/reply-user:block z-50">
-                        <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
-                          <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
-                          <div class="relative z-10 p-3">
-                            <div class="flex items-center space-x-3 mb-2">
-                              <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
-                                   :class="reply.user.avatar ? '' : 'bg-blue-600'">
-                                <img v-if="reply.user.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" alt="">
-                                <span v-else>{{ reply.user.username?.charAt(0).toUpperCase() || '?' }}</span>
-                              </div>
-                              <div class="flex-1 min-w-0">
-                                <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
-                                  {{ reply.user.name || reply.user.username }}
+                    <div class="flex items-center gap-2">
+                      <!-- Name with Tooltip -->
+                      <div class="relative group/reply-user">
+                        <span class="font-medium text-gray-800 dark:text-white text-sm cursor-pointer">
+                          {{ reply.user?.name || reply.user?.username || '匿名' }}
+                        </span>
+                        <!-- User Info Tooltip on Name -->
+                        <div v-if="reply.user" class="absolute left-0 top-full pt-2 hidden group-hover/reply-user:block z-50">
+                          <div class="bg-gray-200 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700" style="min-width: 200px;">
+                            <div class="absolute top-0 left-4 w-3 h-3 bg-gray-200 dark:bg-gray-800 border-t border-l border-gray-300 dark:border-gray-700 transform rotate-45"></div>
+                            <div class="relative z-10 p-3">
+                              <div class="flex items-center space-x-3 mb-2">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden text-white text-sm"
+                                     :class="reply.user.avatar ? '' : 'bg-blue-600'">
+                                  <img v-if="reply.user.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" alt="">
+                                  <span v-else>{{ reply.user.username?.charAt(0).toUpperCase() || '?' }}</span>
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  @{{ reply.user.username }}
+                                <div class="flex-1 min-w-0">
+                                  <div class="font-medium text-gray-800 dark:text-white text-sm truncate">
+                                    {{ reply.user.name || reply.user.username }}
+                                  </div>
+                                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    @{{ reply.user.username }}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                      <!-- Time (outside group) -->
+                      <span class="text-xs text-gray-400 cursor-help" :title="formatFullTime(reply.createdAt)">{{ formatCommentTime(reply.createdAt) }}</span>
                     </div>
                     <!-- Reply Menu -->
                     <div v-if="canEditComment(reply) || canDeleteComment(reply)" class="relative">
@@ -496,6 +500,10 @@ const renderCommentMarkdown = (text) => {
 
 const formatCommentTime = (time) => {
   return dayjs(time).fromNow()
+}
+
+const formatFullTime = (time) => {
+  return dayjs(time).format('YYYY/MM/DD HH:mm')
 }
 
 const canEditComment = (comment) => {
@@ -848,7 +856,7 @@ defineExpose({
 </script>
 
 <style scoped>
-.comment-body p {
+.comment-body :deep(p) {
   margin: 0;
 }
 </style>

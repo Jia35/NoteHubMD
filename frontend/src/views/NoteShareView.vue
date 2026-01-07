@@ -40,6 +40,9 @@ import { loadMermaid, loadKatexPlugin, contentHasMath } from '@/composables/useD
 // Excalidraw for whiteboard notes
 import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
 
+// Comment Section
+import CommentSection from '@/components/common/CommentSection.vue'
+
 // Note: mermaid and KaTeX are loaded dynamically via useDynamicLoaders
 
 // Highlight.js
@@ -118,6 +121,8 @@ const lastEditor = ref(null)
 const lastEditedAt = ref(null)
 const noteCreatedAt = ref(null)
 const canEdit = ref(false)
+const commentsEnabled = ref(true)
+const currentUser = ref(null)
 
 // Book data
 const book = ref(null)
@@ -387,6 +392,7 @@ const loadNote = async () => {
     lastEditedAt.value = data.lastEditedAt || data.lastContentEditedAt
     noteCreatedAt.value = data.createdAt || null
     canEdit.value = data.canEdit || false
+    commentsEnabled.value = data.commentsDisabled !== true
     
     // Detect note type (markdown or excalidraw)
     noteType.value = data.noteType || 'markdown'
@@ -654,7 +660,14 @@ const handleEscKey = (e) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Load current user for comments
+  try {
+    currentUser.value = await api.getMe()
+  } catch (e) {
+    currentUser.value = null
+  }
+  
   loadNote()
   document.addEventListener('keyup', handleEscKey)
   
@@ -916,6 +929,18 @@ watch(() => route.params.shareId, () => {
                   </a>
                   <div v-else></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Comments Section (only for markdown notes if enabled) -->
+            <div v-if="noteType === 'markdown' && commentsEnabled && noteId" 
+                 class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-center">
+              <div class="w-full px-4 md:px-8 py-6" style="max-width: 900px">
+                <CommentSection 
+                  :noteId="noteId"
+                  :currentUser="currentUser"
+                  :isOwner="false"
+                />
               </div>
             </div>
           </div>
