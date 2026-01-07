@@ -1154,7 +1154,7 @@ details[open] summary {
     border-right: 1px solid rgba(0, 0, 0, 0.1);
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.35;
+    line-height: 1.45;
 }
 
 .hljs.has-line-numbers .code-line-number {
@@ -1168,7 +1168,7 @@ details[open] summary {
     overflow-x: auto;
     font-family: inherit;
     font-size: inherit;
-    line-height: 1.35;
+    line-height: 1.45;
 }
 
 .hljs.has-line-numbers .code-line {
