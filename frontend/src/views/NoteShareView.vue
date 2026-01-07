@@ -743,7 +743,7 @@ watch(() => route.params.shareId, () => {
             class="px-2 py-1 text-xs border border-gray-500 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-400 hover:text-white dark:hover:bg-gray-700 transition cursor-pointer"
             :title="theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'"
           >
-            <i :class="theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
+            <i :class="theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'"></i>
           </button>
           <!-- Slide Mode Button (only for markdown) -->
           <button 

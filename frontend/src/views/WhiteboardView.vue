@@ -367,6 +367,13 @@ const setTheme = (t) => {
   localStorage.setItem('NoteHubMD-theme', t)
 }
 
+// Toggle theme (light/dark)
+const toggleTheme = () => {
+  const newTheme = theme.value === 'dark' ? 'light' : 'dark'
+  theme.value = newTheme
+  setTheme(newTheme)
+}
+
 const logout = async () => {
   await api.logout()
   window.location.href = '/login'
@@ -651,11 +658,12 @@ watch(noteId, (newId, oldId) => {
         
         <!-- Right Actions -->
         <div class="flex-1 flex justify-end items-center space-x-2">
-          <!-- Read-only Badge -->
-          <div v-if="!canEdit" class="flex items-center space-x-1 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded text-sm text-yellow-700 dark:text-yellow-400">
-            <i class="fas fa-eye text-xs"></i>
-            <span>唯讀</span>
-          </div>
+          <!-- Theme Toggle -->
+          <button @click="toggleTheme" 
+                  class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer min-h-[28px]"
+                  :title="theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'">
+            <i :class="theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'" class="text-xs"></i>
+          </button>
           
           <!-- Online Users -->
           <div class="relative">
@@ -691,6 +699,11 @@ watch(noteId, (newId, oldId) => {
             <i class="fas fa-lock text-xs"></i>
             <span>{{ permissionOptions.find(o => o.value === permission)?.label || permission }}</span>
           </button>
+          <!-- Read-only Badge -->
+          <div v-if="!canEdit" class="flex items-center space-x-1 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded text-sm text-yellow-700 dark:text-yellow-400">
+            <i class="fas fa-eye text-xs"></i>
+            <span>唯讀</span>
+          </div>
 
           <!-- Note Info -->
           <button @click="noteInfoModalTab = 'info'; showNoteInfoModal = true; showNoteMenu = false;" 

@@ -200,6 +200,13 @@ const noteInfoModalTab = ref('info')
 const theme = ref(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
 const appVersion = ref('')
 
+// Toggle theme (light/dark)
+const toggleTheme = () => {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  localStorage.setItem('NoteHubMD-theme', theme.value)
+  document.documentElement.classList.toggle('dark', theme.value === 'dark')
+}
+
 // Editor Theme - using dynamic loader from composable
 // editorThemeList is imported from useDynamicLoaders
 const selectedEditorTheme = ref(localStorage.getItem('NoteHubMD-editorTheme') || (theme.value === 'dark' ? 'custom-onedark' : 'githubLight'))
@@ -2038,6 +2045,13 @@ watch(() => route.params.id, (newId, oldId) => {
           
           <!-- Right Actions -->
           <div class="flex-1 flex justify-end items-center space-x-2">
+            <!-- Theme Toggle -->
+            <button @click="toggleTheme" 
+                    class="flex items-center space-x-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 py-1 rounded text-sm text-gray-700 dark:text-gray-300 transition cursor-pointer min-h-[28px]"
+                    :title="theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'">
+              <i :class="theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'" class="text-xs"></i>
+            </button>
+
             <!-- Online Users -->
             <div class="relative">
               <button @click="toggleOnlineUsersPopup" 
