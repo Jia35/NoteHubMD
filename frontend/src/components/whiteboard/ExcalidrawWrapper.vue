@@ -110,7 +110,24 @@ defineExpose({
   getAPI: () => excalidrawAPI.value,
   getElements: () => excalidrawAPI.value?.getSceneElements() || [],
   getAppState: () => excalidrawAPI.value?.getAppState() || {},
-  getFiles: () => excalidrawAPI.value?.getFiles() || {}
+  getFiles: () => excalidrawAPI.value?.getFiles() || {},
+  
+  // Get current scene data (for export/sync)
+  getData: () => ({
+    elements: excalidrawAPI.value?.getSceneElements() || [],
+    appState: excalidrawAPI.value?.getAppState() || {},
+    files: excalidrawAPI.value?.getFiles() || {}
+  }),
+  
+  // Update scene from remote sync (Yjs collaboration)
+  updateScene: (data) => {
+    if (excalidrawAPI.value) {
+      excalidrawAPI.value.updateScene({
+        elements: data.elements || [],
+        appState: data.appState
+      })
+    }
+  }
 })
 </script>
 

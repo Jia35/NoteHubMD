@@ -11,6 +11,7 @@ import InfoModal from '@/components/common/InfoModal.vue'
 import SidebarNav from '@/components/common/SidebarNav.vue'
 import { SettingsModal, AboutModal, UserProfileModal, CreateBookModal } from '@/components'
 import { useSocket } from '@/composables/useSocket'
+import { useYjs } from '@/composables/useYjs'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-tw'
@@ -173,25 +174,110 @@ const loadWhiteboard = async () => {
     }
   } finally {
     loading.value = false
+    
+    // Initialize Yjs collaboration after loading
+    if (note.value && canEdit.value) {
+        initYjsCollaboration()
+    }
   }
 }
 
 // Auto-save with debounce
 let saveTimeout = null
+
+// Yjs collaboration instance
+const yjsInstance = ref(null)
+
+// Throttle control for Yjs sync
+let lastBroadcastTime = 0
+const BROADCAST_THROTTLE = 500 // 500ms
+
+// Initialize Yjs collaboration
+const initYjsCollaboration = () => {
+    const username = currentUser.value?.username || 'Guest'
+    console.log('[Yjs] Initializing collaboration for note:', note.value.id, 'user:', username)
+    
+    yjsInstance.value = useYjs(note.value.id, username)
+
+    // Wait for sync then initialize data
+    let checkSyncInterval = null
+    checkSyncInterval = setInterval(() => {
+        if (!yjsInstance.value) {
+            clearInterval(checkSyncInterval)
+            return
+        }
+        
+        if (yjsInstance.value.synced.value) {
+            clearInterval(checkSyncInterval)
+            console.log('[Yjs] Initial sync complete')
+            
+            // If Yjs is empty, initialize with database data
+            const yjsElements = yjsInstance.value.getElements()
+            console.log('[Yjs] Elements in Yjs:', yjsElements.length, 'Elements in DB:', diagramData.value?.elements?.length || 0)
+            
+            if (yjsElements.length === 0 && diagramData.value?.elements?.length > 0) {
+                console.log('[Yjs] Initializing Yjs with database data')
+                yjsInstance.value.setElements(diagramData.value.elements)
+            } else if (yjsElements.length > 0) {
+                // Use Yjs data
+                console.log('[Yjs] Using Yjs data')
+                diagramData.value = { ...diagramData.value, elements: yjsElements }
+                excalidrawRef.value?.updateScene({ elements: yjsElements })
+            }
+        }
+    }, 100)
+    
+    // Timeout after 10 seconds if not synced
+    setTimeout(() => {
+        if (yjsInstance.value && !yjsInstance.value.synced.value) {
+            console.warn('[Yjs] Sync timeout - connection may have failed')
+            clearInterval(checkSyncInterval)
+        }
+    }, 10000)
+
+    // Listen for remote changes
+    yjsInstance.value.onRemoteChange((elements) => {
+        console.log('[Yjs] Remote change received, elements:', elements.length)
+        diagramData.value = { ...diagramData.value, elements }
+        excalidrawRef.value?.updateScene({ elements })
+    })
+}
+
 const handleWhiteboardChange = (data) => {
   if (!canEdit.value || !note.value) return
   
   diagramData.value = data
+  
+  // Throttled sync to Yjs (every 500ms max)
+  const now = Date.now()
+  if (now - lastBroadcastTime >= BROADCAST_THROTTLE && yjsInstance.value) {
+      lastBroadcastTime = now
+      yjsInstance.value.setElements(data.elements)
+  }
   
   // Clear existing timeout
   if (saveTimeout) {
     clearTimeout(saveTimeout)
   }
   
-  // Debounce save (2 seconds after last change)
+  // Debounce save to database (2 seconds after last change)
   saveTimeout = setTimeout(() => {
     saveWhiteboard()
   }, 2000)
+}
+
+// Handle pointer move for cursor sync
+const handlePointerUpdate = (e) => {
+    if (!yjsInstance.value || !excalidrawRef.value) return
+    
+    const container = document.querySelector('.whiteboard-container')
+    if (!container) return
+    
+    const rect = container.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    yjsInstance.value.updateCursor(x, y)
 }
 
 const saveWhiteboard = async () => {
@@ -515,6 +601,10 @@ onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
   // Save any pending changes
   forceSave()
+  // Cleanup Yjs
+  if (yjsInstance.value) {
+      yjsInstance.value.destroy()
+  }
   // Leave socket room
   if (note.value) {
     leaveNote(note.value.id)
@@ -743,7 +833,7 @@ watch(noteId, (newId, oldId) => {
       </header>
       
       <!-- Excalidraw Container -->
-      <div class="whiteboard-container">
+      <div class="whiteboard-container" @pointermove="handlePointerUpdate">
         <ExcalidrawWrapper
           ref="excalidrawRef"
           :initialData="diagramData"
@@ -751,6 +841,26 @@ watch(noteId, (newId, oldId) => {
           :readOnly="!canEdit"
           @change="handleWhiteboardChange"
         />
+        
+        <!-- Remote Cursors Overlay -->
+        <div v-if="yjsInstance" class="remote-cursors-layer">
+            <div 
+                v-for="[clientId, cursor] in yjsInstance.remoteCursors.value" 
+                :key="clientId"
+                class="remote-cursor"
+                :style="{ 
+                    left: cursor.x + 'px', 
+                    top: cursor.y + 'px'
+                }"
+            >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path d="M5 2L19 12L12 13L9 20L5 2Z" :fill="cursor.color"/>
+                </svg>
+                <span class="cursor-label" :style="{ background: cursor.color }">
+                    {{ cursor.username }}
+                </span>
+            </div>
+        </div>
       </div>
     </template>
     </div>
@@ -1098,6 +1208,38 @@ watch(noteId, (newId, oldId) => {
   flex: 1;
   overflow: hidden;
   position: relative;
+}
+
+/* Remote Cursors Layer */
+.remote-cursors-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.remote-cursor {
+  position: absolute;
+  transform: translate(-2px, -2px);
+  transition: left 0.05s linear, top 0.05s linear;
+  will-change: left, top;
+}
+
+.cursor-label {
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 /* Dark mode adjustments */

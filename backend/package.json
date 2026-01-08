@@ -9,6 +9,7 @@
         "dev": "node src/index.js"
     },
     "dependencies": {
+        "@y/websocket-server": "^0.1.1",
         "adm-zip": "^0.5.16",
         "archiver": "^7.0.1",
         "base32-decode": "^1.0.0",
@@ -23,6 +24,7 @@
         "express-session": "^1.18.2",
         "helmet": "^8.1.0",
         "ldapjs": "^3.0.7",
+        "lib0": "^0.2.117",
         "morgan": "^1.10.1",
         "multer": "^2.0.2",
         "nanoid": "^5.1.6",
@@ -30,6 +32,10 @@
         "pg-hstore": "^2.3.4",
         "reveal.js": "^5.2.1",
         "sequelize": "^6.37.7",
-        "socket.io": "^4.8.1"
+        "socket.io": "^4.8.1",
+        "ws": "^8.19.0",
+        "y-protocols": "^1.0.7",
+        "y-websocket": "^3.0.0",
+        "yjs": "^13.6.29"
     }
 }

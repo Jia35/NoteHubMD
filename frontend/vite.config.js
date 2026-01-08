@@ -25,6 +25,10 @@ export default defineConfig({
         target: 'http://localhost:3000',
         ws: true
       },
+      '/whiteboard': {
+        target: 'http://localhost:3000',
+        ws: true
+      },
       '/_uploads': {
         target: 'http://localhost:3000'
       }

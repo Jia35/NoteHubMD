@@ -9,6 +9,10 @@ const compression = require('compression');
 const helmet = require('helmet');
 const db = require('./models');
 
+// Yjs WebSocket for whiteboard collaboration
+const WebSocket = require('ws');
+const { setupWSConnection } = require('./utils/yjsServer');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -101,8 +105,27 @@ db.sequelize.sync({ force: false }).then(async () => {
     await cleanExpiredTrash();
     startScheduledCleanup();
 
+    // Yjs WebSocket Server for whiteboard collaboration
+    const wss = new WebSocket.Server({ noServer: true });
+
+    server.on('upgrade', (request, socket, head) => {
+        const url = new URL(request.url, `http://${request.headers.host}`);
+
+        // Handle Yjs whiteboard collaboration at /whiteboard/{noteId}
+        if (url.pathname.startsWith('/whiteboard/')) {
+            const docName = url.pathname.replace('/whiteboard/', '');
+
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                wss.emit('connection', ws, request);
+                setupWSConnection(ws, request, { docName });
+            });
+        }
+        // Other WebSocket connections (Socket.io) are handled automatically by Socket.io
+    });
+
     server.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
+        console.log(`Yjs WebSocket handler ready at /whiteboard/{noteId}`);
     });
 });
 
