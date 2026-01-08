@@ -62,7 +62,7 @@ const searchResults = ref({ books: [], notes: [] })
 const searchInput = ref(null)
 const allTags = ref([])
 const selectedTag = ref('')
-const searchOwnerFilter = ref('all')
+const searchOwnerFilter = ref('my')
 const searchDateRange = ref('all')
 const searchDateStart = ref('')
 const searchDateEnd = ref('')
@@ -92,7 +92,7 @@ const openSearchModal = async () => {
   showSearchModal.value = true
   searchQuery.value = ''
   selectedTag.value = ''
-  searchOwnerFilter.value = 'all'
+  searchOwnerFilter.value = 'my'
   searchDateRange.value = 'all'
   searchDateStart.value = ''
   searchDateEnd.value = ''

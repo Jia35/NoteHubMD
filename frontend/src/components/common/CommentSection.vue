@@ -67,11 +67,11 @@
           :style="{ maxHeight: '192px', overflow: 'auto' }"></textarea>
       <!-- Preview area -->
       <div v-if="commentPreviewMode && newComment.trim()" 
-          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-auto markdown-body comment-body"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-b-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-auto markdown-body comment-body"
           style="min-height: 76px; max-height: 192px;"
           v-html="renderCommentMarkdown(newComment)"></div>
       <div v-if="commentPreviewMode && !newComment.trim()" 
-          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 italic"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-b-lg bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 italic"
           style="min-height: 76px;">
           沒有內容可預覽
       </div>
