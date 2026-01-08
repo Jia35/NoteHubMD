@@ -284,6 +284,14 @@ const copyAliasUrl = async () => {
               <div class="text-gray-500 dark:text-gray-400 mb-1">
                 ID：<span class="font-mono text-gray-700 dark:text-gray-300">{{ item?.id }}</span>
               </div>
+              <!-- Note Type (for notes only) -->
+              <div v-if="type === 'note'" class="text-gray-500 dark:text-gray-400 mb-1">
+                筆記類別：
+                <span class="text-gray-700 dark:text-gray-300">
+                  <i :class="item?.noteType === 'excalidraw' ? 'fa-solid fa-chalkboard text-purple-500' : 'fa-brands fa-markdown text-blue-500'" class="mr-1"></i>
+                  {{ item?.noteType === 'excalidraw' ? '白板' : 'Markdown 筆記' }}
+                </span>
+              </div>
               <!-- Creator / Owner -->
               <div class="text-gray-500 dark:text-gray-400 mb-1">
                 建立者：
