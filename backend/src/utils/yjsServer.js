@@ -31,6 +31,7 @@ const getYDoc = (docname) => {
 
         doc.awareness.on('update', ({ added, updated, removed }, conn) => {
             const changedClients = added.concat(updated, removed);
+            // Broadcast if change originated from a connection OR from the server (e.g. disconnect)
             if (conn !== null) {
                 const encoder = encoding.createEncoder();
                 encoding.writeVarUint(encoder, messageAwareness);
@@ -64,8 +65,18 @@ const send = (doc, conn, message) => {
 const closeConn = (doc, conn) => {
     if (doc.conns.has(conn)) {
         const controlledIds = doc.conns.get(conn);
+        // console.log(`[Yjs] Closing connection. Controlled IDs: ${controlledIds.size}`, Array.from(controlledIds));
+
         doc.conns.delete(conn);
-        awarenessProtocol.removeAwarenessStates(doc.awareness, Array.from(controlledIds), null);
+
+        // Remove awareness states for this client and notify others
+        if (controlledIds.size > 0) {
+            const clientIds = Array.from(controlledIds);
+
+            // Use 'server' as origin to trigger the update handler to broadcast the removal
+            // This will send an update with null state for these clients
+            awarenessProtocol.removeAwarenessStates(doc.awareness, clientIds, 'server');
+        }
 
         if (doc.conns.size === 0) {
             doc.destroy();
@@ -103,11 +114,22 @@ const messageListener = (conn, doc, message) => {
                 break;
 
             case messageAwareness:
+                const awarenessUpdate = decoding.readVarUint8Array(decoder);
                 awarenessProtocol.applyAwarenessUpdate(
                     doc.awareness,
-                    decoding.readVarUint8Array(decoder),
+                    awarenessUpdate,
                     conn
                 );
+
+                // Track which client IDs this connection controls
+                // Extract clientIds from the awareness update
+                const awarenessDecoder = decoding.createDecoder(awarenessUpdate);
+                const len = decoding.readVarUint(awarenessDecoder);
+                const controlledIds = doc.conns.get(conn);
+                for (let i = 0; i < len; i++) {
+                    const clientId = decoding.readVarUint(awarenessDecoder);
+                    controlledIds.add(clientId);
+                }
                 break;
         }
     } catch (err) {

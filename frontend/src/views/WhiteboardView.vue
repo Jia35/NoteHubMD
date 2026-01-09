@@ -99,6 +99,12 @@ const filteredSidebarBooks = computed(() => {
   return books.value.filter(b => b.isPublic)
 })
 
+// Yjs collaboration instance (must be declared before computed that uses it)
+const yjsInstance = ref(null)
+
+// Remote cursors as reactive array for v-for (updated via callback)
+const remoteCursorsArray = ref([])
+
 // Load whiteboard data
 const loadWhiteboard = async () => {
   loading.value = true
@@ -176,7 +182,8 @@ const loadWhiteboard = async () => {
     loading.value = false
     
     // Initialize Yjs collaboration after loading
-    if (note.value && canEdit.value) {
+    // Initialize Yjs collaboration for ALL users (not just editors) to show cursors
+    if (note.value) {
         initYjsCollaboration()
     }
   }
@@ -184,9 +191,6 @@ const loadWhiteboard = async () => {
 
 // Auto-save with debounce
 let saveTimeout = null
-
-// Yjs collaboration instance
-const yjsInstance = ref(null)
 
 // Throttle control for Yjs sync
 let lastBroadcastTime = 0
@@ -213,14 +217,14 @@ const initYjsCollaboration = () => {
             
             // If Yjs is empty, initialize with database data
             const yjsElements = yjsInstance.value.getElements()
-            console.log('[Yjs] Elements in Yjs:', yjsElements.length, 'Elements in DB:', diagramData.value?.elements?.length || 0)
+            // console.log('[Yjs] Elements in Yjs:', yjsElements.length, 'Elements in DB:', diagramData.value?.elements?.length || 0)
             
             if (yjsElements.length === 0 && diagramData.value?.elements?.length > 0) {
-                console.log('[Yjs] Initializing Yjs with database data')
+                // console.log('[Yjs] Initializing Yjs with database data')
                 yjsInstance.value.setElements(diagramData.value.elements)
             } else if (yjsElements.length > 0) {
                 // Use Yjs data
-                console.log('[Yjs] Using Yjs data')
+                // console.log('[Yjs] Using Yjs data')
                 diagramData.value = { ...diagramData.value, elements: yjsElements }
                 excalidrawRef.value?.updateScene({ elements: yjsElements })
             }
@@ -230,16 +234,22 @@ const initYjsCollaboration = () => {
     // Timeout after 10 seconds if not synced
     setTimeout(() => {
         if (yjsInstance.value && !yjsInstance.value.synced.value) {
-            console.warn('[Yjs] Sync timeout - connection may have failed')
+            // console.warn('[Yjs] Sync timeout - connection may have failed')
             clearInterval(checkSyncInterval)
         }
     }, 10000)
 
     // Listen for remote changes
     yjsInstance.value.onRemoteChange((elements) => {
-        console.log('[Yjs] Remote change received, elements:', elements.length)
+        // console.log('[Yjs] Remote change received, elements:', elements.length)
         diagramData.value = { ...diagramData.value, elements }
         excalidrawRef.value?.updateScene({ elements })
+    })
+    
+    // Subscribe to cursor updates (bypass Vue's nested ref reactivity issues)
+    yjsInstance.value.onCursorsChange((cursorsArray) => {
+        // console.log('[Yjs] Cursors callback, count:', cursorsArray.length)
+        remoteCursorsArray.value = cursorsArray
     })
 }
 
@@ -267,8 +277,15 @@ const handleWhiteboardChange = (data) => {
 }
 
 // Handle pointer move for cursor sync
+let lastCursorTime = 0
+const CURSOR_THROTTLE = 50 // 50ms
 const handlePointerUpdate = (e) => {
-    if (!yjsInstance.value || !excalidrawRef.value) return
+    if (!yjsInstance.value) return
+    
+    // Throttle cursor updates
+    const now = Date.now()
+    if (now - lastCursorTime < CURSOR_THROTTLE) return
+    lastCursorTime = now
     
     const container = document.querySelector('.whiteboard-container')
     if (!container) return
@@ -843,9 +860,17 @@ watch(noteId, (newId, oldId) => {
         />
         
         <!-- Remote Cursors Overlay -->
-        <div v-if="yjsInstance" class="remote-cursors-layer">
+        <div class="remote-cursors-layer">
+            <!-- DEBUG INFO -->
+            <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px; z-index: 2000; font-size: 10px;">
+                Cursors: {{ remoteCursorsArray.length }}
+                <div v-for="[id, c] in remoteCursorsArray" :key="id">
+                    {{ c.username }}: {{ c.x.toFixed(0) }}, {{ c.y.toFixed(0) }}
+                </div>
+            </div>
+
             <div 
-                v-for="[clientId, cursor] in yjsInstance.remoteCursors.value" 
+                v-for="[clientId, cursor] in remoteCursorsArray" 
                 :key="clientId"
                 class="remote-cursor"
                 :style="{ 

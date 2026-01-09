@@ -6,12 +6,13 @@
  */
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
-import { ref } from 'vue'
+import { ref, shallowRef, triggerRef } from 'vue'
 
 export function useYjs(noteId, username) {
     const connected = ref(false)
     const synced = ref(false)
-    const remoteCursors = ref(new Map())
+    // Use shallowRef for the Map to ensure reactivity when replaced
+    const remoteCursors = shallowRef(new Map())
 
     // Create Y.Doc
     const ydoc = new Y.Doc()
@@ -35,7 +36,7 @@ export function useYjs(noteId, username) {
 
     // Use synced property or fallback to connected
     provider.on('sync', (isSynced) => {
-        console.log('[useYjs] Sync event:', isSynced)
+        // console.log('[useYjs] Sync event:', isSynced)
         synced.value = isSynced
     })
 
@@ -44,7 +45,7 @@ export function useYjs(noteId, username) {
         if (status === 'connected') {
             setTimeout(() => {
                 if (!synced.value) {
-                    console.log('[useYjs] Fallback sync after 500ms')
+                    // console.log('[useYjs] Fallback sync after 500ms')
                     synced.value = true
                 }
             }, 500)
@@ -60,24 +61,68 @@ export function useYjs(noteId, username) {
         color: getRandomColor()
     })
 
+    // Callback for cursor updates
+    let cursorsCallback = null
+    const onCursorsChange = (callback) => {
+        cursorsCallback = callback
+    }
+
+    // Track cursor timestamps to detect stale cursors
+    const cursorTimestamps = new Map()
+    const CURSOR_STALE_TIMEOUT = 5000 // 5 seconds
+
     // Listen to awareness changes from other users
     awareness.on('change', () => {
         const states = awareness.getStates()
         const cursors = new Map()
+        const now = Date.now()
 
         states.forEach((state, clientId) => {
             if (clientId !== ydoc.clientID && state.cursor) {
+                // Update timestamp for this cursor
+                cursorTimestamps.set(clientId, now)
+
                 cursors.set(clientId, {
                     x: state.cursor.x,
                     y: state.cursor.y,
                     username: state.user?.name || 'Guest',
                     color: state.user?.color || '#666'
                 })
+            } else if (clientId !== ydoc.clientID) {
+                // Client no longer has cursor, remove timestamp
+                cursorTimestamps.delete(clientId)
             }
         })
 
         remoteCursors.value = cursors
+        triggerRef(remoteCursors)
+
+        // Call external callback with array format
+        if (cursorsCallback) {
+            cursorsCallback(Array.from(cursors.entries()))
+        }
     })
+
+    // Periodically clean up stale cursors (every 2 seconds)
+    const cleanupInterval = setInterval(() => {
+        const now = Date.now()
+        let hasChanges = false
+
+        cursorTimestamps.forEach((timestamp, clientId) => {
+            if (now - timestamp > CURSOR_STALE_TIMEOUT) {
+                cursorTimestamps.delete(clientId)
+                remoteCursors.value.delete(clientId)
+                hasChanges = true
+            }
+        })
+
+        if (hasChanges) {
+            triggerRef(remoteCursors)
+            if (cursorsCallback) {
+                cursorsCallback(Array.from(remoteCursors.value.entries()))
+            }
+        }
+    }, 2000)
 
     // Update local cursor position
     const updateCursor = (x, y) => {
@@ -116,7 +161,7 @@ export function useYjs(noteId, username) {
 
         lastElementsHash = hash
         yScene.set('elements', elementsJson)
-        console.log('[useYjs] setElements:', elements.length, 'elements')
+        // console.log('[useYjs] setElements:', elements.length, 'elements')
     }
 
     // Listen for remote changes
@@ -127,7 +172,7 @@ export function useYjs(noteId, username) {
             // Only trigger on remote changes (not local transactions)
             if (!transaction.local && remoteChangeCallback) {
                 const elements = getElements()
-                console.log('[useYjs] Remote scene change:', elements.length, 'elements')
+                // console.log('[useYjs] Remote scene change:', elements.length, 'elements')
                 // Update hash to prevent echo
                 const hash = simpleHash(JSON.stringify(elements))
                 lastElementsHash = hash
@@ -138,6 +183,7 @@ export function useYjs(noteId, username) {
 
     // Cleanup
     const destroy = () => {
+        clearInterval(cleanupInterval)
         clearCursor()
         provider.disconnect()
         provider.destroy()
@@ -157,6 +203,7 @@ export function useYjs(noteId, username) {
         getElements,
         setElements,
         onRemoteChange,
+        onCursorsChange,
         destroy
     }
 }
