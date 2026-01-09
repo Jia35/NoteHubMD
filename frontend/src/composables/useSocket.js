@@ -22,8 +22,8 @@ export function useSocket() {
     let usersInNoteHandler = null
     let permissionChangedHandler = null
 
-    const joinNote = (noteId, username = 'Guest') => {
-        s.emit('join-note', { noteId, username })
+    const joinNote = (noteId, username = 'Guest', name = null) => {
+        s.emit('join-note', { noteId, username, name })
     }
 
     const leaveNote = (noteId) => {

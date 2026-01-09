@@ -569,7 +569,8 @@ const loadNote = async () => {
     
     if (note.value) {
       const username = currentUser.value?.username || 'Guest'
-      joinNote(note.value.id, username)
+      const name = currentUser.value?.name || null
+      joinNote(note.value.id, username, name)
       
       onUsersInNote((users) => {
         // Deduplicate users by username (except 'Guest')
@@ -2073,7 +2074,7 @@ watch(() => route.params.id, (newId, oldId) => {
                             :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                         {{ user.username?.charAt(0).toUpperCase() || '?' }}
                       </span>
-                      <span class="truncate">{{ user.username || 'Guest' }}</span>
+                      <span class="truncate">{{ user.name || user.username || 'Guest' }} <span class="text-gray-500">@{{ user.username || 'Guest' }}</span></span>
                     </li>
                   </ul>
                 </div>

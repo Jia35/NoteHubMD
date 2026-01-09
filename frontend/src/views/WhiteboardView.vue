@@ -160,7 +160,8 @@ const loadWhiteboard = async () => {
     
     // Join socket room for online users with actual username
     const username = currentUser.value?.username || 'Guest'
-    joinNote(data.id, username)
+    const name = currentUser.value?.name || null
+    joinNote(data.id, username, name)
     onUsersInNote((users) => {
       onlineUsers.value = users
     })
@@ -793,7 +794,7 @@ watch(noteId, (newId, oldId) => {
                           :class="user.username && user.username !== 'Guest' ? 'bg-blue-600' : 'bg-gray-500'">
                       {{ user.username?.charAt(0).toUpperCase() || '?' }}
                     </span>
-                    <span class="truncate">{{ user.username || 'Guest' }}</span>
+                    <span class="truncate">{{ user.name || user.username || 'Guest' }} <span class="text-gray-500">@{{ user.username || 'Guest' }}</span></span>
                   </li>
                 </ul>
               </div>

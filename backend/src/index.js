@@ -174,6 +174,7 @@ io.on('connection', (socket) => {
         }
         noteUsersMap.get(noteId).set(socket.id, {
             username,
+            name: typeof data === 'object' ? (data.name || null) : null,
             joinedAt: new Date().toISOString()
         });
 
