@@ -2239,16 +2239,8 @@ watch(() => route.params.id, (newId, oldId) => {
                    :class="{'flex justify-center': !showEditor}">
                 <div :class="{'w-full px-8': !showEditor, 'px-4': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
                   <div class="flex items-center flex-wrap gap-y-1">
-                    <!-- Creation Date with Tooltip -->
-                    <span v-if="formattedCreatedDate" 
-                          class="cursor-help" 
-                          :title="detailedCreatedTime">
-                      {{ formattedCreatedDate }}
-                    </span>
-                    
                     <!-- Author with Tooltip -->
                     <template v-if="noteOwner">
-                      <span class="ms-2 me-1">作者</span>
                       <div class="relative group inline-flex items-center">
                         <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
                               style="font-size: 10px;"
@@ -2274,9 +2266,17 @@ watch(() => route.params.id, (newId, oldId) => {
                         </div>
                       </div>
                     </template>
+                    <!-- Creation Date with Tooltip -->
+                    <template v-if="formattedCreatedDate">
+                      <span class="ms-2 me-1">創建於</span>
+                      <span class="cursor-help" 
+                            :title="detailedCreatedTime">
+                        {{ formattedCreatedDate }}
+                      </span>
+                    </template>
                     
-                    <!-- Last Editor (only if edited and different from owner) -->
-                    <template v-if="isEdited && lastEditor">
+                    <!-- Last Editor -->
+                    <template v-if="lastEditor">
                       <span class="mx-2 text-gray-400">|</span>
                       <div class="relative group inline-flex items-center">
                         <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
@@ -2302,8 +2302,8 @@ watch(() => route.params.id, (newId, oldId) => {
                           </div>
                         </div>
                       </div>
-                      <span class="ml-1">編輯於</span>
-                      <span class="ml-1 cursor-help" :title="detailedEditedTime">{{ relativeLastEditedTime }}</span>
+                      <span class="ms-2 me-1">編輯於</span>
+                      <span class="cursor-help" :title="detailedEditedTime">{{ relativeLastEditedTime }}</span>
                     </template>
                   </div>
                 </div>

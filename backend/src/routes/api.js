@@ -251,6 +251,7 @@ router.post('/notes', async (req, res) => {
             // Determine default title based on note type
             const defaultTitle = noteType === 'excalidraw' ? 'Untitled Whiteboard' : 'Untitled Note';
 
+            const now = new Date();
             const noteData = {
                 id: id,
                 title: (req.body && req.body.title) || defaultTitle,
@@ -258,7 +259,11 @@ router.post('/notes', async (req, res) => {
                 noteType: noteType || 'markdown',
                 diagramData: noteType === 'excalidraw' ? (diagramData || { elements: [], appState: {}, files: {} }) : null,
                 ownerId: req.session.userId || null,
-                shareId: shareId  // Auto-generated share link
+                shareId: shareId,  // Auto-generated share link
+                lastEditedAt: now,
+                lastEditorId: req.session.userId || null,
+                lastUpdaterId: req.session.userId || null,
+                updatedAt: now
             };
             // Add optional fields if provided
             if (permission !== undefined) noteData.permission = permission;
@@ -1765,6 +1770,7 @@ router.post('/books/:id/notes', async (req, res) => {
         let retry = 0;
         while (retry < 5) {
             try {
+                const now = new Date();
                 const note = await db.Note.create({
                     id: id,
                     title: (req.body && req.body.title) || 'Untitled Note',
@@ -1775,7 +1781,11 @@ router.post('/books/:id/notes', async (req, res) => {
                     ownerId: userId,
                     permission: 'inherit', // Default to inherit from book
                     order: newOrder,
-                    shareId: shareId  // Auto-generate share link
+                    shareId: shareId,  // Auto-generate share link
+                    lastEditedAt: now,
+                    lastEditorId: userId,
+                    lastUpdaterId: userId,
+                    updatedAt: now
                 });
                 // Update user's lastActiveAt
                 if (userId) {

@@ -830,16 +830,8 @@ watch(() => route.params.shareId, () => {
             <div class="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 text-xs text-gray-500 dark:text-gray-400 flex justify-center">
               <div class="w-full px-8" style="max-width: 900px">
                 <div class="flex items-center flex-wrap gap-y-1">
-                  <!-- Creation Date with Tooltip -->
-                  <span v-if="formattedCreatedDate" 
-                        class="cursor-help" 
-                        :title="detailedCreatedTime">
-                    {{ formattedCreatedDate }}
-                  </span>
-                  
                   <!-- Author with Tooltip -->
                   <template v-if="noteOwner">
-                    <span class="mx-2">作者</span>
                     <div class="relative group inline-flex items-center">
                       <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
                             style="font-size: 10px;"
@@ -865,9 +857,17 @@ watch(() => route.params.shareId, () => {
                       </div>
                     </div>
                   </template>
+                  <!-- Creation Date with Tooltip -->
+                  <template v-if="formattedCreatedDate">
+                    <span class="ms-2 me-1">創建於</span>
+                    <span class="cursor-help" 
+                          :title="detailedCreatedTime">
+                      {{ formattedCreatedDate }}
+                    </span>
+                  </template>
                   
-                  <!-- Last Editor (only if edited) -->
-                  <template v-if="isEdited && lastEditor">
+                  <!-- Last Editor -->
+                  <template v-if="lastEditor">
                     <span class="mx-2 text-gray-400">|</span>
                     <div class="relative group inline-flex items-center">
                       <!-- <span class="w-5 h-5 rounded-full flex items-center justify-center font-medium text-white shrink-0 overflow-hidden cursor-help mr-1"
@@ -893,8 +893,8 @@ watch(() => route.params.shareId, () => {
                         </div>
                       </div>
                     </div>
-                    <span class="ml-1">編輯於</span>
-                    <span class="ml-1 cursor-help" :title="detailedEditedTime">{{ relativeLastEditedTime }}</span>
+                    <span class="ms-2 me-1">編輯於</span>
+                    <span class="cursor-help" :title="detailedEditedTime">{{ relativeLastEditedTime }}</span>
                   </template>
                 </div>
               </div>
