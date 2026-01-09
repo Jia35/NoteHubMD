@@ -524,6 +524,35 @@ const api = {
         const res = await fetch('/api/system/articles/' + id)
         if (!res.ok) throw new Error('System article not found')
         return res.json()
+    },
+
+    // Note reactions
+    async getNoteReactions(noteId) {
+        const res = await fetch('/api/notes/' + noteId + '/reactions')
+        if (!res.ok) {
+            // Return empty if feature disabled or error
+            return { reactionCounts: {}, userReaction: null }
+        }
+        return res.json()
+    },
+
+    async toggleNoteReaction(noteId, type) {
+        const res = await fetch('/api/notes/' + noteId + '/reactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        })
+        if (!res.ok) throw new Error('Failed to toggle reaction')
+        return res.json()
+    },
+
+    // Feature config
+    async getFeatureConfig() {
+        const res = await fetch('/api/config/features')
+        if (!res.ok) {
+            return { comments: true, noteReactions: true }
+        }
+        return res.json()
     }
 }
 

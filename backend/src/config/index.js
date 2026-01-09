@@ -66,7 +66,8 @@ const config = {
         bookPermission: getEnv('DEFAULT_BOOK_PERMISSION', 'private')
     },
     features: {
-        comments: getEnv('FEATURE_COMMENTS', true)
+        comments: getEnv('FEATURE_COMMENTS', true),
+        noteReactions: getEnv('FEATURE_NOTE_REACTIONS', true)
     },
     api: {
         masterKey: getEnv('API_MASTER_KEY', '')

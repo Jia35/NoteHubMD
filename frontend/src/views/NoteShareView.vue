@@ -42,6 +42,7 @@ import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
 
 // Comment Section
 import CommentSection from '@/components/common/CommentSection.vue'
+import NoteReactions from '@/components/common/NoteReactions.vue'
 
 // Note: mermaid and KaTeX are loaded dynamically via useDynamicLoaders
 
@@ -929,6 +930,17 @@ watch(() => route.params.shareId, () => {
                   </a>
                   <div v-else></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Note Reactions (emoji feedback) -->
+            <div v-if="noteType === 'markdown' && noteId" 
+                 class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-center">
+              <div class="w-full" style="max-width: 900px">
+                <NoteReactions 
+                  :noteId="noteId"
+                  :currentUser="currentUser"
+                />
               </div>
             </div>
 

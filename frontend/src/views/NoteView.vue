@@ -19,6 +19,7 @@ dayjs.locale('zh-tw')
 // Components
 import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, CreateBookModal, RevisionsModal, ImageLightbox } from '@/components'
 import CommentSection from '@/components/common/CommentSection.vue'
+import NoteReactions from '@/components/common/NoteReactions.vue'
 
 // CodeMirror 6
 import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
@@ -2314,6 +2315,17 @@ watch(() => route.params.id, (newId, oldId) => {
                    :class="{'flex justify-center': !showEditor, 'has-toc': toc.length > 0 && mode === 'view' && !showEditor}"
                    :style="toc.length > 0 && mode === 'view' && !showEditor ? 'padding-right: 15rem' : ''">
                 <div :class="{'w-full px-8 pb-2': !showEditor, 'px-8 pb-2': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''" ref="previewContent"></div>
+              </div>
+
+              <!-- Note Reactions (emoji feedback) -->
+              <div v-if="(mode === 'view' || mode === 'both') && note?.id" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                   :class="{'flex justify-center': !showEditor}">
+                <div :class="{'w-full': !showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
+                  <NoteReactions 
+                    :noteId="note.id"
+                    :currentUser="currentUser"
+                  />
+                </div>
               </div>
 
               <!-- Comments Section (hidden when commentsDisabled) -->

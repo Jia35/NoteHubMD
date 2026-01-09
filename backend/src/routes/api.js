@@ -2632,6 +2632,113 @@ router.delete('/comments/:id/reactions/:type', async (req, res) => {
     }
 });
 
+// --- Note Reactions ---
+
+// Get note reactions (summary + user's reaction)
+router.get('/notes/:id/reactions', async (req, res) => {
+    try {
+        // Check if feature is enabled
+        if (config.features?.noteReactions === false) {
+            return res.status(403).json({ error: 'Note reactions feature is disabled' });
+        }
+
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+
+        const userId = req.session.userId || null;
+
+        // Get all reactions for this note
+        const reactions = await db.NoteReaction.findAll({
+            where: { noteId: req.params.id }
+        });
+
+        // Count reactions by type
+        const reactionCounts = {};
+        let userReaction = null;
+
+        for (const r of reactions) {
+            reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
+            if (userId && r.userId === userId) {
+                userReaction = r.type;
+            }
+        }
+
+        res.json({ reactionCounts, userReaction });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Toggle note reaction (add/remove/change)
+router.post('/notes/:id/reactions', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Login required' });
+        }
+
+        // Check if feature is enabled
+        if (config.features?.noteReactions === false) {
+            return res.status(403).json({ error: 'Note reactions feature is disabled' });
+        }
+
+        const { type } = req.body;
+        const validTypes = ['like', 'ok', 'laugh', 'surprise', 'sad'];
+        if (!type || !validTypes.includes(type)) {
+            return res.status(400).json({ error: 'Invalid reaction type' });
+        }
+
+        const note = await db.Note.findByPk(req.params.id);
+        if (!note) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+
+        // Check if user has same reaction already (toggle off)
+        const existingSame = await db.NoteReaction.findOne({
+            where: {
+                noteId: req.params.id,
+                userId: req.session.userId,
+                type
+            }
+        });
+
+        if (existingSame) {
+            // Toggle off - remove the reaction
+            await existingSame.destroy();
+            res.json({ action: 'removed', type });
+        } else {
+            // Remove any existing reaction from this user on this note (only one reaction allowed)
+            await db.NoteReaction.destroy({
+                where: {
+                    noteId: req.params.id,
+                    userId: req.session.userId
+                }
+            });
+
+            // Add new reaction
+            await db.NoteReaction.create({
+                noteId: req.params.id,
+                userId: req.session.userId,
+                type
+            });
+            res.json({ action: 'added', type });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Features Config ---
+
+// Get enabled features for frontend
+router.get('/config/features', (req, res) => {
+    res.json({
+        comments: config.features?.comments !== false,
+        noteReactions: config.features?.noteReactions !== false
+    });
+});
+
 // --- Export ---
 
 // Export user's notes as ZIP

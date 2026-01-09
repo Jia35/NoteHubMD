@@ -92,5 +92,12 @@ db.Note.hasMany(db.NoteRevision, { foreignKey: 'noteId', as: 'revisions' });
 db.NoteRevision.belongsTo(db.Note, { foreignKey: 'noteId' });
 db.NoteRevision.belongsTo(db.User, { foreignKey: 'editorId', as: 'editor' });
 
+// NoteReaction model and associations
+db.NoteReaction = require('./NoteReaction')(sequelize, Sequelize);
+db.Note.hasMany(db.NoteReaction, { foreignKey: 'noteId', as: 'noteReactions' });
+db.NoteReaction.belongsTo(db.Note, { foreignKey: 'noteId' });
+db.User.hasMany(db.NoteReaction, { foreignKey: 'userId' });
+db.NoteReaction.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = db;
 
