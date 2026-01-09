@@ -244,6 +244,7 @@ const permissionOptions = [
 
 // Comments - now handled by CommentSection component
 const noteCommentsEnabled = ref(true)
+const featureConfig = ref({ comments: true, noteReactions: true })
 
 // Note owner/editor info
 const noteOwner = ref(null)
@@ -520,6 +521,15 @@ const loadNote = async () => {
     lastEditor.value = data.lastEditor || null
     lastContentEditedAt.value = data.lastContentEditedAt || data.updatedAt || null
     noteCreatedAt.value = data.createdAt || null
+    
+    // Load global feature config
+    try {
+      featureConfig.value = await api.getFeatureConfig()
+      console.log('Feature Config Loaded:', featureConfig.value)
+    } catch (e) {
+      console.error('Failed to load feature config:', e)
+      // Keep defaults if fetch fails
+    }
     
     // Fetch book with Notes if note belongs to a book
     if (data.bookId) {
@@ -2318,7 +2328,7 @@ watch(() => route.params.id, (newId, oldId) => {
               </div>
 
               <!-- Note Reactions (emoji feedback) -->
-              <div v-if="(mode === 'view' || mode === 'both') && note?.id" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+              <div v-if="(mode === 'view' || mode === 'both') && note?.id && featureConfig.noteReactions" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                    :class="{'flex justify-center': !showEditor}">
                 <div :class="{'w-full': !showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
                   <NoteReactions 
@@ -2328,8 +2338,8 @@ watch(() => route.params.id, (newId, oldId) => {
                 </div>
               </div>
 
-              <!-- Comments Section (hidden when commentsDisabled) -->
-              <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+              <!-- Comments Section (hidden when commentsDisabled or global feature disabled) -->
+              <div v-if="(mode === 'view' || mode === 'both') && noteCommentsEnabled && featureConfig.comments" class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                    :class="{'flex justify-center': !showEditor}">
                 <div :class="{'w-full px-8 py-6': !showEditor, 'px-8 py-6': showEditor}" :style="!showEditor ? 'max-width: 800px' : ''">
                   <CommentSection 

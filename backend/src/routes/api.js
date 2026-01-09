@@ -2356,9 +2356,11 @@ router.get('/trash', async (req, res) => {
 
 // Get feature config (public)
 router.get('/config/features', (req, res) => {
-    res.json({
-        comments: config.features?.comments !== false
-    });
+    const features = {
+        comments: config.features?.comments !== false,
+        noteReactions: config.features?.noteReactions !== false
+    };
+    res.json(features);
 });
 
 // Get comments for a note
@@ -2727,16 +2729,6 @@ router.post('/notes/:id/reactions', async (req, res) => {
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
-});
-
-// --- Features Config ---
-
-// Get enabled features for frontend
-router.get('/config/features', (req, res) => {
-    res.json({
-        comments: config.features?.comments !== false,
-        noteReactions: config.features?.noteReactions !== false
-    });
 });
 
 // --- Export ---
