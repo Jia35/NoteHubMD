@@ -9,7 +9,7 @@ import api from '@/composables/useApi'
 import ExcalidrawWrapper from '@/components/whiteboard/ExcalidrawWrapper.vue'
 import InfoModal from '@/components/common/InfoModal.vue'
 import SidebarNav from '@/components/common/SidebarNav.vue'
-import { SettingsModal, AboutModal, UserProfileModal, CreateBookModal } from '@/components'
+import { SettingsModal, AboutModal, CreateBookModal } from '@/components'
 import { useSocket } from '@/composables/useSocket'
 import { useYjs } from '@/composables/useYjs'
 import dayjs from 'dayjs'
@@ -62,7 +62,6 @@ const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const appVersion = ref('')
 const showSettingsModal = ref(false)
 const settingsInitialTab = ref('')
-const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 const showAboutModal = ref(false)
 
@@ -944,13 +943,6 @@ watch(noteId, (newId, oldId) => {
     />
     
     <AboutModal :show="showAboutModal" :app-version="appVersion" @close="showAboutModal = false" />
-    
-    <UserProfileModal 
-      :show="showUserProfileModal" 
-      :user="currentUser"
-      @close="showUserProfileModal = false"
-      @updated="handleUserProfileUpdate"
-    />
     
     <CreateBookModal 
       :show="showCreateBookModal"

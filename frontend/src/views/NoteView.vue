@@ -17,7 +17,7 @@ dayjs.extend(relativeTimePlugin)
 dayjs.locale('zh-tw')
 
 // Components
-import { SidebarNav, InfoModal, SettingsModal, AboutModal, UserProfileModal, CreateBookModal, RevisionsModal, ImageLightbox } from '@/components'
+import { SidebarNav, InfoModal, SettingsModal, AboutModal, CreateBookModal, RevisionsModal, ImageLightbox } from '@/components'
 import CommentSection from '@/components/common/CommentSection.vue'
 import NoteReactions from '@/components/common/NoteReactions.vue'
 
@@ -191,7 +191,6 @@ const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const showSettingsModal = ref(false)
 const settingsInitialTab = ref('')
 const showAboutModal = ref(false)
-const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 const showNoteInfoModal = ref(false)
 const showRevisionsModal = ref(false)
@@ -2491,13 +2490,6 @@ watch(() => route.params.id, async (newId, oldId) => {
     />
     
     <AboutModal :show="showAboutModal" :app-version="appVersion" @close="showAboutModal = false" />
-    
-    <UserProfileModal 
-      :show="showUserProfileModal" 
-      :user="currentUser"
-      @close="showUserProfileModal = false"
-      @updated="handleUserProfileUpdate"
-    />
     
     <CreateBookModal 
       :show="showCreateBookModal"

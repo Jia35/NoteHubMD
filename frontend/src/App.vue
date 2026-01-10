@@ -2,7 +2,7 @@
 import { ref, computed, provide, onMounted, inject } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import api from '@/composables/useApi'
-import { SidebarNav, CreateBookModal, SettingsModal, UserProfileModal, InfoModal, AboutModal } from '@/components'
+import { SidebarNav, CreateBookModal, SettingsModal, InfoModal, AboutModal } from '@/components'
 
 const route = useRoute()
 const router = useRouter()
@@ -168,13 +168,11 @@ const setTheme = (newTheme) => {
 const showCreateBookModal = ref(false)
 const showSettings = ref(false)
 const settingsInitialTab = ref('')
-const showUserProfileModal = ref(false)
 const showAboutModal = ref(false)
 
 // Provide open modal functions (optional, if needed by children)
 provide('openCreateBookModal', () => showCreateBookModal.value = true)
 provide('openSettingsModal', () => showSettings.value = true)
-provide('openUserProfileModal', () => showUserProfileModal.value = true)
 
 // Import/Export Logic
 const exportingNotes = ref(false)
@@ -433,13 +431,6 @@ onMounted(async () => {
       :show="showAboutModal" 
       :app-version="appVersion" 
       @close="showAboutModal = false" 
-    />
-
-    <UserProfileModal 
-      :show="showUserProfileModal" 
-      :user="sidebarUser" 
-      @close="showUserProfileModal = false" 
-      @updated="updateSidebarUser" 
     />
   </div>
 
