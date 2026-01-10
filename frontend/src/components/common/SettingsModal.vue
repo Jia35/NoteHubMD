@@ -219,9 +219,18 @@ const saveProfile = async () => {
       avatarOriginal: avatarOriginalUrl
     })
     
+    // Record if we made changes before resetting
+    const hadAvatarChange = !!avatarFile.value || avatarRemoved.value
+    
+    // Reset state
     avatarFile.value = null
     avatarRemoved.value = false
     pendingAvatarFile = null
+    
+    // Update local preview with the new avatar URL after reset
+    if (hadAvatarChange) {
+      avatarPreview.value = avatarUrl || ''
+    }
   } catch (e) {
     console.error('Save profile failed:', e)
   } finally {
@@ -316,7 +325,7 @@ const visibleTabs = () => {
               <!-- Username -->
               <div>
                 <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">帳號 (Username)</label>
-                <div class="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-sm">
+                <div class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 text-sm">
                   {{ user?.username }}
                 </div>
               </div>

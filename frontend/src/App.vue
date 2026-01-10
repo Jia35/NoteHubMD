@@ -104,8 +104,13 @@ const updateSidebarPinnedItems = (items) => {
   sidebarPinnedItems.value = items
 }
 
-const updateSidebarUser = (user) => {
-  sidebarUser.value = user
+const updateSidebarUser = (userData) => {
+  if (sidebarUser.value && typeof userData === 'object') {
+    // Merge with existing user data to preserve properties like username, role, etc.
+    sidebarUser.value = { ...sidebarUser.value, ...userData }
+  } else {
+    sidebarUser.value = userData
+  }
 }
 
 // Clear sidebar data (for logout)
