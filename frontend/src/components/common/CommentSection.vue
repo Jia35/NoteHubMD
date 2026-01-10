@@ -1,8 +1,18 @@
 <template>
   <div class="comment-section">
-    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
-      <i class="fa-solid fa-comments mr-2"></i>留言 ({{ comments.length }})
-    </h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white">
+        <i class="fa-solid fa-comments mr-2"></i>留言 ({{ comments.length }})
+      </h3>
+      <div v-if="comments.length > 0" class="flex items-center gap-2 text-sm">
+        <span class="text-gray-500 dark:text-gray-400">排序：</span>
+        <select v-model="sortBy" class="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 cursor-pointer">
+          <option value="time-asc">由舊到新</option>
+          <option value="time-desc">由新到舊</option>
+          <option value="reactions">表情回饋</option>
+        </select>
+      </div>
+    </div>
     
     <!-- Comment Input Form -->
     <div v-if="currentUser" class="mb-4">
@@ -472,6 +482,7 @@ const editCommentContent = ref('')
 const openMenuId = ref(null)
 const commentTextareaFocused = ref(false)
 const commentTextarea = ref(null)
+const sortBy = ref('time-asc')
 
 // Reply state
 const replyingToId = ref(null)
@@ -481,9 +492,22 @@ const replyContent = ref('')
 
 // Computed
 const topLevelComments = computed(() => {
-  return comments.value
-    .filter(c => !c.parentId)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  const filtered = comments.value.filter(c => !c.parentId)
+  
+  if (sortBy.value === 'time-asc') {
+    return filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  } else if (sortBy.value === 'time-desc') {
+    return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } else if (sortBy.value === 'reactions') {
+    // Sort by total reaction count (descending)
+    const getReactionCount = (c) => {
+      if (!c.reactionCounts) return 0
+      return Object.values(c.reactionCounts).reduce((sum, count) => sum + count, 0)
+    }
+    return filtered.sort((a, b) => getReactionCount(b) - getReactionCount(a))
+  }
+  
+  return filtered
 })
 
 const getReplies = (parentId) => {
