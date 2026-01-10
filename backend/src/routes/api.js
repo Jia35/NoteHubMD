@@ -25,7 +25,7 @@ router.get('/version', (req, res) => {
 // --- Image Upload ---
 
 // Configure multer storage
-const uploadDir = path.join(__dirname, '../../_uploads');
+const uploadDir = path.join(__dirname, '../../../_uploads');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync(uploadDir)) {
@@ -71,7 +71,7 @@ router.post('/upload/image', upload.single('image'), (req, res) => {
 // --- Avatar Upload ---
 
 // Configure multer storage for avatars
-const avatarUploadDir = path.join(__dirname, '../../_uploads/avatars');
+const avatarUploadDir = path.join(__dirname, '../../../_uploads/avatars');
 const avatarStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync(avatarUploadDir)) {
@@ -2904,7 +2904,7 @@ const AdmZip = require('adm-zip');
 // Configure multer storage for import (temp file)
 const importStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const importTempDir = path.join(__dirname, '../../_uploads/import_temp');
+        const importTempDir = path.join(__dirname, '../../../_uploads/import_temp');
         if (!fs.existsSync(importTempDir)) {
             fs.mkdirSync(importTempDir, { recursive: true });
         }

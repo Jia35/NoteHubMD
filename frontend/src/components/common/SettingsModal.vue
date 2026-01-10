@@ -47,12 +47,18 @@ watch(() => props.show, (newVal) => {
     
     // Initialize profile data
     if (props.user) {
+      console.log('[Watch show] Initializing with props.user.avatar:', props.user.avatar)
       editableName.value = props.user.name || ''
       avatarPreview.value = props.user.avatar || ''
       avatarFile.value = null
       avatarRemoved.value = false
     }
   }
+})
+
+// Debug: watch avatarPreview changes
+watch(avatarPreview, (newVal, oldVal) => {
+  console.log('[Watch avatarPreview] Changed from', oldVal, 'to', newVal)
 })
 
 // Import handlers
@@ -219,18 +225,17 @@ const saveProfile = async () => {
       avatarOriginal: avatarOriginalUrl
     })
     
-    // Record if we made changes before resetting
-    const hadAvatarChange = !!avatarFile.value || avatarRemoved.value
-    
     // Reset state
     avatarFile.value = null
     avatarRemoved.value = false
     pendingAvatarFile = null
     
-    // Update local preview with the new avatar URL after reset
-    if (hadAvatarChange) {
-      avatarPreview.value = avatarUrl || ''
-    }
+    // Always sync preview with the final avatar URL after successful save
+    // Add timestamp to bust cache
+    const finalUrl = avatarUrl ? `${avatarUrl}?t=${Date.now()}` : ''
+    console.log('[SaveProfile] Setting avatarPreview to:', finalUrl)
+    avatarPreview.value = finalUrl
+    console.log('[SaveProfile] avatarPreview is now:', avatarPreview.value)
   } catch (e) {
     console.error('Save profile failed:', e)
   } finally {
