@@ -1581,6 +1581,28 @@ const saveNote = async () => {
   }
 }
 
+// Force save before leaving (clear debounce and save immediately)
+const forceSave = async () => {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+    saveTimeout = null
+  }
+  if (content.value && canEdit.value && note.value) {
+    await saveNote()
+  }
+}
+
+// Handle beforeunload event (browser close/refresh)
+const handleBeforeUnload = (e) => {
+  if (canEdit.value && note.value) {
+    // Trigger synchronous save attempt
+    forceSave()
+    // Show browser confirmation dialog
+    //e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
 // Global save handler
 const handleGlobalSave = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -1909,14 +1931,20 @@ onMounted(() => {
   window.addEventListener('keydown', handleGlobalSave)
   // Close menu/popups on click outside
   document.addEventListener('click', handleDocumentClick)
+  // Save on browser close/refresh
+  window.addEventListener('beforeunload', handleBeforeUnload)
 
   updateHighlightStyle(theme.value)
   loadNote()
 })
 
 onUnmounted(() => {
+  // Save any pending changes before leaving
+  forceSave()
+  
   window.removeEventListener('keydown', handleGlobalSave)
   document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   if (saveTimeout) clearTimeout(saveTimeout)
   if (renderTimeout) clearTimeout(renderTimeout)
   if (tocObserver) tocObserver.disconnect()
@@ -1933,8 +1961,10 @@ onUnmounted(() => {
 })
 
 // Watch route
-watch(() => route.params.id, (newId, oldId) => {
+watch(() => route.params.id, async (newId, oldId) => {
   if (oldId) {
+    // Save pending changes before switching notes
+    await forceSave()
     leaveNote(oldId)
     offNoteUpdated()
     offUsersInNote()

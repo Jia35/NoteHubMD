@@ -370,6 +370,17 @@ const forceSave = async () => {
   }
 }
 
+// Handle beforeunload event (browser close/refresh)
+const handleBeforeUnload = (e) => {
+  if (canEdit.value && note.value) {
+    // Trigger synchronous save attempt
+    forceSave()
+    // Show browser confirmation dialog
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
 // Right actions functions
 const toggleOnlineUsersPopup = () => {
   showOnlineUsersPopup.value = !showOnlineUsersPopup.value
@@ -613,11 +624,14 @@ const moveNoteToBook = async (bookId) => {
 // Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+  // Save on browser close/refresh
+  window.addEventListener('beforeunload', handleBeforeUnload)
   loadWhiteboard()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   // Save any pending changes
   forceSave()
   // Cleanup Yjs
