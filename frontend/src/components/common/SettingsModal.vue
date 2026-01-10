@@ -11,7 +11,8 @@ const props = defineProps({
   show: Boolean,
   user: { type: Object, default: null },
   theme: { type: String, default: 'dark' },
-  appVersion: { type: String, default: '' }
+  appVersion: { type: String, default: '' },
+  initialTab: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'set-theme', 'logout', 'open-about', 'export-notes', 'import-file', 'import-folder', 'user-updated'])
@@ -41,8 +42,12 @@ let pendingAvatarFile = null
 // Watch for show changes - reset state
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    // Reset to appropriate default tab based on login state
-    activeTab.value = props.user ? 'profile' : 'appearance'
+    // Set initial tab based on prop or default to appropriate tab
+    if (props.initialTab) {
+      activeTab.value = props.initialTab
+    } else {
+      activeTab.value = props.user ? 'profile' : 'appearance'
+    }
     showImportMenu.value = false
     
     // Initialize profile data

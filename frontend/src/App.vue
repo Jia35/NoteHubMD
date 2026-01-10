@@ -167,6 +167,7 @@ const setTheme = (newTheme) => {
 // Modal States
 const showCreateBookModal = ref(false)
 const showSettings = ref(false)
+const settingsInitialTab = ref('')
 const showUserProfileModal = ref(false)
 const showAboutModal = ref(false)
 
@@ -392,8 +393,8 @@ onMounted(async () => {
         @create-note="createNote"
         @create-whiteboard="createWhiteboard"
         @create-book="showCreateBookModal = true"
-        @open-profile="showUserProfileModal = true"
-        @open-settings="showSettings = true"
+        @open-profile="settingsInitialTab = 'profile'; showSettings = true"
+        @open-settings="settingsInitialTab = ''; showSettings = true"
       />
 
       <!-- Main Content Area -->
@@ -417,7 +418,8 @@ onMounted(async () => {
       :user="sidebarUser" 
       :theme="theme" 
       :app-version="appVersion"
-      @close="showSettings = false"
+      :initial-tab="settingsInitialTab"
+      @close="showSettings = false; settingsInitialTab = ''"
       @set-theme="setTheme"
       @logout="handleLogout"
       @export-notes="exportNotes"

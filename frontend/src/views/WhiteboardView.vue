@@ -61,6 +61,7 @@ const pinnedItems = ref([]) // 空陣列代替，避免模板報錯
 const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 const appVersion = ref('')
 const showSettingsModal = ref(false)
+const settingsInitialTab = ref('')
 const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
 const showAboutModal = ref(false)
@@ -679,8 +680,8 @@ watch(noteId, (newId, oldId) => {
             @view-mode-change="setGlobalViewMode"
             @create-note="createNewNote"
             @create-book="showCreateBookModal = true"
-            @open-profile="showUserProfileModal = true"
-            @open-settings="showSettingsModal = true"
+            @open-profile="settingsInitialTab = 'profile'; showSettingsModal = true"
+            @open-settings="settingsInitialTab = ''; showSettingsModal = true"
           />
         </div>
       </div>
@@ -920,7 +921,8 @@ watch(noteId, (newId, oldId) => {
       :user="currentUser" 
       :theme="theme" 
       :app-version="appVersion"
-      @close="showSettingsModal = false"
+      :initial-tab="settingsInitialTab"
+      @close="showSettingsModal = false; settingsInitialTab = ''"
       @set-theme="setTheme"
       @logout="logout"
       @open-about="showAboutModal = true"

@@ -189,6 +189,7 @@ const globalViewMode = ref(localStorage.getItem('NoteHubMD-viewMode') || 'my')
 
 // Modals
 const showSettingsModal = ref(false)
+const settingsInitialTab = ref('')
 const showAboutModal = ref(false)
 const showUserProfileModal = ref(false)
 const showCreateBookModal = ref(false)
@@ -1981,8 +1982,8 @@ watch(() => route.params.id, (newId, oldId) => {
             @view-mode-change="setGlobalViewMode"
             @create-note="createNewNote"
             @create-book="showCreateBookModal = true"
-            @open-profile="showUserProfileModal = true"
-            @open-settings="showSettingsModal = true"
+            @open-profile="settingsInitialTab = 'profile'; showSettingsModal = true"
+            @open-settings="settingsInitialTab = ''; showSettingsModal = true"
           />
         </div>
       </div>
@@ -2451,7 +2452,8 @@ watch(() => route.params.id, (newId, oldId) => {
       :user="currentUser" 
       :theme="theme" 
       :app-version="appVersion"
-      @close="showSettingsModal = false"
+      :initial-tab="settingsInitialTab"
+      @close="showSettingsModal = false; settingsInitialTab = ''"
       @set-theme="setTheme"
       @logout="logout"
       @open-about="showAboutModal = true"
