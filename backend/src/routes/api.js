@@ -2675,23 +2675,40 @@ router.get('/notes/:id/reactions', async (req, res) => {
 
         const userId = req.session.userId || null;
 
-        // Get all reactions for this note
+        // Get all reactions for this note with user info
         const reactions = await db.NoteReaction.findAll({
-            where: { noteId: req.params.id }
+            where: { noteId: req.params.id },
+            include: [
+                { model: db.User, as: 'user', attributes: ['id', 'username', 'name'] }
+            ]
         });
 
-        // Count reactions by type
+        // Count reactions by type and collect user names
         const reactionCounts = {};
+        const reactionUsers = {};  // { type: [{ id, username, name }, ...] }
         let userReaction = null;
 
         for (const r of reactions) {
             reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
+
+            // Collect user info for each type
+            if (!reactionUsers[r.type]) {
+                reactionUsers[r.type] = [];
+            }
+            if (r.user) {
+                reactionUsers[r.type].push({
+                    id: r.user.id,
+                    username: r.user.username,
+                    name: r.user.name || r.user.username
+                });
+            }
+
             if (userId && r.userId === userId) {
                 userReaction = r.type;
             }
         }
 
-        res.json({ reactionCounts, userReaction });
+        res.json({ reactionCounts, reactionUsers, userReaction });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
