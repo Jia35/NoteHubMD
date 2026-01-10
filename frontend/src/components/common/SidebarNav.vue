@@ -267,7 +267,7 @@ const formatDate = (date) => {
           </button>
           <button
             @click="toggleCreateDropdown"
-            class="bg-blue-600 text-white px-2.5 py-2 rounded-r-lg hover:bg-blue-700 transition flex items-center justify-center text-sm cursor-pointer border-l border-blue-500">
+            class="bg-blue-600 text-white px-2.5 py-2 rounded-r-lg hover:bg-blue-700 transition flex items-center justify-center text-sm border-l border-blue-500">
             <i class="fa-solid fa-chevron-down text-xs"></i>
           </button>
         </div>
@@ -278,13 +278,13 @@ const formatDate = (date) => {
         >
           <button
             @click="handleCreateNote"
-            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center cursor-pointer"
+            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center"
           >
             <i class="fa-solid fa-note-sticky mr-2 text-blue-500"></i> 新增筆記
           </button>
           <button
             @click="handleCreateWhiteboard"
-            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center cursor-pointer"
+            class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center"
           >
             <i class="fa-solid fa-chalkboard mr-2 text-purple-500"></i> 新增白板
           </button>
@@ -292,7 +292,7 @@ const formatDate = (date) => {
       </div>
       <button
         @click="emit('create-book')"
-        class="w-full bg-transparent text-green-600 px-4 py-1.5 rounded-lg hover:bg-green-600 hover:text-white transition flex items-center justify-center text-sm cursor-pointer border border-green-600"
+        class="w-full bg-transparent text-green-600 px-4 py-1.5 rounded-lg hover:bg-green-600 hover:text-white transition flex items-center justify-center text-sm border border-green-600"
       >
         <i class="fa-solid fa-book mr-1"></i> 新增書本
       </button>

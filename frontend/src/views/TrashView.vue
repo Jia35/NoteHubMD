@@ -142,10 +142,10 @@ onMounted(loadData)
                         </div>
                     </div>
                     <div class="flex space-x-2">
-                        <button @click="restoreBook(book.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" title="還原">
+                        <button @click="restoreBook(book.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition" title="還原">
                             <i class="fa-solid fa-rotate-left mr-1"></i> 還原
                         </button>
-                        <button @click="forceDeleteBook(book.id)" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" title="永久刪除">
+                        <button @click="forceDeleteBook(book.id)" class="px-3 py-1 text-sm bg-transparent text-red-500 hover:bg-red-600 hover:text-white rounded border border-red-600 transition" title="永久刪除">
                             <i class="fa-solid fa-trash mr-1"></i> 永久刪除
                         </button>
                     </div>
@@ -170,10 +170,10 @@ onMounted(loadData)
                         </div>
                     </div>
                     <div class="flex space-x-2">
-                        <button @click="restoreNote(note.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer" title="還原">
+                        <button @click="restoreNote(note.id)" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition" title="還原">
                             <i class="fa-solid fa-rotate-left mr-1"></i> 還原
                         </button>
-                        <button @click="forceDeleteNote(note.id)" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer" title="永久刪除">
+                        <button @click="forceDeleteNote(note.id)" class="px-3 py-1 text-sm bg-transparent text-red-500 hover:bg-red-600 hover:text-white rounded border border-red-600 transition" title="永久刪除">
                             <i class="fa-solid fa-trash mr-1"></i> 永久刪除
                         </button>
                     </div>
