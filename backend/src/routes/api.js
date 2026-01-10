@@ -2930,28 +2930,50 @@ const importUpload = multer({
     }
 });
 
-// Parse filename to determine if it's a book note or standalone
-// Book note format: {{bookTitle}}__{{order}}__{{noteTitle}}.md
+// Parse filename to determine note title
+// New format: {order}_{noteTitle}_{noteID}.md/excalidraw (for book notes)
+// Standalone format: {noteTitle}_{noteID}.md/excalidraw
 function parseImportFilename(filename) {
     // Remove extension
     const nameWithoutExt = filename.replace(/\.(md|excalidraw)$/i, '');
 
-    // Check for book format: bookTitle__order__noteTitle
-    const bookMatch = nameWithoutExt.match(/^(.+?)__(\d+)__(.+)$/);
-
-    if (bookMatch) {
+    // Check for book note format: order_noteTitle_noteID (where order is 2-digit number)
+    const bookNoteMatch = nameWithoutExt.match(/^(\d{2})_(.+)_([a-zA-Z0-9]+)$/);
+    if (bookNoteMatch) {
         return {
             isBookNote: true,
-            bookTitle: bookMatch[1].trim(),
-            order: parseInt(bookMatch[2], 10),
-            noteTitle: bookMatch[3].trim()
+            order: parseInt(bookNoteMatch[1], 10),
+            noteTitle: bookNoteMatch[2].trim()
         };
     }
 
-    // Standalone note - just use the filename as title
+    // Standalone note format: noteTitle_noteID
+    const standaloneMatch = nameWithoutExt.match(/^(.+)_([a-zA-Z0-9]+)$/);
+    if (standaloneMatch) {
+        return {
+            isBookNote: false,
+            noteTitle: standaloneMatch[1].trim() || 'Untitled'
+        };
+    }
+
+    // Fallback: use entire filename as title
     return {
         isBookNote: false,
         noteTitle: nameWithoutExt.trim() || 'Untitled'
+    };
+}
+
+// Parse book folder name: {bookTitle}_{bookID}
+function parseBookFolderName(folderName) {
+    const match = folderName.match(/^(.+)_([a-zA-Z0-9]+)$/);
+    if (match) {
+        return {
+            bookTitle: match[1].trim()
+        };
+    }
+    // Fallback: use entire folder name as title
+    return {
+        bookTitle: folderName.trim() || 'Untitled Book'
     };
 }
 
@@ -2970,39 +2992,68 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
         const filePath = req.file.path;
         const ext = path.extname(req.file.originalname).toLowerCase();
 
-        let importFiles = []; // Array of { filename, content, type }
+        // bookNotes: { bookTitle: [{ order, noteTitle, content, type }] }
+        const bookNotes = {};
+        // standaloneNotes: [{ noteTitle, content, type }]
+        const standaloneNotes = [];
+
         const isZip = ext === '.zip';
 
         if (isZip) {
-            // Extract files from zip
+            // Extract files from zip - new folder structure format
+            // Structure: {bookTitle}_{bookID}/{order}_{noteTitle}_{noteID}.md
+            //           {noteTitle}_{noteID}.md (standalone)
             const zip = new AdmZip(filePath);
             const entries = zip.getEntries();
 
             for (const entry of entries) {
                 if (entry.isDirectory) continue;
 
-                const entryName = entry.entryName.toLowerCase();
-                const isMd = entryName.endsWith('.md');
-                const isExcalidraw = entryName.endsWith('.excalidraw');
+                const entryNameLower = entry.entryName.toLowerCase();
+                const isMd = entryNameLower.endsWith('.md');
+                const isExcalidraw = entryNameLower.endsWith('.excalidraw');
 
-                if (isMd || isExcalidraw) {
-                    // Get just the filename (without directory path)
-                    const filename = path.basename(entry.entryName);
-                    const content = entry.getData().toString('utf8');
-                    importFiles.push({
-                        filename,
+                if (!isMd && !isExcalidraw) continue;
+
+                const entryPath = entry.entryName;
+                const pathParts = entryPath.split('/').filter(p => p);
+                const filename = path.basename(entryPath);
+                const content = entry.getData().toString('utf8');
+                const fileType = isExcalidraw ? 'excalidraw' : 'markdown';
+
+                if (pathParts.length >= 2) {
+                    // File is inside a folder -> book note
+                    const folderName = pathParts[0];
+                    const { bookTitle } = parseBookFolderName(folderName);
+                    const parsed = parseImportFilename(filename);
+
+                    if (!bookNotes[bookTitle]) {
+                        bookNotes[bookTitle] = [];
+                    }
+                    bookNotes[bookTitle].push({
+                        order: parsed.order || bookNotes[bookTitle].length,
+                        noteTitle: parsed.noteTitle,
                         content,
-                        type: isExcalidraw ? 'excalidraw' : 'markdown'
+                        type: fileType
+                    });
+                } else {
+                    // File is at root -> standalone note
+                    const parsed = parseImportFilename(filename);
+                    standaloneNotes.push({
+                        noteTitle: parsed.noteTitle,
+                        content,
+                        type: fileType
                     });
                 }
             }
         } else {
-            // Single file
+            // Single file upload (.md or .excalidraw)
             const isExcalidraw = ext === '.excalidraw';
             if (ext === '.md' || isExcalidraw) {
                 const content = fs.readFileSync(filePath, 'utf8');
-                importFiles.push({
-                    filename: req.file.originalname,
+                const parsed = parseImportFilename(req.file.originalname);
+                standaloneNotes.push({
+                    noteTitle: parsed.noteTitle,
                     content,
                     type: isExcalidraw ? 'excalidraw' : 'markdown'
                 });
@@ -3012,34 +3063,8 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
         // Clean up temp file
         fs.unlinkSync(filePath);
 
-        if (importFiles.length === 0) {
+        if (Object.keys(bookNotes).length === 0 && standaloneNotes.length === 0) {
             return res.status(400).json({ error: 'No valid files (.md or .excalidraw) found' });
-        }
-
-        // Group notes by book
-        const bookNotes = {}; // { bookTitle: [{ order, noteTitle, content }] }
-        const standaloneNotes = []; // [{ noteTitle, content }]
-
-        for (const { filename, content, type } of importFiles) {
-            const parsed = parseImportFilename(filename);
-
-            if (parsed.isBookNote) {
-                if (!bookNotes[parsed.bookTitle]) {
-                    bookNotes[parsed.bookTitle] = [];
-                }
-                bookNotes[parsed.bookTitle].push({
-                    order: parsed.order,
-                    noteTitle: parsed.noteTitle,
-                    content,
-                    type
-                });
-            } else {
-                standaloneNotes.push({
-                    noteTitle: parsed.noteTitle,
-                    content,
-                    type
-                });
-            }
         }
 
         // Create books and notes
@@ -3116,7 +3141,7 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
                             bookId: book.id,
                             order: i,
                             ownerId: userId,
-                            shareId: generateId()
+                            shareId: generateShareId()
                         });
                         createdNotes.push({ id: note.id, title: note.title, bookId: book.id });
                         break;
@@ -3164,7 +3189,7 @@ router.post('/import/notes', importUpload.single('file'), async (req, res) => {
                         diagramData: diagramData,
                         tags: tags,
                         ownerId: userId,
-                        shareId: generateId()
+                        shareId: generateShareId()
                     });
                     createdNotes.push({ id: note.id, title: note.title });
                     break;
@@ -3224,41 +3249,70 @@ router.post('/import/notes-folder', importFolderUpload.array('files', 500), asyn
 
         const userId = req.session.userId;
 
-        // Convert files to importFiles array
-        // Fix encoding: browser sends filename as Latin-1, need to decode as UTF-8
-        const importFiles = req.files.map(file => {
-            const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-            return {
-                filename: originalName,
-                content: file.buffer.toString('utf8'),
-                type: originalName.toLowerCase().endsWith('.excalidraw') ? 'excalidraw' : 'markdown'
-            };
-        });
+        // Get paths from the separate JSON field
+        let paths = [];
+        if (req.body.paths) {
+            try {
+                paths = JSON.parse(req.body.paths);
+            } catch (e) {
+                console.error('[Import Folder] Failed to parse paths:', e);
+            }
+        }
 
-        // Group notes by book (same logic as single file import)
+        // Group notes by book based on folder structure
         const bookNotes = {};
         const standaloneNotes = [];
 
-        for (const { filename, content, type } of importFiles) {
-            const parsed = parseImportFilename(filename);
+        for (let i = 0; i < req.files.length; i++) {
+            const file = req.files[i];
+            // Use the path from the paths array (already UTF-8 from JSON), 
+            // fallback to originalname (needs Latin-1 to UTF-8 conversion)
+            const originalPath = paths[i]
+                ? paths[i]  // Already UTF-8 from JSON.parse
+                : Buffer.from(file.originalname, 'latin1').toString('utf8');
+            const content = file.buffer.toString('utf8');
+            const isExcalidraw = originalPath.toLowerCase().endsWith('.excalidraw');
+            const fileType = isExcalidraw ? 'excalidraw' : 'markdown';
 
-            if (parsed.isBookNote) {
-                if (!bookNotes[parsed.bookTitle]) {
-                    bookNotes[parsed.bookTitle] = [];
+            // Parse path: webkitRelativePath format is "rootFolder/bookFolder/file.md"
+            // or "rootFolder/file.md" for standalone notes at root of selected folder
+            const pathParts = originalPath.split(/[\/\\]/).filter(p => p);
+            const filename = pathParts[pathParts.length - 1];
+
+            // pathParts[0] is the selected root folder (always present)
+            // pathParts[1] could be a subfolder (book) or the file itself
+            // If length >= 3: rootFolder/bookFolder/file.md -> book note
+            // If length == 2: rootFolder/file.md -> standalone note
+            // If length == 1: file.md (fallback) -> standalone note
+            if (pathParts.length >= 3) {
+                // File is inside a subfolder -> book note
+                // Use the folder at index 1 as the book (immediate subfolder of root)
+                const folderName = pathParts[1];
+                const { bookTitle } = parseBookFolderName(folderName);
+                const parsed = parseImportFilename(filename);
+
+                if (!bookNotes[bookTitle]) {
+                    bookNotes[bookTitle] = [];
                 }
-                bookNotes[parsed.bookTitle].push({
-                    order: parsed.order,
+                bookNotes[bookTitle].push({
+                    order: parsed.order || bookNotes[bookTitle].length,
                     noteTitle: parsed.noteTitle,
                     content,
-                    type
+                    type: fileType
                 });
             } else {
+                // File is at root level -> standalone note
+                const parsed = parseImportFilename(filename);
                 standaloneNotes.push({
                     noteTitle: parsed.noteTitle,
                     content,
-                    type
+                    type: fileType
                 });
             }
+        }
+
+        if (Object.keys(bookNotes).length === 0 && standaloneNotes.length === 0) {
+            return res.status(400).json({ error: 'No valid files (.md or .excalidraw) found' });
         }
 
         // Create books and notes

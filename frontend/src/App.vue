@@ -249,9 +249,16 @@ const handleImportFolder = async (event) => {
   importingNotes.value = true
   try {
     const formData = new FormData()
+    // Collect paths for each file to preserve folder structure
+    const paths = []
     validFiles.forEach(file => {
+      // webkitRelativePath contains the relative path like "rootFolder/bookFolder/file.md"
+      const relativePath = file.webkitRelativePath || file.name
+      paths.push(relativePath)
       formData.append('files', file)
     })
+    // Send paths as JSON string
+    formData.append('paths', JSON.stringify(paths))
 
     const response = await fetch('/api/import/notes-folder', {
       method: 'POST',
