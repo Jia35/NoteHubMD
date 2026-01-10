@@ -2836,17 +2836,20 @@ router.get('/export/my-notes', async (req, res) => {
         // Add notes to archive
         for (const note of notes) {
             const noteTitle = sanitizeFilename(note.title);
+            const noteId = note.id;
+            const isWhiteboard = note.noteType === 'excalidraw';
             let filename;
 
             if (note.Book) {
-                // Note is in a book: {{bookTitle}}__{{order}}__{{noteTitle}}.md
+                // Note is in a book: {bookTitle}_{bookID}/{order}_{noteTitle}_{noteID}
                 const bookTitle = sanitizeFilename(note.Book.title);
+                const bookId = note.Book.id;
                 // Zero-pad order to 2 digits for proper sorting (e.g., 01, 02, 10)
                 const orderNum = String(note.order + 1).padStart(2, '0');
-                filename = `${bookTitle}__${orderNum}__${noteTitle}`;
+                filename = `${bookTitle}_${bookId}/${orderNum}_${noteTitle}_${noteId}`;
             } else {
-                // Standalone note: {{noteTitle}}.md
-                filename = `${noteTitle}`;
+                // Standalone note: {noteTitle}_{noteID}
+                filename = `${noteTitle}_${noteId}`;
             }
 
             // Handle duplicate filenames (shouldn't happen with ID, but just in case)
@@ -2857,11 +2860,29 @@ router.get('/export/my-notes', async (req, res) => {
                 filenameCount[filename] = 1;
             }
 
-            // Add .md extension
-            filename = `${filename}.md`;
-
-            // Add file to archive
-            archive.append(note.content || '', { name: filename });
+            // Add appropriate extension based on note type
+            if (isWhiteboard) {
+                filename = `${filename}.excalidraw`;
+                // Export diagram data in standard Excalidraw format
+                const diagramData = note.diagramData || {};
+                const exportData = {
+                    type: 'excalidraw',
+                    version: 2,
+                    source: 'NoteHubMD',
+                    elements: diagramData.elements || [],
+                    appState: {
+                        ...(diagramData.appState || {}),
+                        viewBackgroundColor: diagramData.appState?.viewBackgroundColor || '#ffffff',
+                        currentItemFontFamily: diagramData.appState?.currentItemFontFamily || 1
+                    },
+                    files: diagramData.files || {}
+                };
+                const content = JSON.stringify(exportData, null, 2);
+                archive.append(content, { name: filename });
+            } else {
+                filename = `${filename}.md`;
+                archive.append(note.content || '', { name: filename });
+            }
         }
 
         // Finalize the archive
