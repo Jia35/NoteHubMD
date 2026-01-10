@@ -11,12 +11,15 @@
 ![Features](docs/images/features.png)
 
 - **📝 Markdown 編輯器** - 完整功能的編輯器，支援即時預覽、語法高亮、Mermaid 流程圖
+- **🎨 白板筆記** - 基於 Excalidraw 的白板功能，透過 Yjs CRDT 實現多人即時協作
 - **👥 即時協作** - 透過 Socket.IO 實現多人同時編輯同一份筆記
 - **📚 書本與筆記** - 使用書本分類筆記，支援拖曳排序。支援列表/網格檢視模式。
 - **🔐 權限系統** - 細緻的存取控制（私人、公開、需登入、個別使用者權限）
 - **🔗 自訂分享網址** - 為分享的筆記與書本建立容易記憶的別名（例如 `/s/my-tutorial`）
-- **💬 留言功能** - 在筆記上啟用討論與留言
+- **💬 留言功能** - 在筆記上啟用討論與留言，支援表情符號回饋
+- **😊 表情符號回饋** - 對筆記與留言進行表情符號回應
 - **🔄 活動紀錄** - 筆記版本控制，支援差異比對與版本還原功能。
+- **🔔 留言 Webhook** - 當有新留言時發送通知到外部服務
 - **🏢 LDAP/AD 整合** - 支援 Active Directory 企業級驗證
 - **🐳 Docker 部署** - 使用 Docker Compose 輕鬆部署
 - **🗄️ 資料庫選項** - 支援 PostgreSQL（建議）或 SQLite
@@ -97,7 +100,10 @@ cp .env.example .env
 | `DEFAULT_BOOK_PERMISSION` | 新書本的預設權限 | `private` |
 | **功能** | | |
 | `FEATURE_COMMENTS` | 啟用留言功能 | `true` |
+| `FEATURE_NOTE_REACTIONS` | 啟用筆記表情符號回饋 | `true` |
 | `API_MASTER_KEY` | 外部存取用的 Master API Key | - |
+| **Webhook** | | |
+| `COMMENT_WEBHOOK_URL` | 留言通知的 Webhook URL | - |
 | **垃圾桶** | | |
 | `TRASH_AUTO_DELETE_DAYS` | 自動刪除垃圾桶內容的天數（設為 0 停用） | `90` |
 | **LDAP（選用）** | | |
@@ -108,6 +114,58 @@ cp .env.example .env
 | `LDAP_SEARCH_BASE` | LDAP 使用者搜尋 Base | - |
 | `LDAP_SEARCH_FILTER` | LDAP 搜尋過濾器 | `(sAMAccountName={{username}})` |
 
+## 🔔 留言 Webhook
+
+當設定 `COMMENT_WEBHOOK_URL` 環境變數後，系統會在每次新增留言時發送 POST 請求到指定的 URL。
+
+### 請求格式
+
+```json
+{
+  "event": "comment.created",
+  "timestamp": "2026-01-10T10:30:00.000Z",
+  "note": {
+    "id": "abc123",
+    "title": "筆記標題",
+    "type": "markdown",
+    "shareUrl": "http://localhost:3000/s/xyz789",
+    "owner": {
+      "id": 1,
+      "username": "creator",
+      "name": "創建者名稱"
+    },
+    "lastEditor": {
+      "id": 2,
+      "username": "editor",
+      "name": "編輯者名稱"
+    }
+  },
+  "comment": {
+    "id": 100,
+    "content": "留言內容",
+    "createdAt": "2026-01-10T10:30:00.000Z",
+    "user": {
+      "id": 3,
+      "username": "commenter",
+      "name": "留言者名稱"
+    }
+  },
+  "parent": {
+    "id": 99,
+    "content": "父留言內容",
+    "createdAt": "2026-01-10T10:00:00.000Z",
+    "user": {
+      "id": 2,
+      "username": "parent_user",
+      "name": "父留言者名稱"
+    }
+  }
+}
+```
+
+> **注意**：`parent` 欄位僅在回覆現有留言時才會包含。
+
 ## 📄 授權
 
 MIT License
+
