@@ -6,6 +6,7 @@ const multer = require('multer');
 const db = require('../models');
 const config = require('../config');
 const { generateId, generateShareId, generateImageId } = require('../utils/idGenerator');
+const { sendCommentWebhook } = require('../utils/webhook');
 const DiffMatchPatch = require('diff-match-patch');
 
 // Get io from index.js for broadcasting events
@@ -2459,6 +2460,29 @@ router.post('/notes/:id/comments', async (req, res) => {
                 { model: db.User, as: 'user', attributes: ['id', 'username', 'name', 'avatar', 'role'] }
             ]
         });
+
+        // Trigger webhook (async, non-blocking)
+        if (config.webhook?.commentUrl) {
+            // Fetch note with owner and lastEditor for webhook
+            const noteWithDetails = await db.Note.findByPk(req.params.id, {
+                include: [
+                    { model: db.User, as: 'owner', attributes: ['id', 'username', 'name'] },
+                    { model: db.User, as: 'lastEditor', attributes: ['id', 'username', 'name'] }
+                ]
+            });
+
+            // If reply, fetch parent comment with user
+            let parentCommentWithUser = null;
+            if (parentId) {
+                parentCommentWithUser = await db.Comment.findByPk(parentId, {
+                    include: [
+                        { model: db.User, as: 'user', attributes: ['id', 'username', 'name'] }
+                    ]
+                });
+            }
+
+            sendCommentWebhook(noteWithDetails, commentWithUser, parentCommentWithUser);
+        }
 
         res.json(commentWithUser);
     } catch (e) {

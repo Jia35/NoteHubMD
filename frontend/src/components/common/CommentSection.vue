@@ -90,11 +90,11 @@
         <div class="flex gap-2">
           <button @click="commentPreviewMode = !commentPreviewMode"
               :class="commentPreviewMode ? 'bg-gray-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
-              class="px-2 py-1 text-xs rounded hover:opacity-80">
+              class="px-2 py-1 text-sm rounded hover:opacity-80">
             {{ commentPreviewMode ? '編輯' : '預覽' }}
           </button>
           <button @click="submitComment" :disabled="submittingComment || !newComment.trim()"
-              class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+              class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
             {{ submittingComment ? '發送中...' : '發送' }}
           </button>
         </div>
