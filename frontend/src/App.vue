@@ -419,6 +419,7 @@ onMounted(async () => {
       @import-file="handleImportFile"
       @import-folder="handleImportFolder"
       @open-about="showAboutModal = true"
+      @user-updated="updateSidebarUser"
     />
 
     <AboutModal 

@@ -924,6 +924,7 @@ watch(noteId, (newId, oldId) => {
       @set-theme="setTheme"
       @logout="logout"
       @open-about="showAboutModal = true"
+      @user-updated="handleUserProfileUpdate"
     />
     
     <AboutModal :show="showAboutModal" :app-version="appVersion" @close="showAboutModal = false" />
