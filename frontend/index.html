@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoteHubMD</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <!-- Apply theme immediately to prevent flash -->
+  <script>
+    (function () {
+      var theme = localStorage.getItem('NoteHubMD-theme') || 'dark';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+</head>
+
+<body class="bg-gray-100 dark:bg-[#1a1a1a]">
+  <div class="h-screen" id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
