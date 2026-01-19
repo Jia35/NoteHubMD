@@ -21,7 +21,7 @@ const requireAdmin = async (req, res, next) => {
 router.get('/users', requireAdmin, async (req, res) => {
     try {
         const users = await db.User.findAll({
-            attributes: ['id', 'username', 'name', 'avatar', 'role', 'createdAt', 'lastActiveAt'],
+            attributes: ['id', 'username', 'name', 'avatar', 'role', 'createdAt', 'lastActiveAt', 'isApiKeyEnabled'],
             order: [['createdAt', 'ASC']]
         });
 
@@ -131,6 +131,39 @@ router.put('/users/:id/role', requireAdmin, async (req, res) => {
             id: targetUser.id,
             username: targetUser.username,
             role: targetUser.role
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// PUT /api/admin/users/:id/apikey - Toggle user API Key feature
+router.put('/users/:id/apikey', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { enabled } = req.body;
+
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: 'enabled must be a boolean' });
+        }
+
+        const targetUser = await db.User.findByPk(id);
+        if (!targetUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // If disabling, also clear the API key
+        const updateData = { isApiKeyEnabled: enabled };
+        if (!enabled) {
+            updateData.apiKey = null;
+        }
+
+        await targetUser.update(updateData);
+
+        res.json({
+            id: targetUser.id,
+            username: targetUser.username,
+            isApiKeyEnabled: targetUser.isApiKeyEnabled
         });
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -15,6 +15,9 @@ const nanoidShare = customAlphabet(alphabet, 7);
 // Create custom nanoid generator with 8-char Base62 for Image IDs
 const nanoidImage = customAlphabet(base62Alphabet, 8);
 
+// Create custom nanoid generator with 30-char Base62 for API Keys (will be prefixed with sk-nh-)
+const nanoidApiKey = customAlphabet(base62Alphabet, 30);
+
 /**
  * Generate a unique ID
  * @param {number} [length=9] - Length of the ID (defaults to 9 for Note/Book IDs)
@@ -40,4 +43,13 @@ function generateImageId() {
   return nanoidImage();
 }
 
-module.exports = { generateId, generateShareId, generateImageId };
+/**
+ * Generate a unique API Key (sk-nh-{30-char Base62})
+ * @returns {string} - Generated API Key with sk-nh- prefix
+ */
+function generateApiKey() {
+  return 'sk-nh-' + nanoidApiKey();
+}
+
+module.exports = { generateId, generateShareId, generateImageId, generateApiKey };
+

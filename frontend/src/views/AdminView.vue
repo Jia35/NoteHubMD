@@ -108,6 +108,17 @@ const updateRole = async (targetUser) => {
   }
 }
 
+// Toggle user API key feature
+const toggleUserApiKey = async (targetUser, enabled) => {
+  try {
+    await api.toggleUserApiKey(targetUser.id, enabled)
+    targetUser.isApiKeyEnabled = enabled
+  } catch (e) {
+    showAlert?.('更新失敗：' + e.message, 'error')
+    loadData()
+  }
+}
+
 // Load system config
 const loadSystemConfig = async () => {
   try {
@@ -387,6 +398,7 @@ onMounted(loadData)
                     <th class="px-6 py-3 font-semibold">使用者</th>
                     <th class="px-6 py-3 font-semibold">角色</th>
                     <th class="px-6 py-3 font-semibold">內容</th>
+                    <th class="px-6 py-3 font-semibold">API Key</th>
                     <th class="px-6 py-3 font-semibold">上次活動</th>
                     <th class="px-6 py-3 font-semibold">註冊時間</th>
                   </tr>
@@ -429,6 +441,19 @@ onMounted(loadData)
                           {{ u.noteCount || 0 }}
                         </span>
                       </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <button 
+                        @click="toggleUserApiKey(u, !u.isApiKeyEnabled)"
+                        class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer"
+                        :class="u.isApiKeyEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                        :title="u.isApiKeyEnabled ? '點擊停用' : '點擊啟用'"
+                      >
+                        <span 
+                          class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform"
+                          :class="u.isApiKeyEnabled ? 'translate-x-5' : 'translate-x-1'"
+                        ></span>
+                      </button>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400" :title="formatDateTime(u.lastActiveAt)">
                       {{ formatRelativeTime(u.lastActiveAt) }}

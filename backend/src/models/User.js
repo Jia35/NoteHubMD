@@ -47,6 +47,15 @@ module.exports = (sequelize, DataTypes) => {
             set(value) {
                 this.setDataValue('pinnedItems', JSON.stringify(value || []));
             }
+        },
+        apiKey: {
+            type: DataTypes.STRING,
+            unique: true,
+            allowNull: true
+        },
+        isApiKeyEnabled: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         }
     });
     return User;

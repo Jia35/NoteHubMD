@@ -609,6 +609,43 @@ const api = {
             return { models: [] }
         }
         return res.json()
+    },
+
+    // API Key management
+    async generateApiKey() {
+        const res = await fetch('/api/auth/apikey', {
+            method: 'POST'
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to generate API key')
+        }
+        return res.json()
+    },
+
+    async deleteApiKey() {
+        const res = await fetch('/api/auth/apikey', {
+            method: 'DELETE'
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to delete API key')
+        }
+        return res.json()
+    },
+
+    // Admin: Toggle user API key feature
+    async toggleUserApiKey(userId, enabled) {
+        const res = await fetch('/api/admin/users/' + userId + '/apikey', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled })
+        })
+        if (!res.ok) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to toggle API key feature')
+        }
+        return res.json()
     }
 }
 

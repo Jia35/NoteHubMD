@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../models');
 const config = require('../config');
+const { generateApiKey } = require('../utils/idGenerator');
 
 // LDAP client (lazy loaded)
 let ldap = null;
@@ -225,7 +226,7 @@ router.get('/me', async (req, res) => {
     }
     try {
         const user = await db.User.findByPk(req.session.userId, {
-            attributes: ['id', 'username', 'name', 'avatar', 'avatarOriginal', 'avatarCropData', 'pinnedItems', 'role']
+            attributes: ['id', 'username', 'name', 'avatar', 'avatarOriginal', 'avatarCropData', 'pinnedItems', 'role', 'isApiKeyEnabled', 'apiKey']
         });
         if (!user) {
             req.session.destroy();
@@ -383,6 +384,50 @@ router.delete('/pins/:type/:id', async (req, res) => {
         await user.update({ pinnedItems });
 
         res.json({ success: true, pinnedItems });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Generate or Regenerate User API Key
+router.post('/apikey', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    try {
+        const user = await db.User.findByPk(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Check if user has API Key feature enabled
+        if (!user.isApiKeyEnabled) {
+            return res.status(403).json({ error: 'API Key feature is not enabled for your account' });
+        }
+
+        // Generate new API key
+        const newApiKey = generateApiKey();
+        await user.update({ apiKey: newApiKey });
+
+        res.json({ apiKey: newApiKey });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete User API Key
+router.delete('/apikey', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    try {
+        const user = await db.User.findByPk(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        await user.update({ apiKey: null });
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

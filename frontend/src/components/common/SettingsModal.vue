@@ -64,6 +64,12 @@ const showImportMenu = ref(false)
 const importFileInput = ref(null)
 const importFolderInput = ref(null)
 
+// API Key state
+const apiKeyVisible = ref(false)
+const apiKeyGenerating = ref(false)
+const apiKeyDeleting = ref(false)
+const apiKeyCopied = ref(false)
+
 // Profile editing state
 const editableName = ref('')
 const avatarPreview = ref('')
@@ -291,6 +297,7 @@ const tabs = [
   { id: 'profile', label: '個人資料', icon: 'fa-solid fa-user', requireLogin: true },
   { id: 'appearance', label: '外觀', icon: 'fa-solid fa-palette', requireLogin: false },
   { id: 'data', label: '資料管理', icon: 'fa-solid fa-folder-open', requireLogin: true },
+  { id: 'advanced', label: '進階功能', icon: 'fa-solid fa-key', requireApiKey: true },
   { id: 'admin', label: '管理者', icon: 'fa-solid fa-user-shield', requireAdmin: true },
   { id: 'help', label: '使用說明', icon: 'fa-solid fa-book-open', requireLogin: false }
 ]
@@ -300,11 +307,55 @@ const visibleTabs = () => {
     if (tab.requireAdmin) {
       return props.user && (props.user.role === 'super-admin' || props.user.role === 'admin')
     }
+    if (tab.requireApiKey) {
+      return props.user && props.user.isApiKeyEnabled
+    }
     if (tab.requireLogin) {
       return !!props.user
     }
     return true
   })
+}
+
+// API Key functions
+const generateApiKey = async (isRegenerate = false) => {
+  if (isRegenerate) {
+    if (!confirm('確定要重新產生 API Key 嗎？現有的 Key 將立即失效。')) return
+  }
+  apiKeyGenerating.value = true
+  try {
+    const result = await api.generateApiKey()
+    // Update user object with new key (emit event to parent)
+    emit('user-updated', { apiKey: result.apiKey })
+  } catch (e) {
+    console.error('Failed to generate API key:', e)
+  } finally {
+    apiKeyGenerating.value = false
+  }
+}
+
+const deleteApiKey = async () => {
+  if (!confirm('確定要刪除 API Key 嗎？刪除後將無法使用現有的 Key 存取 API。')) return
+  apiKeyDeleting.value = true
+  try {
+    await api.deleteApiKey()
+    emit('user-updated', { apiKey: null })
+  } catch (e) {
+    console.error('Failed to delete API key:', e)
+  } finally {
+    apiKeyDeleting.value = false
+  }
+}
+
+const copyApiKey = async () => {
+  if (!props.user?.apiKey) return
+  try {
+    await navigator.clipboard.writeText(props.user.apiKey)
+    apiKeyCopied.value = true
+    setTimeout(() => { apiKeyCopied.value = false }, 2000)
+  } catch (e) {
+    console.error('Failed to copy:', e)
+  }
 }
 </script>
 
@@ -555,6 +606,84 @@ const visibleTabs = () => {
                     <i class="fa-solid fa-folder text-yellow-500 mr-3"></i>
                     <span class="text-sm text-gray-700 dark:text-gray-200">上傳資料夾</span>
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced Features Tab -->
+            <div v-show="activeTab === 'advanced' && user && user.isApiKeyEnabled" class="space-y-4">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">API Key</h3>
+              
+              <!-- Info Box -->
+              <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div class="flex items-start">
+                  <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 mr-3"></i>
+                  <div class="text-sm text-blue-700 dark:text-blue-300">
+                    <p class="font-medium mb-1">使用方式</p>
+                    <p class="text-xs opacity-80 mb-1">在 HTTP 請求中加入以下任一 Header：</p>
+                    <ul class="text-xs opacity-80 list-disc list-inside space-y-0.5">
+                      <li><code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">X-API-Key: sk-nh-xxx</code></li>
+                      <li><code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">Authorization: Bearer sk-nh-xxx</code></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- API Key Display/Generate -->
+              <div class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <template v-if="user.apiKey">
+                  <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">您的 API Key</label>
+                  <div class="flex items-center gap-2 mb-3">
+                    <div class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded font-mono text-sm text-gray-800 dark:text-gray-200 overflow-x-auto">
+                      {{ apiKeyVisible ? user.apiKey : '•'.repeat(36) }}
+                    </div>
+                    <button @click="apiKeyVisible = !apiKeyVisible" 
+                            class="px-3 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                            :title="apiKeyVisible ? '隱藏' : '顯示'">
+                      <i :class="apiKeyVisible ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                    </button>
+                    <button @click="copyApiKey" 
+                            class="px-3 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                            :title="apiKeyCopied ? '已複製!' : '複製'">
+                      <i :class="apiKeyCopied ? 'fa-solid fa-check text-green-500' : 'fa-solid fa-copy'"></i>
+                    </button>
+                  </div>
+                  <div class="flex gap-2">
+                    <button @click="generateApiKey(true)" :disabled="apiKeyGenerating"
+                            class="px-4 py-2 text-sm text-yellow-600 dark:text-yellow-400 hover:text-white border border-yellow-500 rounded hover:bg-yellow-500 transition disabled:opacity-50 cursor-pointer">
+                      <i v-if="apiKeyGenerating" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                      <i v-else class="fa-solid fa-rotate mr-1"></i>
+                      重新產生
+                    </button>
+                    <button @click="deleteApiKey" :disabled="apiKeyDeleting"
+                            class="px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:text-white border border-red-700 rounded hover:bg-red-700 transition disabled:opacity-50 cursor-pointer">
+                      <i v-if="apiKeyDeleting" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                      <i v-else class="fa-solid fa-trash mr-1"></i>
+                      刪除 Key
+                    </button>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="text-center py-4">
+                    <i class="fa-solid fa-key text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">您尚未產生 API Key</p>
+                    <button @click="generateApiKey" :disabled="apiKeyGenerating"
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer">
+                      <i v-if="apiKeyGenerating" class="fa-solid fa-spinner fa-spin mr-1"></i>
+                      <i v-else class="fa-solid fa-plus mr-1"></i>
+                      產生 API Key
+                    </button>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Warning -->
+              <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div class="flex items-start">
+                  <i class="fa-solid fa-triangle-exclamation text-yellow-500 mt-0.5 mr-3"></i>
+                  <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                    API Key 等同於您的帳號密碼，請妥善保管並勿分享給他人。
+                  </p>
                 </div>
               </div>
             </div>
