@@ -56,6 +56,43 @@ const upload = multer({
     }
 });
 
+/**
+ * @swagger
+ * /api/upload/image:
+ *   post:
+ *     summary: 上傳圖片
+ *     description: 上傳圖片檔案 (JPEG, PNG, GIF, WebP)，最大 5MB
+ *     tags: [Upload]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: 上傳成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   description: 圖片網址
+ *                 filename:
+ *                   type: string
+ *       400:
+ *         description: 未上傳檔案或格式錯誤
+ *       401:
+ *         description: 未認證
+ */
 // Image upload endpoint
 router.post('/upload/image', upload.single('image'), (req, res) => {
     if (!req.session.userId && !req.isMasterApiKey) {
@@ -218,6 +255,52 @@ router.get('/users/search', async (req, res) => {
 
 // --- Notes ---
 
+/**
+ * @swagger
+ * /api/notes:
+ *   post:
+ *     summary: 建立新筆記
+ *     description: 建立新的筆記，可以是 Markdown、白板 (Excalidraw) 或流程圖 (Draw.io)
+ *     tags: [Notes]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: 筆記標題
+ *               content:
+ *                 type: string
+ *                 description: 筆記內容
+ *               noteType:
+ *                 type: string
+ *                 enum: [markdown, excalidraw, drawio]
+ *                 default: markdown
+ *               permission:
+ *                 type: string
+ *                 enum: [private, public-view, public-edit, auth-view, auth-edit]
+ *     responses:
+ *       200:
+ *         description: 成功建立筆記
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 shareId:
+ *                   type: string
+ *       401:
+ *         description: 未認證
+ */
 // Create Note
 router.post('/notes', async (req, res) => {
     if (!req.session.userId && !req.isMasterApiKey) {
@@ -298,6 +381,53 @@ router.post('/notes', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate unique ID' });
 });
 
+/**
+ * @swagger
+ * /api/notes/{id}:
+ *   get:
+ *     summary: 取得特定筆記
+ *     description: 取得筆記內容、權限資訊與相關元資料
+ *     tags: [Notes]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 筆記 ID
+ *     responses:
+ *       200:
+ *         description: 筆記詳情
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 content:
+ *                   type: string
+ *                 noteType:
+ *                   type: string
+ *                   enum: [markdown, excalidraw, drawio]
+ *                 isOwner:
+ *                   type: boolean
+ *                 canEdit:
+ *                   type: boolean
+ *                 effectivePermission:
+ *                   type: string
+ *       401:
+ *         description: 需要登入
+ *       403:
+ *         description: 沒有存取權限
+ *       404:
+ *         description: 筆記不存在
+ */
 // Get Note
 router.get('/notes/:id', async (req, res) => {
     try {
@@ -378,6 +508,60 @@ router.get('/notes/:id', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/notes/{id}:
+ *   put:
+ *     summary: 更新筆記
+ *     description: 更新筆記內容、標題、權限或設定
+ *     tags: [Notes]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 筆記 ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               permission:
+ *                 type: string
+ *                 enum: [private, public-view, public-edit, auth-view, auth-edit, inherit]
+ *               isPublic:
+ *                 type: boolean
+ *               commentsEnabled:
+ *                 type: boolean
+ *               bookId:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *       403:
+ *         description: 沒有編輯權限
+ *       404:
+ *         description: 筆記不存在
+ */
 // Update Note
 router.put('/notes/:id', async (req, res) => {
     try {
@@ -1460,6 +1644,48 @@ router.get('/share/:shareIdOrAlias', async (req, res) => {
 
 // --- Books ---
 
+/**
+ * @swagger
+ * /api/books:
+ *   post:
+ *     summary: 建立新書本
+ *     description: 建立新的書本，可設定權限與公開狀態
+ *     tags: [Books]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               permission:
+ *                 type: string
+ *                 enum: [private, public-view, public-edit, auth-view, auth-edit]
+ *               isPublic:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: 建立成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 shareId:
+ *                   type: string
+ *       401:
+ *         description: 未認證
+ */
 // Create Book
 router.post('/books', async (req, res) => {
     if (!req.session.userId && !req.isMasterApiKey) {
@@ -1514,6 +1740,53 @@ router.post('/books', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate unique ID' });
 });
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   get:
+ *     summary: 取得特定書本
+ *     description: 取得書本詳情及其包含的筆記列表
+ *     tags: [Books]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 書本 ID
+ *     responses:
+ *       200:
+ *         description: 書本詳情 (含筆記)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 Notes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                 isOwner:
+ *                   type: boolean
+ *                 canEdit:
+ *                   type: boolean
+ *       403:
+ *         description: 沒有存取權限
+ *       404:
+ *         description: 書本不存在
+ */
 // Get Book with Notes
 router.get('/books/:id', async (req, res) => {
     try {
@@ -1606,6 +1879,43 @@ router.get('/books/:id', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   put:
+ *     summary: 更新書本
+ *     description: 更新書本標題、描述 (不含權限)
+ *     tags: [Books]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 書本 ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               isPublic:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *       403:
+ *         description: 沒有編輯權限
+ *       404:
+ *         description: 書本不存在
+ */
 // Update Book
 router.put('/books/:id', async (req, res) => {
     try {
@@ -1898,6 +2208,44 @@ router.put('/books/:id/notes/reorder', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books:
+ *   get:
+ *     summary: 取得書本列表
+ *     description: 取得所有可見的書本列表
+ *     tags: [Books]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 1000
+ *         description: 限制回傳數量
+ *     responses:
+ *       200:
+ *         description: 書本列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   isOwner:
+ *                     type: boolean
+ *                   canEdit:
+ *                     type: boolean
+ *                   noteCount:
+ *                     type: integer
+ */
 // Get All Books (Home)
 router.get('/books', async (req, res) => {
     try {
@@ -1953,6 +2301,38 @@ router.get('/books', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   delete:
+ *     summary: 刪除書本
+ *     description: 將書本移至垃圾桶 (軟刪除)
+ *     tags: [Books]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 書本 ID
+ *     responses:
+ *       200:
+ *         description: 刪除成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       403:
+ *         description: 沒有刪除權限
+ *       404:
+ *         description: 書本不存在
+ */
 // Delete Book (Soft)
 router.delete('/books/:id', async (req, res) => {
     try {
@@ -2295,6 +2675,38 @@ router.delete('/books/:id/alias', async (req, res) => {
 
 // --- Trash ---
 
+/**
+ * @swagger
+ * /api/notes/{id}:
+ *   delete:
+ *     summary: 刪除筆記
+ *     description: 將筆記移至垃圾桶 (軟刪除)
+ *     tags: [Notes]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 筆記 ID
+ *     responses:
+ *       200:
+ *         description: 刪除成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       403:
+ *         description: 沒有刪除權限
+ *       404:
+ *         description: 筆記不存在
+ */
 // Delete Note (Soft)
 router.delete('/notes/:id', async (req, res) => {
     try {
@@ -2764,6 +3176,55 @@ router.get('/notes/:id/reactions', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/notes/{id}/reactions:
+ *   post:
+ *     summary: 對筆記按讚或表達心情
+ *     description: 切換對筆記的反應 (Like, OK, Laugh, Surprise, Sad)。若已存在相同反應則會取消 (Toggle)。
+ *     tags: [Notes]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 筆記 ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [like, ok, laugh, surprise, sad]
+ *                 description: 反應類型
+ *     responses:
+ *       200:
+ *         description: 成功切換
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 action:
+ *                   type: string
+ *                   enum: [added, removed]
+ *                 type:
+ *                   type: string
+ *       400:
+ *         description: 無效的反應類型
+ *       401:
+ *         description: 未登入
+ *       403:
+ *         description: 此功能已停用
+ *       404:
+ *         description: 筆記不存在
+ */
 // Toggle note reaction (add/remove/change)
 router.post('/notes/:id/reactions', async (req, res) => {
     try {

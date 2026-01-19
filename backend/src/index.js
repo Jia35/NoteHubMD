@@ -60,6 +60,65 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api', require('./routes/api'));
 
+// Swagger API Documentation
+const swaggerUi = require('swagger-ui-express');
+const { swaggerSpec, filterSpecForUser } = require('./config/swagger');
+
+// Access control middleware for API docs
+const apiDocsAuth = async (req, res, next) => {
+    // Check if user is logged in
+    if (!req.session.userId) {
+        return res.status(401).send(`
+            <html>
+            <head><title>401 Unauthorized</title></head>
+            <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                <h1>401 Unauthorized</h1>
+                <p>請先登入以查看 API 文件</p>
+                <a href="/login">前往登入</a>
+            </body>
+            </html>
+        `);
+    }
+
+    // Check if user has API Key enabled
+    const user = await db.User.findByPk(req.session.userId);
+    if (!user || !user.isApiKeyEnabled) {
+        return res.status(403).send(`
+            <html>
+            <head><title>403 Forbidden</title></head>
+            <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                <h1>403 Forbidden</h1>
+                <p>您的帳號尚未開啟 API Key 功能</p>
+                <p>請聯繫管理員開啟此功能</p>
+                <a href="/">返回首頁</a>
+            </body>
+            </html>
+        `);
+    }
+
+    // Set user role for spec filtering
+    req.isAdmin = (user.role === 'super-admin' || user.role === 'admin');
+    next();
+};
+
+// Serve filtered swagger spec based on user role
+app.get('/api-docs.json', apiDocsAuth, (req, res) => {
+    const filteredSpec = filterSpecForUser(swaggerSpec, req.isAdmin);
+    res.json(filteredSpec);
+});
+
+// Swagger UI setup with dynamic spec loading
+app.use('/api-docs', apiDocsAuth, swaggerUi.serve, (req, res, next) => {
+    const filteredSpec = filterSpecForUser(swaggerSpec, req.isAdmin);
+    swaggerUi.setup(filteredSpec, {
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'NoteHubMD API 文件',
+        swaggerOptions: {
+            persistAuthorization: true
+        }
+    })(req, res, next);
+});
+
 // Vite SPA mode - serve static files and handle all routes
 const spaHandler = viteConfig.spaMiddleware(app, express);
 

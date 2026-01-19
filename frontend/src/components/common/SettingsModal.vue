@@ -686,6 +686,19 @@ const copyApiKey = async () => {
                   </p>
                 </div>
               </div>
+
+              <!-- API Documentation Link -->
+              <a href="/api-docs" target="_blank"
+                 class="flex items-center w-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left shadow-sm">
+                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform shrink-0">
+                  <i class="fa-solid fa-book text-base"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-800 dark:text-white">API 文件</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">查看與測試 API 端點</div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square text-gray-400 ml-2 text-sm"></i>
+              </a>
             </div>
 
             <!-- Admin Tab -->

@@ -17,6 +17,46 @@ const requireAdmin = async (req, res, next) => {
     next();
 };
 
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: 取得所有使用者列表
+ *     description: 取得系統中所有使用者的資訊與統計數據 (需要 Admin 權限)
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 使用者列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   username:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *                     enum: [super-admin, admin, user]
+ *                   isApiKeyEnabled:
+ *                     type: boolean
+ *                   bookCount:
+ *                     type: integer
+ *                   noteCount:
+ *                     type: integer
+ *       401:
+ *         description: 未認證
+ *       403:
+ *         description: 需要 Admin 權限
+ */
 // GET /api/admin/users - List all users with stats
 router.get('/users', requireAdmin, async (req, res) => {
     try {
@@ -43,6 +83,33 @@ router.get('/users', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/stats:
+ *   get:
+ *     summary: 取得系統統計
+ *     description: 取得線上人數、筆記與書本數量 (含垃圾桶) (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 系統統計資訊
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 onlineUsers:
+ *                   type: integer
+ *                 active:
+ *                   type: object
+ *                 trash:
+ *                   type: object
+ *       403:
+ *         description: 需要 Admin 權限
+ */
 // GET /api/admin/stats - Get notes and books statistics
 router.get('/stats', requireAdmin, async (req, res) => {
     try {
@@ -90,6 +157,40 @@ router.get('/stats', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/users/{id}/role:
+ *   put:
+ *     summary: 修改使用者角色
+ *     description: 修改使用者權限角色 (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 使用者 ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [super-admin, admin, user]
+ *     responses:
+ *       200:
+ *         description: 修改成功
+ *       403:
+ *         description: 權限不足或無法修改該使用者
+ *       404:
+ *         description: 使用者不存在
+ */
 // PUT /api/admin/users/:id/role - Update user role
 router.put('/users/:id/role', requireAdmin, async (req, res) => {
     try {
@@ -137,6 +238,37 @@ router.put('/users/:id/role', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/users/{id}/apikey:
+ *   put:
+ *     summary: 切換使用者 API Key 功能
+ *     description: 啟用或停用使用者的 API Key 功能 (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 使用者 ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               enabled:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: 修改成功
+ *       404:
+ *         description: 使用者不存在
+ */
 // PUT /api/admin/users/:id/apikey - Toggle user API Key feature
 router.put('/users/:id/apikey', requireAdmin, async (req, res) => {
     try {
@@ -170,6 +302,33 @@ router.put('/users/:id/apikey', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/system:
+ *   get:
+ *     summary: 取得系統設定
+ *     description: 取得系統功能開關與預設值狀態 (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 系統設定狀態
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 features:
+ *                   type: object
+ *                 defaults:
+ *                   type: object
+ *                 webhook:
+ *                   type: object
+ *                 ldap:
+ *                   type: object
+ */
 // GET /api/admin/system - Get system configuration status
 router.get('/system', requireAdmin, async (req, res) => {
     try {

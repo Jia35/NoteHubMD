@@ -219,6 +219,39 @@ router.post('/logout', (req, res) => {
     res.json({ success: true });
 });
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: 取得目前登入使用者資訊
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 使用者資訊
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 username:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                   enum: [super-admin, admin, user]
+ *                 isApiKeyEnabled:
+ *                   type: boolean
+ *                 apiKey:
+ *                   type: string
+ *       401:
+ *         description: 未認證
+ */
 // Get Current User
 router.get('/me', async (req, res) => {
     if (!req.session.userId) {
@@ -240,6 +273,49 @@ router.get('/me', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: 更新個人資料
+ *     description: 更新目前登入使用者的名稱與頭像
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: 顯示名稱
+ *               avatar:
+ *                 type: string
+ *                 description: 頭像 URL
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 username:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 avatar:
+ *                   type: string
+ *       401:
+ *         description: 未認證
+ *       404:
+ *         description: 使用者不存在
+ */
 // Update Profile
 router.put('/profile', async (req, res) => {
     if (!req.session.userId) {
@@ -389,6 +465,32 @@ router.delete('/pins/:type/:id', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/apikey:
+ *   post:
+ *     summary: 產生或重新產生 API Key
+ *     description: 產生新的 API Key，這會覆蓋舊的 Key
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功產生 API Key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 apiKey:
+ *                   type: string
+ *                   example: sk-nh-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ *       401:
+ *         description: 未認證
+ *       403:
+ *         description: API Key 功能未啟用
+ */
 // Generate or Regenerate User API Key
 router.post('/apikey', async (req, res) => {
     if (!req.session.userId) {
@@ -415,6 +517,29 @@ router.post('/apikey', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/apikey:
+ *   delete:
+ *     summary: 刪除 API Key
+ *     description: 刪除目前的 API Key，刪除後 Key 將立即失效
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功刪除
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       401:
+ *         description: 未認證
+ */
 // Delete User API Key
 router.delete('/apikey', async (req, res) => {
     if (!req.session.userId) {
